@@ -53,28 +53,101 @@ Not yet created, but this is the shape `docker-compose.yml`, `frontend/`, `backe
 - Ask before making breaking architectural changes.
 - Complete the required scope before optional improvements.
 
-### Frontend
+### Project Structure
+- Follow a feature-based folder structure instead of grouping files by type.
+- Keep related components, hooks, services, styles, tests, and types together.
+- Avoid deep nesting whenever possible.
+- Do not create folders containing only a single file unless there is a clear reason.
+- Reuse existing folders before creating new ones.
+
+### File & Folder Naming
+- Use descriptive, self-explanatory names.
+- Avoid unnecessary abbreviations.
+- Allowed abbreviations include well-known technical terms such as API, HTTP, HTTPS, URL, URI, UUID, JWT, OAuth, SSO, MFA, UI, UX, CSS, SCSS, HTML, JSON, SQL, MCP, DTO, CRUD, UUID, CSV, PDF, SVG, PNG.
+- Prefer `user-profile-card.tsx` over `upc.tsx`.
+- Prefer `authentication-service.py` over `auth.py` unless it matches an existing project convention.
+- File names should clearly describe their responsibility.
+- Use kebab-case for file and folder names unless the framework requires otherwise.
+
+### Architecture
+- Prefer feature-based architecture.
+- Keep modules loosely coupled.
+- Favor composition over inheritance.
+- Minimize shared mutable state.
+- Avoid circular dependencies.
+- Prefer dependency injection where appropriate.
+
+### Frontend (React)
 - Use React functional components and hooks.
 - Prefer TypeScript where available.
-- Keep components small and focused.
+- One component per file, one primary responsibility per component.
+- Keep components small and focused — aim for under ~200 lines whenever practical.
 - Extract reusable logic into custom hooks.
-- Use the project's SCSS + BEM convention (see "Locked architecture decisions" above) — no CSS Modules, no Tailwind.
-- Avoid inline styles unless necessary.
-- Keep business logic out of UI components.
+- Keep presentation and business logic separated; keep business logic out of UI components.
+- Avoid prop drilling when appropriate; prefer composition over inheritance.
+- Co-locate tests, styles, and types with the component.
 
-### Backend
-- Use FastAPI best practices.
-- Keep routes thin and move business logic into services.
-- Use Pydantic models for request and response validation.
+### SCSS
+- Use the project's SCSS + BEM convention (see "Locked architecture decisions" above) — no CSS Modules, no Tailwind.
+- Keep styles scoped to the feature/component.
+- Prefer nesting only when it improves readability.
+- Avoid overly specific selectors.
+- Reuse variables, mixins, and design tokens.
+- Avoid inline styles unless necessary.
+- Avoid `!important` unless absolutely necessary.
+
+### Backend (FastAPI)
+- Use FastAPI best practices; keep routes thin and move business logic into services.
+- Database access belongs in repositories, kept separate from API endpoints.
+- Validate all request and response models with Pydantic.
 - Add proper error handling with meaningful HTTP status codes.
-- Keep database access separated from API endpoints.
+- Prefer dependency injection over global state.
+- Keep routers organized by feature.
+
+### Python
+- Follow PEP 8.
+- Use explicit type hints whenever possible.
+- Prefer dataclasses or Pydantic models over raw dictionaries.
+- Keep functions focused on a single responsibility.
+- Avoid large utility modules.
+- Use meaningful exception types.
+- Prefer `pathlib` over `os.path`.
+
+### Configuration
+- Store configuration in environment variables.
+- Never hardcode secrets or credentials.
+- Keep development and production configuration separate.
+- Centralize configuration loading.
+
+### Imports
+- Remove unused imports.
+- Keep imports organized.
+- Prefer absolute imports if supported by the project.
+- Avoid wildcard imports.
 
 ### Code Quality
 - Follow existing project structure and naming conventions.
-- Write readable, self-documenting code.
+- Write readable, self-documenting, explicit code — prefer explicit over clever.
+- Keep functions and files focused on a single responsibility.
+- Avoid duplicate logic; refactor when duplication appears.
 - Remove unused imports and dead code.
-- Avoid premature optimization.
-- Keep functions small and focused.
+- Avoid premature optimization — readability first.
+- Leave the codebase cleaner than you found it.
+
+### Before Creating New Code
+Before creating a new file, component, hook, service, utility, or model:
+- Search the project for an existing implementation.
+- Reuse existing code whenever appropriate.
+- Extend existing modules instead of creating similar ones.
+- Do not introduce duplicate functionality.
+
+### Decision Making
+When multiple implementation options exist:
+- Choose the simplest maintainable solution.
+- Explain why the chosen approach is preferred.
+- Do not over-engineer.
+- Avoid unnecessary abstractions.
+- Avoid creating generic utilities until at least two real use cases exist.
 
 ### Before Finishing
 - Check for linting issues.
