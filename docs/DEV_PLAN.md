@@ -52,18 +52,18 @@ No virtual environment tool needed beyond Python's built-in `venv` — one fewer
 ### Week 1 — Repo, Docker skeleton, Ollama wired in (no gating yet)
 **Goal:** a real conversation end-to-end with zero security — anyone can ask anything, and it should just answer. That's expected and temporary.
 
-- [ ] Initialize repo structure: `frontend/`, `backend/`, `scripts/`, `docs/diagrams/`
-- [ ] Backend: FastAPI skeleton (`main.py`), `/health` endpoint, `requirements.txt`, Dockerfile
-- [ ] Backend: Postgres connection wired up (SQLAlchemy + Alembic init), models for `Customer`, `Shipment`, `Package`, `ChatSession` (schema per Section 4.4/4.6 of REQUIREMENTS.md)
-- [ ] `docker-compose.yml` — brings up `frontend`, `backend`, `postgres` containers; Ollama stays on host
+- [x] Initialize repo structure: `frontend/`, `backend/`, `scripts/`, `docs/diagrams/`
+- [x] Backend: FastAPI skeleton (`main.py`), `/health` endpoint, `requirements.txt`, Dockerfile
+- [x] Backend: Postgres connection wired up (SQLAlchemy + Alembic init), models for `Customer`, `Shipment`, `Package`, `ChatSession` (schema per Section 4.4/4.6 of REQUIREMENTS.md)
+- [ ] `docker-compose.yml` — brings up `frontend`, `backend`, `postgres` containers; Ollama stays on host (currently `postgres` only — `frontend`/`backend` containers not added yet)
 - [ ] `scripts/seed_data.py` — generates ≥25 customers, 40–60 shipments (realistic status distribution), conforming to the schema; run it and confirm data lands in Postgres
 - [ ] Frontend: Vite + React + TS skeleton, SCSS baseline (`_variables.scss`, `_mixins.scss`), a `ChatWindow` component rendering hardcoded/echo messages first
-- [ ] Backend: `llm/ollama_client.py` wrapping calls to `http://host.docker.internal:11434` (or `localhost:11434` when running backend outside Docker for faster iteration)
-- [ ] `POST /chat` endpoint: takes a message, calls Ollama, returns the model's reply — no gating logic yet, just a basic system prompt defining the assistant's persona
+- [x] Backend: `llm/ollama_client.py` wrapping calls to `http://host.docker.internal:11434` (or `localhost:11434` when running backend outside Docker for faster iteration)
+- [x] `POST /chat` endpoint: takes a message, calls Ollama, returns the model's reply — no gating logic yet, just a basic system prompt defining the assistant's persona
 - [ ] Orval installed and configured (`orval.config.ts` pointed at `/openapi.json`, `client: 'react-query'`) — generate first real hooks now (e.g. `useChat`), not hand-written fetch calls
 - [ ] Frontend `ChatWindow` wired to the real `/chat` endpoint via the generated hook — send/receive works, message history renders
 - [ ] Every chat turn persisted into `ChatSession.transcript` (JSONB) — wire this now while the flow is simple
-- [ ] Copy Section 6 diagrams from `REQUIREMENTS.md` into `docs/diagrams/` as the starting reference (will be corrected in Week 5)
+- [x] Copy Section 6 diagrams from `REQUIREMENTS.md` into `docs/diagrams/` as the starting reference (will be corrected in Week 5)
 
 **Monday demo checklist (Week 2's Monday):**
 - [ ] `docker-compose up` brings up the stack from a clean clone
