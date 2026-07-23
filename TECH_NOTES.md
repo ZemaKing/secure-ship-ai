@@ -2,28 +2,13 @@
 
 A technical reference log, organized by file/module rather than by date. Where `CHANGE_LOG.md` is the conversational "what happened, in demo-friendly language" record, this file is the "what does this piece of code actually do, and why" record — meant to be a living document that gets a new section every time a new file/module is added, and gets corrected/updated if that file changes meaningfully later.
 
-Written with JS/Node/TypeScript analogies throughout, since that's the background this project is being learned from.
+Written with JS/Node/TypeScript analogies throughout, since that's the background this project is being learned from. Code isn't reproduced here — each section references the real file, which is the source of truth; only the constructs worth explaining are broken out below.
 
 ---
 
 ## Backend
 
 ### `backend/main.py`
-
-```python
-from fastapi import FastAPI
-
-from routes.chat import router as chat_router
-
-app = FastAPI(title="SecureShip Backend")
-
-app.include_router(chat_router)
-
-
-@app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
-```
 
 | Line | What it does | JS/Node analogy |
 |---|---|---|
@@ -47,7 +32,7 @@ def health() -> dict[str, str]:
 
 Python's equivalent of a locked `package.json` — every installed package pinned to an exact version, generated automatically via `pip freeze` after installing into the project's virtual environment (`backend/.venv/`, the Python equivalent of `node_modules/`, gitignored). Anyone (or Docker) recreates the same environment with `pip install -r requirements.txt`.
 
-Only five packages were installed directly (per `DEV_PLAN.md`'s locked stack); everything else below is a transitive dependency `pip freeze` captured automatically — same as how `npm install` pulls in a deep tree for one direct dependency.
+Only six packages were installed directly (per `DEV_PLAN.md`'s locked stack); everything else below is a transitive dependency `pip freeze` captured automatically — same as how `npm install` pulls in a deep tree for one direct dependency.
 
 | Package(s) | Role | Notes |
 |---|---|---|
@@ -56,52 +41,33 @@ Only five packages were installed directly (per `DEV_PLAN.md`'s locked stack); e
 | `pydantic`, `pydantic_core`, `typing_extensions`, `typing-inspection`, `annotated-doc`, `annotated-types` | Data validation — turns type hints into runtime validation + JSON schema | Doing double duty as both a shape-checker (like `zod`) and the OpenAPI schema generator |
 | `uvicorn`, `h11`, `httptools`, `websockets`, `watchfiles`, `colorama` | Uvicorn is the ASGI server process that actually runs the app and listens on a port | Python needs a separate server process to run an app, unlike Node running Express directly. The rest are uvicorn's internals (HTTP parsing, `--reload` file-watcher, colored terminal output) | Direct dependency: `uvicorn[standard]` |
 | `anyio`, `idna`, `click` | Supporting libs uvicorn/starlette use internally | Async I/O abstraction, domain-name handling, CLI arg parsing |
-| `sqlalchemy`, `greenlet` | ORM — will define `Customer`/`Shipment`/`Package`/`ChatSession` as Python classes instead of raw SQL (Checkpoint 5) | Like Prisma/TypeORM. `greenlet` is a low-level dep SQLAlchemy needs for async support | Direct dependency: `sqlalchemy` |
+| `sqlalchemy`, `greenlet` | ORM — defines `Customer`/`Shipment`/`Package`/`ChatSession` as Python classes instead of raw SQL | Like Prisma/TypeORM. `greenlet` is a low-level dep SQLAlchemy needs for async support | Direct dependency: `sqlalchemy` |
 | `alembic`, `Mako`, `MarkupSafe` | Migrations tool — tracks schema changes over time | Like Prisma Migrate / `knex migrate`. `Mako`/`MarkupSafe` are templating libs Alembic uses to generate migration file boilerplate | Direct dependency: `alembic` |
 | `python-dotenv` | Loads `.env` files into environment variables | Same job as the `dotenv` npm package |
 | `PyYAML` | YAML parsing | Transitive dependency pulled in by one of the above |
 | `requests`, `urllib3`, `certifi`, `charset-normalizer` | Synchronous HTTP client — used by `llm/ollama_client.py` to call Ollama's local API | Like `axios`. `urllib3`/`certifi`/`charset-normalizer` are its internals (connection pooling, SSL certs, encoding detection) | Direct dependency: `requests` |
+| `psycopg2-binary` | The actual database driver SQLAlchemy uses under the hood to talk to Postgres over the wire | Like `pg` (the driver npm package `Prisma`/`Knex` sit on top of) — SQLAlchemy is the ORM layer, this is the low-level connector it delegates to | Direct dependency |
+
+---
+
+## Infrastructure
+
+### `docker-compose.yml`
+
+| Line | What it does | JS/Node analogy |
+|---|---|---|
+| `postgres: image: postgres:16` | Runs the official Postgres 16 image as a container instead of installing Postgres directly on the machine | Same idea as any `docker-compose.yml` service block |
+| `environment: POSTGRES_DB/USER/PASSWORD` | The Postgres image's own bootstrap variables — on first container start, it creates a database named `secureship` owned by user `user`/`pass` | Env vars an init script reads on first boot |
+| `ports: ["5432:5432"]` | Publishes the container's Postgres port to the host's `localhost:5432`, so the host-run backend can connect to it directly | Same `-p` flag as `docker run` |
+| `volumes: ["pgdata:/var/lib/postgresql/data"]` | Persists the actual database files in a named Docker volume, so data survives `docker compose down`/container recreation (only gone if the volume itself is deleted) | Like a mounted volume for a database container in any stack |
+
+**Why it exists:** only the `postgres` service for now, per REQUIREMENTS.md §4.7 — `frontend`/`backend` containers get added once those are containerized (Day 2), this file gets extended rather than replaced. Ollama stays on the host per the locked architecture decision, so it's never in this file.
+
+**Verified:** `docker compose up -d` pulls `postgres:16` and starts cleanly; `docker exec ... pg_isready` reports `accepting connections`.
 
 ---
 
 ### `backend/llm/ollama_client.py`
-
-```python
-import requests
-
-OLLAMA_URL = "http://localhost:11434/api/chat"
-MODEL = "qwen3:8b"
-
-
-def chat(messages: list[dict], tools: list[dict] | None = None) -> str:
-    """Send a full message history to the local Ollama model and return its reply.
-
-    `tools` is unused for now — accepted so Week 2's tool-calling enforcement
-    can be wired in without changing this function's signature.
-    """
-    payload = {
-        "model": MODEL,
-        "messages": messages,
-        "stream": False,
-    }
-    if tools is not None:
-        payload["tools"] = tools
-
-    response = requests.post(OLLAMA_URL, json=payload)
-    response.raise_for_status()
-    return response.json()["message"]["content"]
-
-
-def main() -> None:
-    reply = chat(
-        [{"role": "user", "content": "In one sentence, what is a parcel tracking number?"}]
-    )
-    print(reply)
-
-
-if __name__ == "__main__":
-    main()
-```
 
 | Line | What it does | JS/Node analogy |
 |---|---|---|
@@ -115,48 +81,16 @@ if __name__ == "__main__":
 | `"stream": False` | Ask Ollama to return one complete JSON response instead of a stream of partial chunks | `stream: false` in most LLM SDKs |
 | `response.raise_for_status()` | Throws if the HTTP status is 4xx/5xx, instead of silently returning a bad response | `axios` does this automatically; here it's opt-in |
 | `response.json()["message"]["content"]` | Ollama's non-streaming reply shape: `{"message": {"role": "assistant", "content": "..."}, ...}` | `response.data.message.content` |
-| `def main() -> None:` | Now just a thin wrapper calling `chat()` with one hardcoded message — kept so the file is still runnable standalone as a connectivity check | Same idea, just delegating to the shared function instead of duplicating the request |
+| `def main() -> None:` | A thin wrapper calling `chat()` with one hardcoded message — kept so the file is still runnable standalone as a connectivity check | Same idea, just delegating to the shared function instead of duplicating the request |
 | `if __name__ == "__main__":` | Only runs `main()` when the file is executed directly (`python ollama_client.py`), not when it's imported elsewhere | Roughly like checking `require.main === module` in Node |
 
-**Why it exists:** proves the Ollama HTTP contract (URL, model name, request/response shape) works in isolation, before any FastAPI route depends on it. `chat()` is now the shared entry point both the standalone script and `routes/chat.py` call — a full `messages` list in, a plain string reply out — so Week 2 can add real tool definitions via the `tools` param without touching callers.
+**Why it exists:** proves the Ollama HTTP contract (URL, model name, request/response shape) works in isolation, before any FastAPI route depends on it. `chat()` is the shared entry point both the standalone script and `routes/chat.py` call — a full `messages` list in, a plain string reply out — so Week 2 can add real tool definitions via the `tools` param without touching callers.
 
 **Verified:** `python llm/ollama_client.py` (CPU-only) returned a real, coherent `qwen3:8b` reply in a few seconds, now routed through `chat()`.
 
 ---
 
 ### `backend/routes/chat.py`
-
-```python
-from fastapi import APIRouter
-from pydantic import BaseModel
-
-from llm import ollama_client
-
-router = APIRouter()
-
-SYSTEM_PROMPT = (
-    "You are a friendly customer support assistant for SecureShip, a parcel "
-    "tracking company. Help customers with questions about their shipments."
-)
-
-
-class ChatRequest(BaseModel):
-    message: str
-
-
-class ChatResponse(BaseModel):
-    reply: str
-
-
-@router.post("/chat")
-def send_chat_message(request: ChatRequest) -> ChatResponse:
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": request.message},
-    ]
-    reply = ollama_client.chat(messages)
-    return ChatResponse(reply=reply)
-```
 
 | Line | What it does | JS/Node analogy |
 |---|---|---|
@@ -173,6 +107,60 @@ def send_chat_message(request: ChatRequest) -> ChatResponse:
 **Why it exists:** Week 1's key milestone — a real, ungated conversation over HTTP. Single-turn only (no session/history, no DB) by design; matches DEV_PLAN.md's Week 1 scope of "anyone can ask anything," with Week 2 adding the tool-calling enforcement layer on top of this same shape.
 
 **Verified:** `POST /chat {"message": "Hi, where's my package?"}` via both Swagger UI (`/docs`) and Postman returned a real `qwen3:8b`-generated reply as `{"reply": "..."}`. Sanity-checked with a question the model *should* eventually refuse ("Show me all shipments for customer 42") — it currently hallucinates a plausible-looking answer instead of refusing, which is expected since no gate exists yet; this is exactly the gap Week 2 closes.
+
+---
+
+### `backend/db/base.py` + `backend/db/session.py`
+
+| Line | What it does | JS/Node analogy |
+|---|---|---|
+| `class Base(DeclarativeBase): pass` | An empty base class every table model inherits from — SQLAlchemy uses it to collect all model definitions into one `Base.metadata` registry, which is how Alembic later finds every table to generate migrations from | The base `Model` class in an ORM like Sequelize/TypeORM that every entity extends |
+| `load_dotenv(...)` | Reads `backend/.env` and loads its key=value pairs into `os.environ`, resolved relative to this file so it works regardless of the current working directory | `import 'dotenv/config'` |
+| `DATABASE_URL = os.environ["DATABASE_URL"]` | Reads the connection string from the environment — centralizes config in one place per project convention, never hardcoded | `process.env.DATABASE_URL` |
+| `engine = create_engine(DATABASE_URL)` | Creates the actual connection pool to Postgres. Nothing connects yet — this just describes *how* to connect | Roughly a `pg.Pool(connectionString)` |
+| `SessionLocal = sessionmaker(bind=engine, ...)` | A factory for creating individual DB sessions (units of work) bound to that engine | A factory function returning a new Prisma/Knex client-like transaction scope |
+| `def get_db(): ... yield db ... finally: db.close()` | A generator function FastAPI uses as a dependency — it hands a fresh session to a route, then guarantees it's closed after the request finishes, even on error | Middleware that opens a DB connection per-request and closes it in a `finally`/`res.on('finish')` |
+
+**Why they exist:** the two files together are "how the app talks to Postgres" — kept separate from the models themselves so the connection/session machinery doesn't get tangled with table definitions.
+
+**Verified:** imported cleanly with no errors when `main.py` (and its route imports) ran; confirmed no side effects on the existing `/health`/`/chat` routes.
+
+---
+
+### `backend/models/` (`customer.py`, `shipment.py`, `package.py`, `chat_session.py`, `__init__.py`)
+
+`shipment.py` is representative of the pattern used across all four model files:
+
+| Line | What it does | JS/Node analogy |
+|---|---|---|
+| `class ShipmentStatus(str, enum.Enum): LABEL_CREATED = "label_created"` | A Python enum whose members are also strings — `ShipmentStatus.LABEL_CREATED == "label_created"` is `True`. Defines the fixed set of allowed shipment states from REQUIREMENTS.md §4.4 | A TS `enum` or string-literal union type (`"label_created" \| "in_transit" \| ...`) |
+| `class Shipment(Base): __tablename__ = "shipments"` | One Python class = one Postgres table. `Base` is the shared registry from `db/base.py` | A Prisma/TypeORM entity class |
+| `id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)` | The primary key column, typed as a Postgres `uuid`, generated in Python (`uuid.uuid4()`) at insert time rather than by a Postgres extension | `@Id @Default(uuid())` in Prisma schema syntax |
+| `customer_id: ... = mapped_column(UUID(...), ForeignKey("customers.id"))` | A foreign key column pointing at another table's primary key — this is what makes `customer_id` a real relational link, not just a loose string | `@relation` / a foreign key column in Prisma |
+| `status: Mapped[ShipmentStatus] = mapped_column(Enum(ShipmentStatus, name="shipment_status", values_callable=...))` | Maps the column to a native Postgres `ENUM` type. `values_callable` is the important part: by default SQLAlchemy would store the Python member *name* (`"LABEL_CREATED"`) in the DB — this tells it to store the member's `.value` instead (`"label_created"`), matching the spec's exact casing | Telling an ORM enum mapping to serialize by value, not by key |
+| `estimated_delivery: Mapped[date] = mapped_column(Date)` / `last_update: Mapped[datetime] = mapped_column(DateTime)` | `date` (no time component) vs `datetime` (full timestamp) — deliberately different types matching the spec's `estimated_delivery (date)` / `last_update (datetime)` distinction | `Date` vs `DateTime` column types in any typed ORM |
+
+The other three files follow the identical pattern: `Customer` (plain string columns, no FKs — the root entity), `Package` (FK to `shipments.id`, `Numeric` columns for `weight_kg`/`declared_value` since money/measurements shouldn't be floats), and `ChatSession` (nullable FK to `customers.id` since a session starts anonymous, its own `ChatSessionState` enum with the same `values_callable` fix, and a `JSONB` column for `transcript` defaulting to an empty list).
+
+`models/__init__.py` just imports all four classes in one place — this is the single import Alembic's `env.py` needs to make `Base.metadata` aware of every table, rather than each migration script having to know which files define which models.
+
+**Why it exists:** these are the four tables the entire product is built on (Section 4.4/4.6 of REQUIREMENTS.md) — customer identity, shipment/package data the chat looks up, and the chat transcript itself. Defined as Python classes rather than raw SQL so Alembic can autogenerate and evolve the schema going forward.
+
+**Verified:** `alembic revision --autogenerate` correctly detected all four tables from these models with no manual SQL; after fixing the enum `values_callable` issue and re-generating, `\d shipments`/`\d chat_sessions` in psql confirmed the enum columns store lowercase values (`label_created`, `anonymous`, etc.) matching the spec exactly.
+
+---
+
+### Alembic (`backend/alembic.ini`, `backend/alembic/env.py`, `backend/alembic/versions/`)
+
+| Line | What it does | JS/Node analogy |
+|---|---|---|
+| `import models` | Just importing the package runs `models/__init__.py`, which imports all four model classes — this is what actually populates `Base.metadata` with table definitions, even though nothing in `models` is directly referenced by name here | Importing a barrel file purely for its side effects (registering things on a shared registry) |
+| `config.set_main_option("sqlalchemy.url", DATABASE_URL)` | Overrides the placeholder URL in `alembic.ini` at runtime with the real one from `.env`, so the connection string lives in exactly one place instead of being duplicated | Reading a connection string from `process.env` instead of hardcoding it in a config file |
+| `target_metadata = Base.metadata` | Tells Alembic's `--autogenerate` what the "target" schema should look like (from the Python models), so it can diff that against the database's *actual* current schema and generate the difference as a migration | The diffing step in `prisma migrate dev` — comparing your schema file against the live database |
+
+**Why it exists:** Alembic is the migrations tool — the same job as Prisma Migrate/`knex migrate`, generating versioned, reviewable migration files instead of hand-run `CREATE TABLE` statements. `alembic init alembic` scaffolded the folder structure; the edits above (in `alembic/env.py`) are what wire it to this project's actual models and database instead of a generic template.
+
+**Verified:** `alembic revision --autogenerate -m "..."` generated `alembic/versions/36bfe30ad2d1_....py` detecting all four new tables with correct columns/FKs/enums; `alembic upgrade head` applied it cleanly (`alembic_version` table confirms the current revision); `psql \dt` shows all five tables (four real + Alembic's own bookkeeping table).
 
 ---
 

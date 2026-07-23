@@ -6,6 +6,21 @@ Full technical scope and week-by-week milestones live in `docs/DEV_PLAN.md` — 
 
 ---
 
+## 2026-07-23 — Week 1, Day 1: The database shows up 🗄️
+
+**Theme:** stand up real Postgres, real tables, real migrations — no more "nothing persists" (flagged in the plan as the day's least-familiar territory).
+
+- 🐳 Added `docker-compose.yml` with just the `postgres` service for now (per spec: `secureship` DB, `user`/`pass`, port 5432, persistent volume) — `frontend`/`backend` containers get added to this same file later, not a separate one.
+- 🏗️ Built the four core tables as SQLAlchemy models — `Customer`, `Shipment`, `Package`, `ChatSession` — matching the schema in REQUIREMENTS.md §4.4/§4.6 field-for-field, including the two enum columns (`shipment.status`, `chat_session.state`) and the `transcript` JSONB column.
+- 🔧 Wired up `backend/db/` — a connection to Postgres via SQLAlchemy, config'd from `.env`, no hardcoded credentials.
+- 📐 Set up Alembic (the migrations tool) and generated/applied the first migration — `alembic upgrade head` creates all four tables from scratch.
+- 🐛 Caught a real bug before it landed: Postgres was about to store enum values as `LABEL_CREATED` instead of the spec's `label_created` (SQLAlchemy's default is to use the enum's name, not its value). Fixed and regenerated the migration before applying.
+- ✅ Verified directly in psql — all four tables exist with the right columns, foreign keys, native Postgres enums (correct lowercase values), and a real `jsonb` column. Confirmed `/health` and `/chat` still work unaffected.
+
+**Where things stand:** the schema is real and migrated, but empty — no data in it yet. Next: `scripts/seed_data.py` to generate ≥25 customers and 40–60 shipments so there's actually something for the chat to look up later.
+
+---
+
 ## 2026-07-23 — Week 1, Day 1: First real conversation 💬
 
 **Theme:** wire the local model into an actual HTTP endpoint — today's key milestone.
