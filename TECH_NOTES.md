@@ -54,6 +54,53 @@ Only five packages were installed directly (per `DEV_PLAN.md`'s locked stack); e
 | `alembic`, `Mako`, `MarkupSafe` | Migrations tool — tracks schema changes over time | Like Prisma Migrate / `knex migrate`. `Mako`/`MarkupSafe` are templating libs Alembic uses to generate migration file boilerplate | Direct dependency: `alembic` |
 | `python-dotenv` | Loads `.env` files into environment variables | Same job as the `dotenv` npm package |
 | `PyYAML` | YAML parsing | Transitive dependency pulled in by one of the above |
+| `requests`, `urllib3`, `certifi`, `charset-normalizer` | Synchronous HTTP client — used by `llm/ollama_client.py` to call Ollama's local API | Like `axios`. `urllib3`/`certifi`/`charset-normalizer` are its internals (connection pooling, SSL certs, encoding detection) | Direct dependency: `requests` |
+
+---
+
+### `backend/llm/ollama_client.py`
+
+```python
+import requests
+
+OLLAMA_URL = "http://localhost:11434/api/chat"
+MODEL = "qwen3:8b"
+
+
+def main() -> None:
+    response = requests.post(
+        OLLAMA_URL,
+        json={
+            "model": MODEL,
+            "messages": [
+                {"role": "user", "content": "In one sentence, what is a parcel tracking number?"}
+            ],
+            "stream": False,
+        },
+    )
+    response.raise_for_status()
+    reply = response.json()["message"]["content"]
+    print(reply)
+
+
+if __name__ == "__main__":
+    main()
+```
+
+| Line | What it does | JS/Node analogy |
+|---|---|---|
+| `import requests` | A synchronous HTTP client library — not part of FastAPI/Starlette, added just for this script | `import axios from 'axios'` |
+| `OLLAMA_URL`, `MODEL` | Module-level constants | `const OLLAMA_URL = ...` |
+| `requests.post(OLLAMA_URL, json={...})` | POSTs a JSON body, auto-sets `Content-Type: application/json` | `axios.post(url, body)` |
+| `"messages": [{"role": "user", "content": ...}]` | Ollama's chat API shape — a list of turns, each with a `role` (`user`/`assistant`/`system`) and `content`. This is the same shape OpenAI's chat API popularized. | Same as the `messages` array in an OpenAI SDK call |
+| `"stream": False` | Ask Ollama to return one complete JSON response instead of a stream of partial chunks | `stream: false` in most LLM SDKs |
+| `response.raise_for_status()` | Throws if the HTTP status is 4xx/5xx, instead of silently returning a bad response | `axios` does this automatically; here it's opt-in |
+| `response.json()["message"]["content"]` | Ollama's non-streaming reply shape: `{"message": {"role": "assistant", "content": "..."}, ...}` | `response.data.message.content` |
+| `if __name__ == "__main__":` | Only runs `main()` when the file is executed directly (`python ollama_client.py`), not when it's imported elsewhere later | Roughly like checking `require.main === module` in Node |
+
+**Why it exists:** proves the Ollama HTTP contract (URL, model name, request/response shape) works in isolation, before any FastAPI route depends on it. If this script fails, the problem is Ollama/the model — not the web server. This file is the seed for a real `ollama_client` module once `POST /chat` is built (Checkpoint 4): the plan is to generalize `main()`'s hardcoded single message into a function that accepts a full `messages` list (and later, a `tools` param for Week 2's tool-calling), so nothing here gets rewritten, only extended.
+
+**Verified:** `python llm/ollama_client.py` (CPU-only) returned a real, coherent `qwen3:8b` reply in a few seconds.
 
 ---
 

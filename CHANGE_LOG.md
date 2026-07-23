@@ -15,5 +15,7 @@ Full technical scope and week-by-week milestones live in `docs/DEV_PLAN.md` — 
 - 🗺️ Copied the original architecture diagrams (system design, identity-verification flow, escalation theater, tool-calling sequence, data model, deployment layout) into `docs/diagrams/` as our "before" snapshot — to be redrawn in Week 5 against what we actually build.
 - 🩺 First real backend code: a bare-bones FastAPI server with a `/health` check — proof the server boots and answers before anything smarter gets layered on.
 - ✅ Tested by hand — clean `200 OK`, plus the framework's free interactive docs page loading in-browser.
+- 🤖 Talked to the local AI brain directly for the first time — a standalone script hits Ollama and gets a real `qwen3:8b` reply back, no server or app logic involved yet.
+- ✅ Confirmed: asked it what a tracking number is, got a correct, coherent answer in a few seconds (CPU-only, as expected).
 
-**Where things stand:** backend server alive, health check passing. Next: a quick script to prove the local AI model responds directly, before wiring it into a real chat endpoint.
+**Where things stand:** backend server alive, health check passing, local AI model confirmed responsive. Next: wire that model into a real `/chat` endpoint — the day's key milestone, a full conversation over HTTP.
