@@ -4,7 +4,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-This repo currently contains **no application code** — only planning documents. `frontend/`, `backend/`, and `scripts/` (per the skeleton in REQUIREMENTS.md §6.6) have not been created yet. Week 1 of the build (repo/Docker skeleton, Ollama wired in) has not started. There are no build/lint/test commands to document yet — once the project is scaffolded, update this file with the real commands (expect `npm run dev`/`build`/`lint` in `frontend/`, `uvicorn`/`pytest`/`alembic` in `backend/`, and `docker-compose up` at the root).
+Week 1 is in progress. `backend/` is real and running; `frontend/` and `scripts/` are still empty (per the skeleton in REQUIREMENTS.md §6.6) — not yet started.
+
+**What exists in `backend/` so far:**
+- FastAPI app (`main.py`) with `GET /health` and `POST /chat` (ungated — no session/gating logic yet, matches Week 1 scope)
+- `llm/ollama_client.py` — `chat(messages, tools=None)` wrapping calls to the local Ollama server
+- `db/` (SQLAlchemy engine/session, `.env`-driven `DATABASE_URL`) and `models/` (`Customer`, `Shipment`, `Package`, `ChatSession` — schema per REQUIREMENTS.md §4.4/§4.6)
+- Alembic initialized and migrated (`alembic/`) — all four tables exist in Postgres, currently empty (seeding is next)
+
+**Root-level:** `docker-compose.yml` exists but only brings up the `postgres` service so far — `frontend`/`backend` containers get added later, per REQUIREMENTS.md §4.7.
+
+**Commands that work today (from `backend/`, with the venv active):**
+- `uvicorn main:app --reload` — runs the API on `:8000`, see `/docs` for Swagger UI
+- `alembic revision --autogenerate -m "..."` / `alembic upgrade head` — schema migrations
+- `python llm/ollama_client.py` — standalone Ollama connectivity check
+
+**From the repo root:** `docker compose up -d` — brings up Postgres only, for now.
+
+No frontend commands yet, and no test suite yet — update this section again as those land.
+
+See `TECH_NOTES.md` for a per-file technical breakdown and `CHANGE_LOG.md` for the day-by-day narrative of what's been built.
 
 ## What this project is
 
@@ -42,7 +61,7 @@ These must hold at every phase of the build, not just at the end:
 
 ## Repository layout (target shape, per REQUIREMENTS.md §6.6)
 
-Not yet created, but this is the shape `docker-compose.yml`, `frontend/`, `backend/`, and `scripts/` should take once scaffolded — `backend/tools/` is the enforcement layer described above, and `frontend/src/api/generated/` is Orval output that should never be hand-edited.
+`backend/` is partially scaffolded (see "Project state" above); `frontend/` and `scripts/` are still empty. This is the target shape everything should converge on — `backend/tools/` is the not-yet-built enforcement layer described above (Week 2+), and `frontend/src/api/generated/` is Orval output that should never be hand-edited once the frontend exists.
 
 ## Project Guidelines
 
