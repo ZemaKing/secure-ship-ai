@@ -34,14 +34,14 @@ Checked from this machine already — do the rest before starting Week 1.
 - [x] **Python 3.13** — already installed
 - [x] **Node.js v24 / npm 11** — already installed
 - [x] **Git** — already installed
-- [ ] **Docker Desktop for Windows** — [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/) — during install, choose **WSL2 backend** (WSL2 is already your default per `wsl --status`, so this should be a clean install). If Docker Desktop complains about virtualization, enable it in BIOS/UEFI (Intel VT-x) and re-run.
-- [ ] **Ollama for Windows** — [ollama.com/download/windows](https://ollama.com/download/windows)
+- [x] **Docker Desktop for Windows** — [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/) — during install, choose **WSL2 backend** (WSL2 is already your default per `wsl --status`, so this should be a clean install). If Docker Desktop complains about virtualization, enable it in BIOS/UEFI (Intel VT-x) and re-run.
+- [x] **Ollama for Windows** — [ollama.com/download/windows](https://ollama.com/download/windows)
   - After install: `ollama pull qwen3:8b`
   - Verify tool-calling support: `ollama show qwen3:8b` (should list `tools` under capabilities)
-- [ ] **Postman** (or Insomnia/Thunder Client) — for backend-only demo weeks (Section 8's suggested demo format) and for manually exercising endpoints before the frontend is wired up
-- [ ] **A Postgres GUI** (optional but recommended) — [pgAdmin](https://www.pgadmin.org/download/pgadmin-4-windows/) or [DBeaver](https://dbeaver.io/download/), for inspecting the `chat_sessions.transcript` JSONB column directly. `docker exec -it <container> psql -U user -d secureship` works too if you'd rather stay in the terminal.
-- [ ] **VS Code** (if not already your daily editor) with extensions: Python, Pylance, ESLint, Prettier, SCSS IntelliSense
-- [ ] **Auth0 account** — free sign-up at [auth0.com](https://auth0.com) — needed before Week 4, not before
+- [x] **Postman** (or Insomnia/Thunder Client) — for backend-only demo weeks (Section 8's suggested demo format) and for manually exercising endpoints before the frontend is wired up
+- [x] **A Postgres GUI** (optional but recommended) — [pgAdmin](https://www.pgadmin.org/download/pgadmin-4-windows/) or [DBeaver](https://dbeaver.io/download/), for inspecting the `chat_sessions.transcript` JSONB column directly. `docker exec -it <container> psql -U user -d secureship` works too if you'd rather stay in the terminal.
+- [x] **VS Code** (if not already your daily editor) with extensions: Python, Pylance, ESLint, Prettier, SCSS IntelliSense
+- [ ] **Auth0 account** — free sign-up at [auth0.com](https://auth0.com) — deferred to Week 4, not before
 
 No virtual environment tool needed beyond Python's built-in `venv` — one fewer thing to install.
 
