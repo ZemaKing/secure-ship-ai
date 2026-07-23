@@ -4,13 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-Week 1 is in progress. `backend/` is real and running; `frontend/` and `scripts/` are still empty (per the skeleton in REQUIREMENTS.md §6.6) — not yet started.
+Week 1 is in progress. `backend/` is real and running, with seeded mock data; `frontend/` is still empty (per the skeleton in REQUIREMENTS.md §6.6) — not yet started.
 
 **What exists in `backend/` so far:**
 - FastAPI app (`main.py`) with `GET /health` and `POST /chat` (ungated — no session/gating logic yet, matches Week 1 scope)
 - `llm/ollama_client.py` — `chat(messages, tools=None)` wrapping calls to the local Ollama server
 - `db/` (SQLAlchemy engine/session, `.env`-driven `DATABASE_URL`) and `models/` (`Customer`, `Shipment`, `Package`, `ChatSession` — schema per REQUIREMENTS.md §4.4/§4.6)
-- Alembic initialized and migrated (`alembic/`) — all four tables exist in Postgres, currently empty (seeding is next)
+- Alembic initialized and migrated (`alembic/`) — all four tables exist in Postgres
+
+**What exists in `scripts/` so far:**
+- `seed_data.py` — populates Postgres with mock customers (English/US, Serbian, and Russian names), shipments (realistic status distribution), and packages, straight through the ORM models. Already run once — the DB has live mock data, not just empty tables.
 
 **Root-level:** `docker-compose.yml` exists but only brings up the `postgres` service so far — `frontend`/`backend` containers get added later, per REQUIREMENTS.md §4.7.
 
@@ -19,7 +22,9 @@ Week 1 is in progress. `backend/` is real and running; `frontend/` and `scripts/
 - `alembic revision --autogenerate -m "..."` / `alembic upgrade head` — schema migrations
 - `python llm/ollama_client.py` — standalone Ollama connectivity check
 
-**From the repo root:** `docker compose up -d` — brings up Postgres only, for now.
+**From the repo root:**
+- `docker compose up -d` — brings up Postgres only, for now.
+- `python scripts/seed_data.py` — (re-)seeds mock data into Postgres; safe to re-run, just adds more rows each time (no truncate/reset step yet).
 
 No frontend commands yet, and no test suite yet — update this section again as those land.
 
@@ -61,7 +66,7 @@ These must hold at every phase of the build, not just at the end:
 
 ## Repository layout (target shape, per REQUIREMENTS.md §6.6)
 
-`backend/` is partially scaffolded (see "Project state" above); `frontend/` and `scripts/` are still empty. This is the target shape everything should converge on — `backend/tools/` is the not-yet-built enforcement layer described above (Week 2+), and `frontend/src/api/generated/` is Orval output that should never be hand-edited once the frontend exists.
+`backend/` is partially scaffolded and `scripts/` has a working seed script (see "Project state" above); `frontend/` is still empty. This is the target shape everything should converge on — `backend/tools/` is the not-yet-built enforcement layer described above (Week 2+), and `frontend/src/api/generated/` is Orval output that should never be hand-edited once the frontend exists.
 
 ## Project Guidelines
 
