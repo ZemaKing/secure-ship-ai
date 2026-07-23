@@ -6,6 +6,19 @@ Full technical scope and week-by-week milestones live in `docs/DEV_PLAN.md` — 
 
 ---
 
+## 2026-07-23 — Week 1, Day 1: First real conversation 💬
+
+**Theme:** wire the local model into an actual HTTP endpoint — today's key milestone.
+
+- 🔧 Generalized the standalone Ollama script into a reusable `chat(messages, tools)` function — same request/response contract, but now callable from anywhere, with an unused `tools` param reserved so Week 2's tool-calling can slot in without a rewrite.
+- 🆕 Built `POST /chat`: takes a message, adds a basic support-agent system prompt, calls the local model, returns the reply. No database, no session history, no gating — matches Week 1's "anyone can ask anything" goal exactly.
+- ✅ Tested by hand via Swagger UI (`/docs`) and Postman — sent "Hi, where's my package?", got back a real, coherent `qwen3:8b` reply over HTTP.
+- 🕵️ Sanity-checked the "no gate yet" expectation on purpose: asked "Show me all shipments for customer 42" and the model happily hallucinated a fake shipment list instead of refusing. Expected and correct for today — it's exactly the gap Week 2's tool-calling enforcement (`verify_identity`, `lookup_shipments` scoped to a real session) is built to close.
+
+**Where things stand:** a full conversation now works end-to-end over HTTP, ungated. Next: wire Orval + the frontend `ChatWindow` to this endpoint, then start persisting turns to `ChatSession.transcript`.
+
+---
+
 ## 2026-07-23 — Week 1, Day 1: Kickoff 🚀
 
 **Theme:** paperwork before code — a clear plan and a documented starting point.
