@@ -164,4 +164,26 @@ The other three files follow the identical pattern: `Customer` (plain string col
 
 ---
 
+## Scripts
+
+### `scripts/seed_data.py`
+
+| Construct | What it does | JS/Node analogy |
+|---|---|---|
+| `sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend"))` | This script lives outside `backend/`, but `backend`'s own modules (`db.session`, `models`) are written as if `backend/` is the working directory (same pattern as `alembic/env.py`). This line puts `backend/` on Python's module search path at runtime so `from db.session import ...` resolves regardless of where the script is invoked from | Adding a path to `NODE_PATH`, or a `tsconfig` path alias, so an import resolves without a relative `../../` chain |
+| `FIRST_NAMES` / `LAST_NAMES` | Fixed pools of English/US, Serbian, and Russian names, combined independently at random per customer (so a first/last name pairing can cross nationality — realistic enough for mock data, not meant to model real naming conventions) | A hardcoded fixture array instead of a fake-data library |
+| `STATUS_WEIGHTS` + `random_status()` | A weighted-random pick across `ShipmentStatus` — mostly `delivered`/`in_transit`, a few `out_for_delivery`/`label_created`, fewest `exception` — via `random.choices(statuses, weights=weights)` | Weighted random selection, same idea as a loot-table roll |
+| `build_customers(count)` | Builds `Customer` ORM instances (not yet saved) — same model class `backend/models/customer.py` defines | Building an array of plain objects shaped like the DB rows, before an `insertMany` call |
+| `build_shipment(customer)` | Builds one `Shipment` instance linked to a given `Customer` via `customer_id`; sets `last_update` to a recent random date and `estimated_delivery` a few days after it | Same idea, deriving a foreign key from an in-memory parent object before either is persisted |
+| `build_packages(shipment)` | Builds 1–3 `Package` instances per shipment — satisfies the "≥1 Package per shipment" requirement | A `.map()` generating a small random-length array per parent |
+| `db.add_all(...)` / `db.flush()` | `add_all` stages objects in the session (nothing hits Postgres yet); `flush()` sends pending `INSERT`s to the DB *without* committing, which is what assigns the auto-generated UUID primary keys so later objects (e.g. `Shipment.customer_id`) can reference them | Similar to a transaction's intermediate `INSERT ... RETURNING id` before the transaction commits |
+| `db.commit()` / `db.rollback()` in `try`/`except`/`finally` | Commits everything as one transaction if nothing raised; rolls back cleanly on any error so a failed run doesn't leave partial data; `finally: db.close()` always releases the session | A single wrapped DB transaction with a `catch` that rolls back and a `finally` that releases the connection |
+| `if __name__ == "__main__": seed()` | Only runs when invoked directly (`python scripts/seed_data.py`), not if ever imported elsewhere | `require.main === module` check |
+
+**Why it exists:** Week 1's schema (Step 5) was real but empty — nothing for the chat to look up yet. This script populates it once, directly through the same ORM models the app itself uses (not raw SQL), so the mock data is guaranteed to match the schema exactly.
+
+**Verified:** ran via `python scripts/seed_data.py` against the running Postgres container — completed cleanly, printing `Seeded 26 customers, 52 shipments, 104 packages.` (within the required 25+/40–60/≥1-per-shipment ranges). Spot-checked via `psql`: customer names show the intended English/Serbian/Russian mix, `shipments` status distribution is delivered/in_transit-heavy with only a few exceptions, and a join against `packages` confirms every shipment has at least one linked package.
+
+---
+
 <!-- Add a new "### backend/<file>" or "### frontend/<file>" section here as each new file is built. Keep entries technical and current — if a file's purpose or shape changes materially, update its section rather than leaving it stale. -->

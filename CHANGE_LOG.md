@@ -6,6 +6,20 @@ Full technical scope and week-by-week milestones live in `docs/DEV_PLAN.md` — 
 
 ---
 
+## 2026-07-23 — Week 1, Day 1: The database gets some data 🌱
+
+**Theme:** stop staring at empty tables — give the schema realistic mock data to work with.
+
+- 🌍 Built `scripts/seed_data.py`, inserting customers, shipments, and packages straight through the same SQLAlchemy models the app uses (no raw SQL, no fake-data library added — just a couple of hardcoded name/address/carrier pools and Python's `random`).
+- 🌐 Customer names deliberately mix English/US, Serbian, and Russian first/last names, shuffled independently — a nod to a realistically international customer base rather than an English-only fixture set.
+- ⚖️ Shipment statuses are weighted, not uniform — mostly `delivered`/`in_transit`, a handful `out_for_delivery`/`label_created`, only a rare `exception` — closer to what a real carrier's mix looks like.
+- 🔗 Every shipment gets 1–3 packages, linked via `flush()`-assigned foreign keys before the final commit.
+- ✅ Ran it: 26 customers, 52 shipments, 104 packages landed cleanly — all within the required ranges. Spot-checked via `psql` — names, addresses, statuses, and shipment↔package links all look plausible.
+
+**Where things stand:** the schema now has real data to query. Next: frontend skeleton (Vite + React + TS) and wiring `/chat` through to the browser.
+
+---
+
 ## 2026-07-23 — Week 1, Day 1: The database shows up 🗄️
 
 **Theme:** stand up real Postgres, real tables, real migrations — no more "nothing persists" (flagged in the plan as the day's least-familiar territory).
