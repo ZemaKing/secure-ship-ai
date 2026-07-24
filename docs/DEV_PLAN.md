@@ -60,9 +60,9 @@ No virtual environment tool needed beyond Python's built-in `venv` — one fewer
 - [ ] Frontend: Vite + React + TS skeleton, SCSS baseline (`_variables.scss`, `_mixins.scss`), a `ChatWindow` component rendering hardcoded/echo messages first
 - [x] Backend: `llm/ollama_client.py` wrapping calls to `http://host.docker.internal:11434` (or `localhost:11434` when running backend outside Docker for faster iteration)
 - [x] `POST /chat` endpoint: takes a message, calls Ollama, returns the model's reply — no gating logic yet, just a basic system prompt defining the assistant's persona
-- [ ] Orval installed and configured (`orval.config.ts` pointed at `/openapi.json`, `client: 'react-query'`) — generate first real hooks now (e.g. `useChat`), not hand-written fetch calls
+- [x] Orval installed and configured (`orval.config.ts` pointed at `/openapi.json`, `client: 'react-query'`) — generate first real hooks now (e.g. `useChat`), not hand-written fetch calls
 - [ ] Frontend `ChatWindow` wired to the real `/chat` endpoint via the generated hook — send/receive works, message history renders
-- [ ] Every chat turn persisted into `ChatSession.transcript` (JSONB) — wire this now while the flow is simple
+- [x] Every chat turn persisted into `ChatSession.transcript` (JSONB) — wire this now while the flow is simple
 - [x] Copy Section 6 diagrams from `REQUIREMENTS.md` into `docs/diagrams/` as the starting reference (will be corrected in Week 5)
 
 **Monday demo checklist (Week 2's Monday):**

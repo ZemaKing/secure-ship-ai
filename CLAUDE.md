@@ -19,8 +19,8 @@ Week 1 is in progress. `backend/` is real and running, with seeded mock data; `f
 **What exists in `frontend/` so far:**
 - Vite + React + TS scaffold (`npm create vite@latest . -- --template react-ts`), global SCSS + BEM baseline (`src/styles/_variables.scss`, `_mixins.scss`, `global.scss`) — no CSS Modules, no Tailwind
 - `components/Sidebar/` — static shell matching `ai-chatbot-ui-mockup.png`: brand header, "New Chat" button (resets `ChatWindow` via a remount key owned by `App.tsx`), hardcoded `ChatHistoryList`, static `AdminAccessCard` skeleton (no real chat-history persistence or Auth0 behind either yet)
-- `components/ChatWindow/` — `ChatWindow` owns local `messages` state seeded with one hardcoded bot message (including a mock `ShipmentCard`, fields limited to what `Shipment`/`Package` models actually have — no invented reference number/service type/timeline); typing and submitting appends a user bubble to the local list; **no network call** — that lands when `/chat` gets wired via Orval hooks
-- No `api/generated/` yet — Orval isn't installed until the real `/chat` wiring step
+- `components/ChatWindow/` — `ChatWindow` owns local `messages` state seeded with one hardcoded bot message (including a mock `ShipmentCard`, fields limited to what `Shipment`/`Package` models actually have — no invented reference number/service type/timeline); typing and submitting appends a user bubble to the local list; **no network call yet** — `ChatWindow` still isn't wired to the hook below
+- `orval.config.ts` + `src/api/generated/secure-ship.ts` — Orval installed and configured (`client: 'react-query'`, `httpClient: 'fetch'`, no axios dependency), generated against the backend's live `/openapi.json`; exports `useChat()` (mutation, from `POST /chat`, `operation_id="chat"` set backend-side for a clean hook name) plus `ChatRequest`/`ChatResponse` types. Regenerate manually via `npm run generate:api` whenever backend routes/models change. `QueryClientProvider` is not wired up yet, so the hook isn't usable at runtime until `ChatWindow` is wired to it.
 
 **Root-level:** `docker-compose.yml` exists but only brings up the `postgres` service so far — `frontend`/`backend` containers get added later, per REQUIREMENTS.md §4.7.
 
@@ -33,6 +33,7 @@ Week 1 is in progress. `backend/` is real and running, with seeded mock data; `f
 - `npm run dev` — runs the Vite dev server on `:5173`
 - `npm run build` — type-checks (`tsc -b`) and produces a production build
 - `npm run lint` — runs `oxlint`
+- `npm run generate:api` — runs Orval against the backend's `/openapi.json` (backend must be running on `:8000`), regenerates `src/api/generated/secure-ship.ts`
 
 **From the repo root:**
 - `docker compose up -d` — brings up Postgres only, for now.

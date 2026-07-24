@@ -42,7 +42,7 @@ def _get_or_create_session(db: Session) -> ChatSession:
     return session
 
 
-@router.post("/chat")
+@router.post("/chat", operation_id="chat")
 def send_chat_message(request: ChatRequest, db: Session = Depends(get_db)) -> ChatResponse:
     session = _get_or_create_session(db)
     transcript = list(session.transcript or [])
