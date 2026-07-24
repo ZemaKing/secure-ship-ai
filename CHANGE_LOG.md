@@ -6,6 +6,19 @@ Full technical scope and week-by-week milestones live in `docs/DEV_PLAN.md` — 
 
 ---
 
+## 2026-07-24 — Week 1, Day 2: Conversations stop vanishing 💾
+
+**Theme:** Step 7 — persist chat turns instead of losing them the moment the HTTP response goes out.
+
+- 🗃️ `POST /chat` now creates-or-reuses a single `ChatSession` row and appends `{role, content, timestamp}` for both the user's message and the model's reply into its `transcript` JSONB array on every call.
+- 🙈 Deliberately naive on purpose: no session id from the client yet, so there's just one "open" session (`ended_at IS NULL`) that every caller currently shares — real per-session identity is Week 2 scope, this step is only about proving turns land in Postgres.
+- ↩️ First pass also fed the accumulating transcript back into every Ollama call for real conversation continuity — reverted it. On this CPU-only `qwen3:8b`, replaying the whole history each turn made responses noticeably slower as the session grew (one call took 42s solo-turn; a with-history call blew past a 60s timeout). Conversation continuity is a Week 2 concern; today's scope is strictly "does it persist," so pulled it back to keep `/chat` sending just the system prompt + latest message, same as before.
+- ✅ Verified by hand: fired several `POST /chat` calls in a row, then `SELECT jsonb_pretty(transcript) FROM chat_sessions` in psql — every turn shows up in order, correctly timestamped, all appended to the same row rather than overwriting it.
+
+**Where things stand:** turns persist, but a session is still a shared, id-less singleton — the growing `docs/DEV_PLAN.md` Week 2 gap is session identity + the actual state-machine transitions (`ANONYMOUS` → `COLLECTING_IDENTITY` → ... → `VERIFIED`), not just storage.
+
+---
+
 ## 2026-07-23 — Week 1, Day 1: The database gets some data 🌱
 
 **Theme:** stop staring at empty tables — give the schema realistic mock data to work with.

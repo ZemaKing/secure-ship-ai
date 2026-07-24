@@ -8,6 +8,7 @@ Week 1 is in progress. `backend/` is real and running, with seeded mock data; `f
 
 **What exists in `backend/` so far:**
 - FastAPI app (`main.py`) with `GET /health` and `POST /chat` (ungated — no session/gating logic yet, matches Week 1 scope)
+- `POST /chat` now persists both turns of every call into `ChatSession.transcript` (JSONB) — creates-or-reuses a single naive open session (`ended_at IS NULL`), no session id from the client yet. The model is still only ever sent the system prompt + latest message (not the accumulated transcript) — replaying full history back to Ollama was tried and reverted, see `CHANGE_LOG.md` 2026-07-24.
 - `llm/ollama_client.py` — `chat(messages, tools=None)` wrapping calls to the local Ollama server
 - `db/` (SQLAlchemy engine/session, `.env`-driven `DATABASE_URL`) and `models/` (`Customer`, `Shipment`, `Package`, `ChatSession` — schema per REQUIREMENTS.md §4.4/§4.6)
 - Alembic initialized and migrated (`alembic/`) — all four tables exist in Postgres
