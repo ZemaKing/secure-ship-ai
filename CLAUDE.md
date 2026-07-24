@@ -9,7 +9,8 @@ Week 1 is in progress. `backend/` is real and running, with seeded mock data; `f
 **What exists in `backend/` so far:**
 - FastAPI app (`main.py`) with `GET /health` and `POST /chat` (ungated — no session/gating logic yet, matches Week 1 scope); CORS middleware allows the `FRONTEND_ORIGIN` env var (`.env`-driven, defaults to `http://localhost:5173`) so the Vite dev server can call it cross-origin
 - `POST /chat` now persists both turns of every call into `ChatSession.transcript` (JSONB) — creates-or-reuses a single naive open session (`ended_at IS NULL`), no session id from the client yet. The model is still only ever sent the system prompt + latest message (not the accumulated transcript) — replaying full history back to Ollama was tried and reverted, see `CHANGE_LOG.md` 2026-07-24.
-- `llm/ollama_client.py` — `chat(messages, tools=None)` wrapping calls to the local Ollama server
+- `llm/ollama_client.py` — `chat(messages, tools=None)` wrapping calls to the local Ollama server; base URL is `OLLAMA_HOST` env-driven (defaults to `http://localhost:11434` for host-native runs; the containerized backend sets it to `http://host.docker.internal:11434`)
+- `Dockerfile` — `python:3.13-slim`, installs `requirements.txt`, runs `uvicorn main:app --host 0.0.0.0`
 - `db/` (SQLAlchemy engine/session, `.env`-driven `DATABASE_URL`) and `models/` (`Customer`, `Shipment`, `Package`, `ChatSession` — schema per REQUIREMENTS.md §4.4/§4.6)
 - Alembic initialized and migrated (`alembic/`) — all four tables exist in Postgres
 
@@ -21,8 +22,9 @@ Week 1 is in progress. `backend/` is real and running, with seeded mock data; `f
 - `components/Sidebar/` — static shell matching `ai-chatbot-ui-mockup.png`: brand header, "New Chat" button (resets `ChatWindow` via a remount key owned by `App.tsx`), hardcoded `ChatHistoryList`, static `AdminAccessCard` skeleton (no real chat-history persistence or Auth0 behind either yet)
 - `components/ChatWindow/` — `ChatWindow` still seeds with one hardcoded bot message (including a mock `ShipmentCard`, fields limited to what `Shipment`/`Package` models actually have) so the card component stays visually demoed, but every message after that is real: submitting calls the generated `useChat()` mutation, shows a "Typing…" bot bubble while pending (input/send disabled meanwhile), appends the real Ollama reply (plain text, no `ShipmentCard` — the backend doesn't call tools yet) on success, or a neutral fallback bubble on error/non-200. Message list auto-scrolls to the newest bubble on every update.
 - `orval.config.ts` + `src/api/generated/secure-ship.ts` — Orval installed and configured (`client: 'react-query'`, `httpClient: 'fetch'`, no axios dependency), generated against the backend's live `/openapi.json`; exports `useChat()` (mutation, from `POST /chat`, `operation_id="chat"` set backend-side for a clean hook name) plus `ChatRequest`/`ChatResponse` types. Regenerate manually via `npm run generate:api` whenever backend routes/models change. `QueryClientProvider` wired up in `main.tsx`.
+- `Dockerfile` — `node:24-slim`, runs `npm run dev -- --host 0.0.0.0` (dev-mode container, not a production build — matches how the project runs everywhere else right now)
 
-**Root-level:** `docker-compose.yml` exists but only brings up the `postgres` service so far — `frontend`/`backend` containers get added later, per REQUIREMENTS.md §4.7.
+**Root-level:** `docker-compose.yml` now brings up all three services — `postgres`, `backend`, `frontend`. Container-to-host networking: the containerized backend reaches Postgres via the `postgres` service name and Ollama via `host.docker.internal` (both env-driven, overridden in `docker-compose.yml`'s `backend.environment`); the browser still talks to `localhost:5173`/`:8000` as before, since Docker Desktop maps those container ports back out. **Not yet done:** no automatic Alembic migration on container startup — a fresh clean-clone `docker compose up` won't have tables until `alembic upgrade head` is run manually against the `postgres` service; validating the true "clean clone" path is deferred to the next session (`DEV_PLAN.md`'s Monday demo checklist).
 
 **Commands that work today (from `backend/`, with the venv active):**
 - `uvicorn main:app --reload` — runs the API on `:8000`, see `/docs` for Swagger UI
@@ -36,7 +38,8 @@ Week 1 is in progress. `backend/` is real and running, with seeded mock data; `f
 - `npm run generate:api` — runs Orval against the backend's `/openapi.json` (backend must be running on `:8000`), regenerates `src/api/generated/secure-ship.ts`
 
 **From the repo root:**
-- `docker compose up -d` — brings up Postgres only, for now.
+- `docker compose up -d` — brings up all three services (`postgres`, `backend` on `:8000`, `frontend` on `:5173`)
+- `docker compose build backend frontend` — rebuild after dependency/Dockerfile changes
 - `python scripts/seed_data.py` — (re-)seeds mock data into Postgres; safe to re-run, just adds more rows each time (no truncate/reset step yet).
 
 No test suite yet — update this section again as that lands.

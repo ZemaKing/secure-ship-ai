@@ -61,10 +61,17 @@ Only six packages were installed directly (per `DEV_PLAN.md`'s locked stack); ev
 | `environment: POSTGRES_DB/USER/PASSWORD` | The Postgres image's own bootstrap variables — on first container start, it creates a database named `secureship` owned by user `user`/`pass` | Env vars an init script reads on first boot |
 | `ports: ["5432:5432"]` | Publishes the container's Postgres port to the host's `localhost:5432`, so the host-run backend can connect to it directly | Same `-p` flag as `docker run` |
 | `volumes: ["pgdata:/var/lib/postgresql/data"]` | Persists the actual database files in a named Docker volume, so data survives `docker compose down`/container recreation (only gone if the volume itself is deleted) | Like a mounted volume for a database container in any stack |
+| `backend: build: ./backend` | Builds and runs `backend/Dockerfile` as a service instead of pulling a prebuilt image, since this is the project's own code | `build: .` pointing at a local `Dockerfile` |
+| `backend.environment: DATABASE_URL=...@postgres:5432/...` | Overrides the value `.env` has for host-native dev (`@localhost:5432`) — inside the container, `localhost` means "this container," so the backend has to reach Postgres via the Docker Compose network's service name (`postgres`) instead | Same idea as a container-specific `DATABASE_URL` in any Dockerized Node app talking to a sibling DB container |
+| `backend.environment: OLLAMA_HOST=http://host.docker.internal:11434` | Same problem, different fix — Ollama runs on the *host* machine, not in a container, so `host.docker.internal` (Docker Desktop's special DNS name for "the machine running Docker") is used instead of a service name | No real Node equivalent — this is Docker Desktop-specific plumbing |
+| `frontend: build: ./frontend` | Same pattern as `backend` — builds `frontend/Dockerfile` | — |
+| `depends_on: [postgres]` / `[backend]` | Controls container *start order* only (not readiness) — `backend` starts after `postgres`'s container process exists, not after Postgres is actually accepting connections. Good enough here since nothing auto-migrates on startup yet (see below) | `depends_on` in Compose has this same "started, not ready" caveat generally |
 
-**Why it exists:** only the `postgres` service for now, per REQUIREMENTS.md §4.7 — `frontend`/`backend` containers get added once those are containerized (Day 2), this file gets extended rather than replaced. Ollama stays on the host per the locked architecture decision, so it's never in this file.
+**Why it exists:** started with just `postgres` per REQUIREMENTS.md §4.7, extended (not replaced) on Day 2 once `backend`/`frontend` had working Dockerfiles. Ollama stays on the host per the locked architecture decision, so it's never in this file — the containerized backend reaches it via `host.docker.internal` instead.
 
-**Verified:** `docker compose up -d` pulls `postgres:16` and starts cleanly; `docker exec ... pg_isready` reports `accepting connections`.
+**Not yet done:** no `alembic upgrade head` step runs automatically on container start, so a genuinely clean clone's Postgres container would come up with no tables. Today's verification reused the existing `postgres` container/volume (already migrated, already seeded) rather than proving the from-scratch path — that's the next thing to validate.
+
+**Verified:** `docker compose build backend frontend` succeeds; `docker compose up -d backend frontend` (with the pre-existing `postgres` container/volume already running) brings all three up; a `curl` `POST /chat` through the containerized backend got a real Ollama reply and the turn was confirmed landed in `chat_sessions.transcript` via `psql` inside the `postgres` container; a headless-browser script against `http://localhost:5173` (served from the `frontend` container) confirmed the full round-trip with zero console errors.
 
 ---
 
@@ -73,7 +80,8 @@ Only six packages were installed directly (per `DEV_PLAN.md`'s locked stack); ev
 | Line | What it does | JS/Node analogy |
 |---|---|---|
 | `import requests` | A synchronous HTTP client library — not part of FastAPI/Starlette, added just for this script | `import axios from 'axios'` |
-| `OLLAMA_URL`, `MODEL` | Module-level constants | `const OLLAMA_URL = ...` |
+| `OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")` | Env-driven base URL, defaulting to the same value it was hardcoded to before — host-native dev is unaffected. The containerized backend overrides this to `http://host.docker.internal:11434` via `docker-compose.yml`, since `localhost` inside a container refers to the container itself, not the host running Ollama | `const OLLAMA_HOST = process.env.OLLAMA_HOST ?? 'http://localhost:11434'` |
+| `OLLAMA_URL = f"{OLLAMA_HOST}/api/chat"`, `MODEL` | Module-level constants | `const OLLAMA_URL = ...` |
 | `def chat(messages, tools=None) -> str:` | The reusable function `routes/chat.py` (and later, tool-calling logic) imports and calls | `export async function chat(messages, tools) {...}` |
 | `tools: list[dict] \| None = None` | An optional parameter — `\|` here is a *union type*, "either a list of dicts or `None`." Not wired to anything yet; just reserved so the signature won't need to change again in Week 2 | `tools?: Record<string, unknown>[]` in a TS function signature |
 | `if tools is not None: payload["tools"] = tools` | Only adds the `tools` key to the request body when the caller actually passes some — Ollama's `/api/chat` accepts an optional `tools` field for function-calling | Conditionally spreading an optional key into a request body |

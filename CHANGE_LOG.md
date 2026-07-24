@@ -6,6 +6,20 @@ Full technical scope and week-by-week milestones live in `docs/DEV_PLAN.md` — 
 
 ---
 
+## 2026-07-24 — Week 1, Day 2: Everything moves into containers 🐳
+
+**Theme:** `docker-compose.yml` grows from just `postgres` to all three services — `frontend`, `backend`, `postgres` — running together.
+
+- 🐍 `backend/Dockerfile` — `python:3.13-slim`, installs `requirements.txt`, runs `uvicorn main:app --host 0.0.0.0`. Nothing fancy: same startup command the backend already used host-native.
+- 🟩 `frontend/Dockerfile` — `node:24-slim`, runs `npm run dev -- --host 0.0.0.0`. Dev-mode container on purpose, not a production build — matches where the rest of the project is right now; a real production image is later-week territory.
+- 🔌 The actual work wasn't the Dockerfiles, it was **container networking**: inside a container, `localhost` means "this container," not the host machine. Two things that used to hardcode `localhost` had to become configurable: `ollama_client.py`'s Ollama URL (now `OLLAMA_HOST` env var, defaults to `localhost:11434` unchanged for host-native dev) and the backend's `DATABASE_URL` (now overridden per-service in `docker-compose.yml` to point at the `postgres` service name instead of `localhost`). Nothing the *browser* talks to needed to change — `localhost:5173`/`:8000` still work from the host machine because Docker Desktop maps those container ports straight back out.
+- ✅ Verified for real, twice over: first a raw `curl` round-trip straight through the containerized backend (confirmed it reached both the `postgres` container and the host's Ollama), then `psql` into the Postgres container to confirm the turn actually landed in `chat_sessions.transcript`. Then the full browser path — `http://localhost:5173` served from the frontend container, driven with the same headless-browser script as the earlier `ChatWindow` wiring check — real reply rendered, zero console errors.
+- 🚧 **Deliberately not done yet:** no automatic Alembic migration on container startup, so a genuinely clean clone won't have tables until `alembic upgrade head` is run by hand against the containerized Postgres — today's verification reused the existing `postgres` container and its already-migrated, already-seeded volume. Validating the true "clean clone, nothing pre-existing" path is next.
+
+**Where things stand:** the whole stack runs in Docker, but the "clean clone" milestone (`DEV_PLAN.md`'s Monday demo checklist) is still unproven from scratch. Next: prove it from a clean state, plus the rest of the Monday demo checklist narration.
+
+---
+
 ## 2026-07-24 — Week 1, Day 2: The frontend starts talking to the backend 🔌
 
 **Theme:** Orval codegen + wiring `ChatWindow` to the real `POST /chat` endpoint — the frontend stops faking it.

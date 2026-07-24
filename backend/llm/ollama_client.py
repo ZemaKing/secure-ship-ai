@@ -4,9 +4,12 @@ Kept separate from FastAPI so a broken Ollama HTTP contract (wrong URL,
 model not pulled, service not running) shows up here first, isolated from
 any web-framework noise. Run directly: `python llm/ollama_client.py`
 """
+import os
+
 import requests
 
-OLLAMA_URL = "http://localhost:11434/api/chat"
+OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+OLLAMA_URL = f"{OLLAMA_HOST}/api/chat"
 MODEL = "qwen3:8b"
 
 

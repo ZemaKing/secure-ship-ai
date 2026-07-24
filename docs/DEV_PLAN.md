@@ -55,7 +55,7 @@ No virtual environment tool needed beyond Python's built-in `venv` — one fewer
 - [x] Initialize repo structure: `frontend/`, `backend/`, `scripts/`, `docs/diagrams/`
 - [x] Backend: FastAPI skeleton (`main.py`), `/health` endpoint, `requirements.txt`, Dockerfile
 - [x] Backend: Postgres connection wired up (SQLAlchemy + Alembic init), models for `Customer`, `Shipment`, `Package`, `ChatSession` (schema per Section 4.4/4.6 of REQUIREMENTS.md)
-- [ ] `docker-compose.yml` — brings up `frontend`, `backend`, `postgres` containers; Ollama stays on host (currently `postgres` only — `frontend`/`backend` containers not added yet)
+- [x] `docker-compose.yml` — brings up `frontend`, `backend`, `postgres` containers; Ollama stays on host
 - [x] `scripts/seed_data.py` — generates ≥25 customers, 40–60 shipments (realistic status distribution), conforming to the schema; run it and confirm data lands in Postgres
 - [x] Frontend: Vite + React + TS skeleton, SCSS baseline (`_variables.scss`, `_mixins.scss`), a `ChatWindow` component rendering hardcoded/echo messages first
 - [x] Backend: `llm/ollama_client.py` wrapping calls to `http://host.docker.internal:11434` (or `localhost:11434` when running backend outside Docker for faster iteration)
