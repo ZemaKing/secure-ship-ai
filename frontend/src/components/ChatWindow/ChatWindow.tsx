@@ -1,7 +1,10 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import ChatMessage from './ChatMessage'
+import { useChat } from '../../api/generated/secure-ship'
 import type { ChatMessageData } from './types'
 import './ChatWindow.scss'
+
+const ERROR_REPLY_TEXT = "Sorry, something went wrong reaching the assistant. Please try again."
 
 const SEED_MESSAGES: ChatMessageData[] = [
   {
@@ -36,17 +39,42 @@ function formatTimestamp() {
 function ChatWindow() {
   const [messages, setMessages] = useState<ChatMessageData[]>(SEED_MESSAGES)
   const [draft, setDraft] = useState('')
+  const chatMutation = useChat()
+  const messageListRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    messageListRef.current?.scrollTo({ top: messageListRef.current.scrollHeight })
+  }, [messages, chatMutation.isPending])
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
     const text = draft.trim()
-    if (!text) return
+    if (!text || chatMutation.isPending) return
 
     setMessages((prev) => [
       ...prev,
       { id: makeMessageId(), role: 'user', text, timestamp: formatTimestamp() },
     ])
     setDraft('')
+
+    chatMutation.mutate(
+      { data: { message: text } },
+      {
+        onSuccess: (response) => {
+          const replyText = response.status === 200 ? response.data.reply : ERROR_REPLY_TEXT
+          setMessages((prev) => [
+            ...prev,
+            { id: makeMessageId(), role: 'bot', text: replyText, timestamp: formatTimestamp() },
+          ])
+        },
+        onError: () => {
+          setMessages((prev) => [
+            ...prev,
+            { id: makeMessageId(), role: 'bot', text: ERROR_REPLY_TEXT, timestamp: formatTimestamp() },
+          ])
+        },
+      },
+    )
   }
 
   return (
@@ -64,10 +92,15 @@ function ChatWindow() {
         </div>
       </header>
 
-      <div className="chat-window__message-list">
+      <div className="chat-window__message-list" ref={messageListRef}>
         {messages.map((message) => (
           <ChatMessage key={message.id} message={message} />
         ))}
+        {chatMutation.isPending && (
+          <ChatMessage
+            message={{ id: 'typing-indicator', role: 'bot', text: 'Typing…', timestamp: formatTimestamp() }}
+          />
+        )}
       </div>
 
       <form className="chat-window__input-bar" onSubmit={handleSubmit}>
@@ -77,8 +110,14 @@ function ChatWindow() {
           placeholder="Ask about any shipment... (e.g., track TS123456789)"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
+          disabled={chatMutation.isPending}
         />
-        <button type="submit" className="chat-window__send-button" aria-label="Send message">
+        <button
+          type="submit"
+          className="chat-window__send-button"
+          aria-label="Send message"
+          disabled={chatMutation.isPending}
+        >
           ➤
         </button>
       </form>

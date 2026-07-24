@@ -4,10 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-Week 1 is in progress. `backend/` is real and running, with seeded mock data; `frontend/` now has a Vite+React+TS scaffold with a static, hardcoded/echo `ChatWindow` — no backend wiring yet.
+Week 1 is in progress. `backend/` is real and running, with seeded mock data; `frontend/` has a Vite+React+TS scaffold with `ChatWindow` wired to the real `/chat` endpoint via a generated Orval hook.
 
 **What exists in `backend/` so far:**
-- FastAPI app (`main.py`) with `GET /health` and `POST /chat` (ungated — no session/gating logic yet, matches Week 1 scope)
+- FastAPI app (`main.py`) with `GET /health` and `POST /chat` (ungated — no session/gating logic yet, matches Week 1 scope); CORS middleware allows the `FRONTEND_ORIGIN` env var (`.env`-driven, defaults to `http://localhost:5173`) so the Vite dev server can call it cross-origin
 - `POST /chat` now persists both turns of every call into `ChatSession.transcript` (JSONB) — creates-or-reuses a single naive open session (`ended_at IS NULL`), no session id from the client yet. The model is still only ever sent the system prompt + latest message (not the accumulated transcript) — replaying full history back to Ollama was tried and reverted, see `CHANGE_LOG.md` 2026-07-24.
 - `llm/ollama_client.py` — `chat(messages, tools=None)` wrapping calls to the local Ollama server
 - `db/` (SQLAlchemy engine/session, `.env`-driven `DATABASE_URL`) and `models/` (`Customer`, `Shipment`, `Package`, `ChatSession` — schema per REQUIREMENTS.md §4.4/§4.6)
@@ -19,8 +19,8 @@ Week 1 is in progress. `backend/` is real and running, with seeded mock data; `f
 **What exists in `frontend/` so far:**
 - Vite + React + TS scaffold (`npm create vite@latest . -- --template react-ts`), global SCSS + BEM baseline (`src/styles/_variables.scss`, `_mixins.scss`, `global.scss`) — no CSS Modules, no Tailwind
 - `components/Sidebar/` — static shell matching `ai-chatbot-ui-mockup.png`: brand header, "New Chat" button (resets `ChatWindow` via a remount key owned by `App.tsx`), hardcoded `ChatHistoryList`, static `AdminAccessCard` skeleton (no real chat-history persistence or Auth0 behind either yet)
-- `components/ChatWindow/` — `ChatWindow` owns local `messages` state seeded with one hardcoded bot message (including a mock `ShipmentCard`, fields limited to what `Shipment`/`Package` models actually have — no invented reference number/service type/timeline); typing and submitting appends a user bubble to the local list; **no network call yet** — `ChatWindow` still isn't wired to the hook below
-- `orval.config.ts` + `src/api/generated/secure-ship.ts` — Orval installed and configured (`client: 'react-query'`, `httpClient: 'fetch'`, no axios dependency), generated against the backend's live `/openapi.json`; exports `useChat()` (mutation, from `POST /chat`, `operation_id="chat"` set backend-side for a clean hook name) plus `ChatRequest`/`ChatResponse` types. Regenerate manually via `npm run generate:api` whenever backend routes/models change. `QueryClientProvider` is not wired up yet, so the hook isn't usable at runtime until `ChatWindow` is wired to it.
+- `components/ChatWindow/` — `ChatWindow` still seeds with one hardcoded bot message (including a mock `ShipmentCard`, fields limited to what `Shipment`/`Package` models actually have) so the card component stays visually demoed, but every message after that is real: submitting calls the generated `useChat()` mutation, shows a "Typing…" bot bubble while pending (input/send disabled meanwhile), appends the real Ollama reply (plain text, no `ShipmentCard` — the backend doesn't call tools yet) on success, or a neutral fallback bubble on error/non-200. Message list auto-scrolls to the newest bubble on every update.
+- `orval.config.ts` + `src/api/generated/secure-ship.ts` — Orval installed and configured (`client: 'react-query'`, `httpClient: 'fetch'`, no axios dependency), generated against the backend's live `/openapi.json`; exports `useChat()` (mutation, from `POST /chat`, `operation_id="chat"` set backend-side for a clean hook name) plus `ChatRequest`/`ChatResponse` types. Regenerate manually via `npm run generate:api` whenever backend routes/models change. `QueryClientProvider` wired up in `main.tsx`.
 
 **Root-level:** `docker-compose.yml` exists but only brings up the `postgres` service so far — `frontend`/`backend` containers get added later, per REQUIREMENTS.md §4.7.
 

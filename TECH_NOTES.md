@@ -16,6 +16,7 @@ Written with JS/Node/TypeScript analogies throughout, since that's the backgroun
 | `from routes.chat import router as chat_router` | Imports the `APIRouter` defined in `routes/chat.py` | `import chatRouter from './routes/chat'` |
 | `app = FastAPI(title="SecureShip Backend")` | Creates the application instance everything else attaches routes to. `title` only labels the app in the auto-generated docs. | `const app = express()` |
 | `app.include_router(chat_router)` | Mounts every route defined on that router onto the main app | `app.use('/', chatRouter)` |
+| `app.add_middleware(CORSMiddleware, allow_origins=[os.environ.get("FRONTEND_ORIGIN", ...)], ...)` | Allows the browser (a different origin — `localhost:5173` vs. `localhost:8000`) to actually read the response. Without this, the browser's own CORS check blocks the fetch client-side before the request even reaches a route — the request still hits the server (visible in `uvicorn`'s access log), but the response is thrown away by the browser. `FRONTEND_ORIGIN` is `.env`-driven (defaults to `http://localhost:5173`) rather than hardcoded, per the "configuration in environment variables" guideline | `app.use(cors({ origin: process.env.FRONTEND_ORIGIN }))` |
 | `@app.get("/health")` | A *decorator* — registers the function directly below it as the handler for `GET /health`. Python has no direct syntax equivalent to this, but it does the same job as chaining a route + handler. | `app.get('/health', (req, res) => {...})` |
 | `def health() -> dict[str, str]:` | A plain function. The `-> dict[str, str]` is a *type hint*: "returns an object with string keys and string values." Python doesn't enforce this by itself at runtime, but FastAPI reads it to validate the response shape and build the OpenAPI schema. | A TypeScript return type annotation |
 | `return {"status": "ok"}` | FastAPI serializes this dict to JSON automatically and sets the right headers. | `res.json({ status: 'ok' })` |
@@ -245,11 +246,32 @@ All three share one `Sidebar.scss` (all their classes are elements of the single
 | File | What it does |
 |---|---|
 | `types.ts` | Local types only — `ChatMessageData`, `ShipmentCardData`, `PackageItem`, `ShipmentStatus`. Deliberately not shared with the backend yet; once Orval is wired up (a later step), the real request/response types will come from generated code instead, and these may get replaced |
-| `ChatWindow.tsx` | Owns `messages: ChatMessageData[]` (`useState`, seeded with one hardcoded bot message) and `draft: string` (the input). `handleSubmit` appends a new `{role: 'user', ...}` entry and clears `draft` — no `fetch`/network call anywhere in this file, on purpose (matches the Week 1 checklist's "hardcoded/echo... no network call yet") |
+| `ChatWindow.tsx` | Owns `messages: ChatMessageData[]` (`useState`, seeded with one hardcoded bot message) and `draft: string` (the input). `handleSubmit` optimistically appends the user's message, then calls the generated `useChat()` mutation (`{ data: { message: text } }`); `onSuccess`/`onError` callbacks passed at call-time append the real reply (or a neutral `ERROR_REPLY_TEXT` fallback for non-200/network failure) — no separate `useEffect` needed to sync mutation state into `messages`. `chatMutation.isPending` drives a "Typing…" bubble and disables the input/send button while a request is in flight. A `messageListRef` + `useEffect` keyed on `[messages, chatMutation.isPending]` scrolls the list to the bottom on every change — without it, new messages/the typing indicator render below the fold since `.chat-window__message-list` is a fixed-height `overflow-y: auto` region that doesn't auto-scroll on its own |
 | `ChatMessage.tsx` | One bubble; `role` picks the BEM modifier (`chat-message--user`/`--bot`) and which side the avatar renders on. Renders a `ShipmentCard` if `message.shipment` is present |
 | `ShipmentCard.tsx` | Pure presentational component. Its prop shape (`ShipmentCardData`) intentionally mirrors only the fields that exist on the backend's `Shipment`/`Package` models (`tracking_number`, `carrier`, `origin`/`destination`, `status`, `estimated_delivery`, `last_update`, and `Package.description`/`weight_kg`/`declared_value`) — the mockup's Reference Number, Service Type, Shipment Date, item Quantity/Unit, and the separate Timeline card were all left out because none of that data exists in the DB yet, and the goal was a card that could plausibly render real data later, not a richer mock |
 
-**Why it exists:** the actual step-8 deliverable — proves the component structure, BEM styling, and local-state interaction pattern (`useState` + controlled input) before any of it has to deal with async/`fetch`/React Query. `messages` and the seed data live in `ChatWindow.tsx` itself rather than a separate mock-data file, since there's exactly one hardcoded seed and no second use case yet to justify extracting one.
+**Why it exists:** step 8 proved the component structure, BEM styling, and local-state interaction pattern (`useState` + controlled input) before any of it dealt with async/`fetch`/React Query; the Orval step (below) then swapped the local-echo `handleSubmit` for a real `useChat()` call without touching that structure. `messages` and the seed data still live in `ChatWindow.tsx` itself — the seed message (with its mock `ShipmentCard`) is kept as message #1 so the card component stays visually demoed, since real backend replies are plain text only until Week 2+'s tool-calling lands.
+
+**Verified:** headless-browser script drove the real dev server + backend together — confirmed the actual `POST /chat` network request/response (not just that a `fetch` call exists in the code), the typing indicator appearing then clearing, the real `qwen3:8b` reply rendering as a new bubble, auto-scroll bringing it into view, and zero console errors. A raw `curl` timing check (`~77s` for a reply, CPU-only) was used to size the test's wait timeout correctly.
+
+---
+
+### `frontend/src/main.tsx`
+
+Wraps `<App />` in `<QueryClientProvider client={queryClient}>` (a single `new QueryClient()` created at module scope) — required for any Orval-generated React Query hook (`useChat()`, etc.) to work at runtime; without a provider ancestor, calling the hook throws.
+
+---
+
+### `frontend/src/api/generated/` (`secure-ship.ts`) + `frontend/orval.config.ts`
+
+| Construct | What it does |
+|---|---|
+| `orval.config.ts` | `input.target` points at the backend's live `http://localhost:8000/openapi.json` (backend must be running to regenerate); `output.client: 'react-query'`, `output.httpClient: 'fetch'` (Orval's built-in fetch client — deliberately chosen over the axios-based default so no new runtime HTTP-client dependency was needed) |
+| `secure-ship.ts` | Generated, never hand-edited (enforced by convention, not tooling) — exports `ChatRequest`/`ChatResponse` types and `useChat()`, a `useMutation` wrapper whose `mutate`/`mutateAsync` take `{ data: ChatRequest }` and resolve to `{ data, status, headers }` (the fetch client doesn't throw on non-2xx, so callers check `response.status` themselves — that's why `ChatWindow.tsx` checks `response.status === 200` inside `onSuccess` rather than only handling `onError`) |
+
+**Why it exists:** the locked "no hand-written fetch calls or duplicated TS types" decision (`DEV_PLAN.md`/`REQUIREMENTS.md` §4.8) — `ChatRequest`/`ChatResponse` are generated straight from the backend's Pydantic models via its OpenAPI schema, so the two can't silently drift. The backend's `/chat` route was given an explicit `operation_id="chat"` (`routes/chat.py`) purely so the generated hook name comes out as `useChat()` instead of an auto-derived `useSendChatMessageChatPost()`.
+
+**Verified:** `npm run generate:api` produces this file cleanly against the running backend; `tsc -b`/`oxlint` pass; see `ChatWindow.tsx`'s entry above for the runtime check.
 
 **Verified:** `tsc -b`, `oxlint`, and `vite build` all clean. Drove the running `npm run dev` server with a headless Playwright script: initial render matches the mockup (seed message + embedded `ShipmentCard` with correct fields), typing text and clicking send appends a new user bubble and clears the input, clicking Sidebar's "New Chat" resets back to one message — zero console errors across all three states.
 

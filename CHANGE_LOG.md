@@ -6,6 +6,19 @@ Full technical scope and week-by-week milestones live in `docs/DEV_PLAN.md` — 
 
 ---
 
+## 2026-07-24 — Week 1, Day 2: The frontend starts talking to the backend 🔌
+
+**Theme:** Orval codegen + wiring `ChatWindow` to the real `POST /chat` endpoint — the frontend stops faking it.
+
+- ⚙️ Installed and configured Orval (`client: 'react-query'`, `httpClient: 'fetch'` — no axios dependency needed), pointed at the backend's live `/openapi.json`. Gave `/chat` an explicit `operation_id="chat"` backend-side so the generated hook comes out as a clean `useChat()` instead of an auto-derived name. Generated output landed in `src/api/generated/secure-ship.ts` — never hand-edited, regenerated via `npm run generate:api`.
+- 🔗 Wired `ChatWindow` to `useChat()`: submitting now calls the real endpoint, shows a "Typing…" bubble while the request is in flight (input/send disabled meanwhile), and appends the real `qwen3:8b` reply as a new bot bubble on success — or a neutral fallback bubble on error/non-200. The original seeded bot message (with its mock `ShipmentCard`) stays as message #1 so the card component is still visually demoed; real replies are plain text only, since the backend doesn't call tools yet.
+- 🐛 Hit and fixed two bugs the static version never exposed: (1) the browser blocked every request with a CORS error, since the FastAPI backend never allowed the Vite origin — added `CORSMiddleware` reading a new `FRONTEND_ORIGIN` env var (defaults to `http://localhost:5173`); (2) the message list never scrolled to show new messages — added a scroll-to-bottom effect keyed off the message list and pending state.
+- ✅ Verified for real again: drove the running dev server + backend with a headless-browser script, confirmed the actual network request/response round-trip (not just that a fetch call exists in the code), the typing indicator appearing and clearing, the real model reply rendering, auto-scroll bringing it into view, and zero console errors. Also timed a raw `curl` call to `/chat` directly — ~77s on this CPU-only setup — to size the test's wait timeout correctly rather than guessing.
+
+**Where things stand:** a full, real conversation now works end-to-end in the browser, ungated. Next: the remaining Week 1 item is containerizing frontend/backend into `docker-compose.yml`, then Week 2's identity-collection + 2FA gate.
+
+---
+
 ## 2026-07-24 — Week 1, Day 2: The frontend gets a face 🖥️
 
 **Theme:** Step 8 — Vite + React + TS scaffold, plus a static `ChatWindow` that only echoes locally. No backend wiring yet — that's next.
