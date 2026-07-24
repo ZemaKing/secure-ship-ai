@@ -1,0 +1,136 @@
+@use '../../styles/variables' as v;
+@use '../../styles/mixins' as m;
+
+.sidebar {
+  width: v.$sidebar-width;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  padding: v.$space-4;
+  background: v.$color-bg-muted;
+  border-right: 1px solid v.$color-border;
+  height: 100%;
+
+  &__brand {
+    display: flex;
+    align-items: center;
+    gap: v.$space-3;
+    margin-bottom: v.$space-4;
+  }
+
+  &__brand-icon {
+    @include m.flex-center;
+    width: 40px;
+    height: 40px;
+    border-radius: v.$radius-pill;
+    background: v.$color-primary-light;
+    font-size: v.$font-size-lg;
+  }
+
+  &__brand-title {
+    margin: 0;
+    font-size: v.$font-size-sm;
+    font-weight: 600;
+    color: v.$color-text;
+  }
+
+  &__brand-subtitle {
+    margin: 0;
+    font-size: v.$font-size-xs;
+    color: v.$color-text-muted;
+  }
+
+  &__new-chat-button {
+    @include m.button-reset;
+    @include m.flex-center;
+    width: 100%;
+    padding: v.$space-3;
+    margin-bottom: v.$space-5;
+    border-radius: v.$radius-sm;
+    background: v.$color-primary-light;
+    color: v.$color-primary;
+    font-size: v.$font-size-sm;
+    font-weight: 600;
+
+    &:hover {
+      background: v.$color-primary-border;
+    }
+  }
+
+  &__section {
+    margin-bottom: v.$space-4;
+  }
+
+  &__section-label {
+    display: block;
+    font-size: v.$font-size-xs;
+    font-weight: 600;
+    color: v.$color-text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: v.$space-2;
+  }
+
+  &__chat-history {
+    display: flex;
+    flex-direction: column;
+    gap: v.$space-1;
+  }
+
+  &__chat-history-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: v.$space-2 v.$space-3;
+    border-radius: v.$radius-sm;
+
+    &:hover {
+      background: v.$color-primary-border;
+      cursor: default;
+    }
+  }
+
+  &__chat-history-item-label {
+    @include m.truncate-text;
+    font-size: v.$font-size-sm;
+    color: v.$color-text;
+  }
+
+  &__chat-history-item-time {
+    font-size: v.$font-size-xs;
+    color: v.$color-text-subtle;
+  }
+
+  &__spacer {
+    flex: 1;
+  }
+
+  &__admin-card {
+    @include m.card-surface;
+    padding: v.$space-3;
+  }
+
+  &__admin-card-title {
+    margin: 0 0 v.$space-1;
+    font-size: v.$font-size-sm;
+    font-weight: 600;
+    color: v.$color-text;
+  }
+
+  &__admin-card-text {
+    margin: 0 0 v.$space-2;
+    font-size: v.$font-size-xs;
+    color: v.$color-text-muted;
+  }
+
+  &__admin-card-link {
+    font-size: v.$font-size-xs;
+    font-weight: 600;
+    color: v.$color-primary;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}

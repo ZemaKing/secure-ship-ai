@@ -191,4 +191,68 @@ The other three files follow the identical pattern: `Customer` (plain string col
 
 ---
 
+## Frontend
+
+Unlike the backend sections above, no JS/Node analogy column here — React/TS is this project's home turf already. These sections instead call out the constructs and decisions that aren't self-evident from reading the file.
+
+### `frontend/src/styles/` (`_variables.scss`, `_mixins.scss`, `global.scss`)
+
+| File | What it holds |
+|---|---|
+| `_variables.scss` | SCSS variables (not CSS custom properties) for color palette, spacing scale, radius, and type scale — includes a dedicated set of five status colors (`$color-status-*`) keyed to the backend's `ShipmentStatus` enum values, so the badge coloring in `ShipmentCard` has a 1:1 source of truth |
+| `_mixins.scss` | Four small mixins: `flex-center`, `card-surface` (border+radius, the shared look behind the sidebar's admin card, the chat input bar, and `ShipmentCard`), `button-reset`, `truncate-text`. Kept intentionally short — no breakpoint/responsive mixins yet since nothing in the current layout needs them |
+| `global.scss` | Box-sizing reset, base body font/color, `#root`/`html`/`body` full-height, list/button resets. `@use`s `_variables.scss` so its tokens are available without a separate import in every component |
+
+Per-component SCSS files (`Sidebar.scss`, `ChatWindow.scss`, `ChatMessage.scss`, `ShipmentCard.scss`) each `@use` `variables`/`mixins` and hold one BEM block (`.sidebar`, `.chat-window`, `.chat-message`, `.shipment-card`) — no shared/global component styles outside this `styles/` folder.
+
+**Why it exists:** the SCSS+BEM baseline from `DEV_PLAN.md`'s locked styling decision — plain SCSS, no CSS Modules, no Tailwind. `_variables.scss`/`_mixins.scss` is the one design-system partial every component styles from.
+
+**Verified:** `npm run build` (which runs `tsc -b` then `vite build`) compiles all `.scss` imports with no errors; rendered output confirmed visually against `ai-chatbot-ui-mockup.png` via a headless-browser screenshot.
+
+---
+
+### `frontend/src/App.tsx`
+
+| Construct | What it does |
+|---|---|
+| `const [sessionKey, setSessionKey] = useState(0)` | Owned by `App`, not `ChatWindow` — `ChatWindow` keeps its own `messages` state fully internal (per the "keep business logic out of shared/parent state unless needed" instinct), so `App` doesn't need to know anything about chat internals to reset it |
+| `<ChatWindow key={sessionKey} />` | Passing a changing `key` is React's built-in "throw this subtree away and remount fresh" mechanism — clicking Sidebar's "New Chat" bumps `sessionKey`, which unmounts the old `ChatWindow` (and its state) and mounts a brand new one seeded back to the hardcoded message. No custom reset prop/effect needed. |
+
+**Why it exists:** the composition root — lays out `Sidebar` + `ChatWindow` side by side and is the one place that knows both exist, without either component needing to know about the other.
+
+**Verified:** clicking "New Chat" after sending a message reliably drops the list back to just the seed message (confirmed via headless-browser screenshot, see `ChatWindow` section below).
+
+---
+
+### `frontend/src/components/Sidebar/` (`Sidebar.tsx`, `ChatHistoryList.tsx`, `AdminAccessCard.tsx`)
+
+| File | What it does |
+|---|---|
+| `Sidebar.tsx` | Static brand header, the "New Chat" button (calls the `onNewChat` prop `App` passes down — see above), and composes `ChatHistoryList` + `AdminAccessCard` |
+| `ChatHistoryList.tsx` | A hardcoded array of `{id, label, time}` rendered as a non-interactive list — a visual placeholder for real chat-history persistence, which doesn't exist yet (no session id, no `ChatSession` list endpoint) |
+| `AdminAccessCard.tsx` | Static card + a `href="#"` "Learn more" link — no Auth0 wired up (that's Week 4 per `DEV_PLAN.md`) |
+
+All three share one `Sidebar.scss` (all their classes are elements of the single `.sidebar` BEM block, so splitting the SCSS per-file would fragment one block's styles across three files for no benefit).
+
+**Why it exists:** step 8's scope was a hardcoded/echo `ChatWindow`, but the user asked for the full mockup shell (sidebar included) as a static skeleton now, with the genuinely-backend-dependent pieces (real history, admin auth) deferred rather than faked with more elaborate mock logic.
+
+**Verified:** rendered correctly in a headless-browser screenshot (`npm run dev` + Playwright), matching `ai-chatbot-ui-mockup.png`'s sidebar layout.
+
+---
+
+### `frontend/src/components/ChatWindow/` (`ChatWindow.tsx`, `ChatMessage.tsx`, `ShipmentCard.tsx`, `types.ts`)
+
+| File | What it does |
+|---|---|
+| `types.ts` | Local types only — `ChatMessageData`, `ShipmentCardData`, `PackageItem`, `ShipmentStatus`. Deliberately not shared with the backend yet; once Orval is wired up (a later step), the real request/response types will come from generated code instead, and these may get replaced |
+| `ChatWindow.tsx` | Owns `messages: ChatMessageData[]` (`useState`, seeded with one hardcoded bot message) and `draft: string` (the input). `handleSubmit` appends a new `{role: 'user', ...}` entry and clears `draft` — no `fetch`/network call anywhere in this file, on purpose (matches the Week 1 checklist's "hardcoded/echo... no network call yet") |
+| `ChatMessage.tsx` | One bubble; `role` picks the BEM modifier (`chat-message--user`/`--bot`) and which side the avatar renders on. Renders a `ShipmentCard` if `message.shipment` is present |
+| `ShipmentCard.tsx` | Pure presentational component. Its prop shape (`ShipmentCardData`) intentionally mirrors only the fields that exist on the backend's `Shipment`/`Package` models (`tracking_number`, `carrier`, `origin`/`destination`, `status`, `estimated_delivery`, `last_update`, and `Package.description`/`weight_kg`/`declared_value`) — the mockup's Reference Number, Service Type, Shipment Date, item Quantity/Unit, and the separate Timeline card were all left out because none of that data exists in the DB yet, and the goal was a card that could plausibly render real data later, not a richer mock |
+
+**Why it exists:** the actual step-8 deliverable — proves the component structure, BEM styling, and local-state interaction pattern (`useState` + controlled input) before any of it has to deal with async/`fetch`/React Query. `messages` and the seed data live in `ChatWindow.tsx` itself rather than a separate mock-data file, since there's exactly one hardcoded seed and no second use case yet to justify extracting one.
+
+**Verified:** `tsc -b`, `oxlint`, and `vite build` all clean. Drove the running `npm run dev` server with a headless Playwright script: initial render matches the mockup (seed message + embedded `ShipmentCard` with correct fields), typing text and clicking send appends a new user bubble and clears the input, clicking Sidebar's "New Chat" resets back to one message — zero console errors across all three states.
+
+---
+
 <!-- Add a new "### backend/<file>" or "### frontend/<file>" section here as each new file is built. Keep entries technical and current — if a file's purpose or shape changes materially, update its section rather than leaving it stale. -->

@@ -1,0 +1,89 @@
+@use '../../styles/variables' as v;
+@use '../../styles/mixins' as m;
+
+.chat-window {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  padding: v.$space-5;
+  background: v.$color-bg;
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: v.$space-4;
+    margin-bottom: v.$space-5;
+  }
+
+  &__greeting-title {
+    margin: 0 0 v.$space-1;
+    font-size: v.$font-size-xl;
+  }
+
+  &__greeting-subtitle {
+    margin: 0;
+    font-size: v.$font-size-sm;
+    color: v.$color-text-muted;
+  }
+
+  &__disclaimer-banner {
+    @include m.card-surface;
+    display: flex;
+    align-items: flex-start;
+    gap: v.$space-2;
+    flex-shrink: 0;
+    max-width: 260px;
+    padding: v.$space-3;
+    background: v.$color-primary-light;
+    border-color: v.$color-primary-border;
+    font-size: v.$font-size-xs;
+    color: v.$color-text;
+  }
+
+  &__message-list {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: v.$space-4;
+  }
+
+  &__input-bar {
+    @include m.card-surface;
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
+    padding: v.$space-2;
+  }
+
+  &__input {
+    flex: 1;
+    border: none;
+    outline: none;
+    padding: v.$space-2;
+    font-size: v.$font-size-sm;
+    font-family: inherit;
+  }
+
+  &__send-button {
+    @include m.flex-center;
+    @include m.button-reset;
+    width: 36px;
+    height: 36px;
+    border-radius: v.$radius-sm;
+    background: v.$color-primary;
+    color: v.$color-bg;
+
+    &:hover {
+      opacity: 0.9;
+    }
+  }
+
+  &__footer-disclaimer {
+    margin: v.$space-2 0 0;
+    text-align: center;
+    font-size: v.$font-size-xs;
+    color: v.$color-text-subtle;
+  }
+}

@@ -6,6 +6,21 @@ Full technical scope and week-by-week milestones live in `docs/DEV_PLAN.md` — 
 
 ---
 
+## 2026-07-24 — Week 1, Day 2: The frontend gets a face 🖥️
+
+**Theme:** Step 8 — Vite + React + TS scaffold, plus a static `ChatWindow` that only echoes locally. No backend wiring yet — that's next.
+
+- 🎨 Given a UI mockup (`ai-chatbot-ui-mockup.png`) as the visual target for the whole app — sidebar with chat history + admin card, chat column with a rich shipment-detail card. Studied it and scoped what step 8 could actually build honestly: everything on screen is either real static markup or a hardcoded local-state demo, nothing fakes a backend capability that doesn't exist yet.
+- 🏗️ Scaffolded `frontend/` for real: `npm create vite@latest . -- --template react-ts`, plus the SCSS+BEM baseline (`_variables.scss`, `_mixins.scss`, `global.scss`) per the locked styling decision — no CSS Modules, no Tailwind.
+- 🧩 Built the sidebar as a static shell (brand header, "New Chat" button, hardcoded chat-history list, admin-access card) — real layout and styling now, real behavior (persistence, Auth0) later, since neither exists on the backend yet.
+- 💬 Built `ChatWindow`: one hardcoded bot message seeds the conversation, typing + submitting appends a new bubble to local state and clears the input, "New Chat" resets it via a remount-key trick in `App.tsx`. Zero `fetch` calls anywhere — matches the Week 1 checklist's "hardcoded/echo" scope exactly.
+- ✂️ Trimmed the mockup's shipment card down to only fields the real `Shipment`/`Package` models actually have — dropped Reference Number, Service Type, Shipment Date, the Timeline card, and item Quantity/Unit columns, since none of that exists in the DB and inventing it would just be more rework once real tool-call data lands in Week 2+.
+- ✅ Verified for real, not just "it compiles": `tsc -b`, `oxlint`, and `vite build` all clean, then drove the actual running dev server with a headless-browser script — confirmed the initial render, the message-echo behavior (bubble appends, input clears), and the New Chat reset, with zero console errors.
+
+**Where things stand:** the frontend has a real, styled shell that looks like the target app but talks to no one. Next: install Orval against `/openapi.json`, generate the first real hook (`useChat`), and wire `ChatWindow` to the actual `/chat` endpoint.
+
+---
+
 ## 2026-07-24 — Week 1, Day 2: Conversations stop vanishing 💾
 
 **Theme:** Step 7 — persist chat turns instead of losing them the moment the HTTP response goes out.

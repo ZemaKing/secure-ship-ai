@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-Week 1 is in progress. `backend/` is real and running, with seeded mock data; `frontend/` is still empty (per the skeleton in REQUIREMENTS.md §6.6) — not yet started.
+Week 1 is in progress. `backend/` is real and running, with seeded mock data; `frontend/` now has a Vite+React+TS scaffold with a static, hardcoded/echo `ChatWindow` — no backend wiring yet.
 
 **What exists in `backend/` so far:**
 - FastAPI app (`main.py`) with `GET /health` and `POST /chat` (ungated — no session/gating logic yet, matches Week 1 scope)
@@ -16,6 +16,12 @@ Week 1 is in progress. `backend/` is real and running, with seeded mock data; `f
 **What exists in `scripts/` so far:**
 - `seed_data.py` — populates Postgres with mock customers (English/US, Serbian, and Russian names), shipments (realistic status distribution), and packages, straight through the ORM models. Already run once — the DB has live mock data, not just empty tables.
 
+**What exists in `frontend/` so far:**
+- Vite + React + TS scaffold (`npm create vite@latest . -- --template react-ts`), global SCSS + BEM baseline (`src/styles/_variables.scss`, `_mixins.scss`, `global.scss`) — no CSS Modules, no Tailwind
+- `components/Sidebar/` — static shell matching `ai-chatbot-ui-mockup.png`: brand header, "New Chat" button (resets `ChatWindow` via a remount key owned by `App.tsx`), hardcoded `ChatHistoryList`, static `AdminAccessCard` skeleton (no real chat-history persistence or Auth0 behind either yet)
+- `components/ChatWindow/` — `ChatWindow` owns local `messages` state seeded with one hardcoded bot message (including a mock `ShipmentCard`, fields limited to what `Shipment`/`Package` models actually have — no invented reference number/service type/timeline); typing and submitting appends a user bubble to the local list; **no network call** — that lands when `/chat` gets wired via Orval hooks
+- No `api/generated/` yet — Orval isn't installed until the real `/chat` wiring step
+
 **Root-level:** `docker-compose.yml` exists but only brings up the `postgres` service so far — `frontend`/`backend` containers get added later, per REQUIREMENTS.md §4.7.
 
 **Commands that work today (from `backend/`, with the venv active):**
@@ -23,11 +29,16 @@ Week 1 is in progress. `backend/` is real and running, with seeded mock data; `f
 - `alembic revision --autogenerate -m "..."` / `alembic upgrade head` — schema migrations
 - `python llm/ollama_client.py` — standalone Ollama connectivity check
 
+**Commands that work today (from `frontend/`):**
+- `npm run dev` — runs the Vite dev server on `:5173`
+- `npm run build` — type-checks (`tsc -b`) and produces a production build
+- `npm run lint` — runs `oxlint`
+
 **From the repo root:**
 - `docker compose up -d` — brings up Postgres only, for now.
 - `python scripts/seed_data.py` — (re-)seeds mock data into Postgres; safe to re-run, just adds more rows each time (no truncate/reset step yet).
 
-No frontend commands yet, and no test suite yet — update this section again as those land.
+No test suite yet — update this section again as that lands.
 
 See `TECH_NOTES.md` for a per-file technical breakdown and `CHANGE_LOG.md` for the day-by-day narrative of what's been built.
 
