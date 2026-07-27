@@ -8,13 +8,9 @@ from db.session import get_db
 from llm import ollama_client
 from models.chat_session import ChatSession, ChatSessionState
 from schemas.chat import ChatRequest, ChatResponse
+from services.prompting import build_system_prompt
 
 router = APIRouter()
-
-SYSTEM_PROMPT = (
-    "You are a friendly customer support assistant for SecureShip, a parcel "
-    "tracking company. Help customers with questions about their shipments."
-)
 
 
 def _get_or_create_session(db: Session, session_id: str | None) -> ChatSession:
@@ -51,10 +47,11 @@ def send_chat_message(request: ChatRequest, db: Session = Depends(get_db)) -> Ch
     )
 
     messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "system", "content": build_system_prompt(session.pending_identity)},
         {"role": "user", "content": request.message},
     ]
-    reply = ollama_client.chat(messages)
+    result = ollama_client.chat(messages)
+    reply = result.content
 
     transcript.append(
         {"role": "assistant", "content": reply, "timestamp": datetime.now(timezone.utc).isoformat()}

@@ -5,6 +5,7 @@ model not pulled, service not running) shows up here first, isolated from
 any web-framework noise. Run directly: `python llm/ollama_client.py`
 """
 import os
+from dataclasses import dataclass
 
 import requests
 
@@ -13,11 +14,17 @@ OLLAMA_URL = f"{OLLAMA_HOST}/api/chat"
 MODEL = "qwen3:8b"
 
 
-def chat(messages: list[dict], tools: list[dict] | None = None) -> str:
+@dataclass
+class ChatCompletionResult:
+    content: str
+    tool_calls: list[dict] | None = None
+
+
+def chat(messages: list[dict], tools: list[dict] | None = None) -> ChatCompletionResult:
     """Send a full message history to the local Ollama model and return its reply.
 
-    `tools` is unused for now — accepted so Week 2's tool-calling enforcement
-    can be wired in without changing this function's signature.
+    `tools` is passed through to Ollama's tool-calling contract when given;
+    the caller is responsible for executing any `tool_calls` in the result.
     """
     payload = {
         "model": MODEL,
@@ -29,14 +36,15 @@ def chat(messages: list[dict], tools: list[dict] | None = None) -> str:
 
     response = requests.post(OLLAMA_URL, json=payload)
     response.raise_for_status()
-    return response.json()["message"]["content"]
+    message = response.json()["message"]
+    return ChatCompletionResult(content=message.get("content", ""), tool_calls=message.get("tool_calls"))
 
 
 def main() -> None:
-    reply = chat(
+    result = chat(
         [{"role": "user", "content": "In one sentence, what is a parcel tracking number?"}]
     )
-    print(reply)
+    print(result.content)
 
 
 if __name__ == "__main__":
