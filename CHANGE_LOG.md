@@ -6,6 +6,34 @@ Full technical scope and week-by-week milestones live in `docs/DEV_PLAN.md` — 
 
 ---
 
+## 2026-07-27 — Week 2, Day 1: Tool-calling plumbing goes into the LLM layer 🔧
+
+**Theme:** Chunk B — no real tool execution yet, just the contract the identity-gate tools (starting with `verify_identity`) will run on top of.
+
+- 🔧 `ollama_client.chat()` no longer returns a bare string — it returns a `ChatCompletionResult` dataclass (`content`, `tool_calls`), so a future caller can branch on whether the model asked to call a tool instead of just replying in prose.
+- 🧾 New `tools/schemas.py` — `VERIFY_IDENTITY_TOOL_SCHEMA`, an OpenAI-style function-calling schema for `verify_identity(first_name, last_name, phone_number, address)`, matching `Customer`'s columns exactly. This only defines what the model is *told* it can call — nothing invokes it yet, that's the enforcement layer still to come.
+- 💬 New `services/prompting.py` — `build_system_prompt(known_identity)` appends any identity fields already collected (read from the `pending_identity` column added yesterday) onto the base system prompt, so the model won't ask a visitor to repeat themselves once real extraction starts populating that column. Currently a no-op in practice, since nothing writes to `pending_identity` yet.
+- 🔌 `routes/chat.py` updated to match both changes: reads `.content` off the new return type, and builds its system prompt via `build_system_prompt(session.pending_identity)` instead of a hardcoded constant.
+- ✅ Verified directly: a real call to the running Ollama server confirmed `chat()` now returns a proper `ChatCompletionResult`; `build_system_prompt` checked by hand against empty/`None`/populated identity dicts; rebuilt the backend container and re-confirmed `/chat` still round-trips end-to-end afterward.
+
+**Where things stand:** the model-facing tool-calling contract exists, but nothing calls `verify_identity` yet and no identity extraction populates `pending_identity`. Next: conversational identity collection/extraction and actually wiring the `verify_identity` tool + neutral-failure messaging (Epic B).
+
+---
+
+## 2026-07-27 — Week 2, Day 1: Chat sessions stop being shared globally 🪪
+
+**Theme:** Chunk A — the first Week 2 slice, fixing a Week 1 shortcut before building the identity gate on top of it.
+
+- 🪪 **The bug:** `_get_or_create_session()` picked "whichever `ChatSession` row is still open," full stop — every caller, in every browser tab, shared the exact same session. Fixed: `ChatRequest.session_id` (nullable) now round-trips between frontend and backend; the lookup is by primary key when a `session_id` is given (and still open), otherwise a fresh row is created and its id echoed back in `ChatResponse.session_id`.
+- 📦 Pulled `ChatRequest`/`ChatResponse` out of their inline definitions in `routes/chat.py` into a new `schemas/chat.py` (plus a stub `EscalationPayload` field for a later escalation-theater chunk), and added `schemas/verify.py` with `VerifyCodeRequest`/`VerifyCodeResponse` ahead of the future code-verification endpoint.
+- 🗄️ `ChatSession` grows two nullable columns: `pending_customer_id` (FK → `customers.id`) and `pending_identity` (JSONB) — a place to hold identity fields collected mid-conversation before a customer match is confirmed. New Alembic migration, applied cleanly against the existing dev database.
+- 🖥️ Frontend follow-on that turned out to be required, not optional: with the old "most recent session" fallback gone, `ChatWindow` had to actually track its own `session_id`, or every single message would've silently become its own new session. It now stores the `session_id` the backend returns and sends it back on every subsequent turn.
+- ✅ Verified with real requests: two callers with no `session_id` land in two distinct sessions; passing a returned `session_id` back resumes that exact row, with its `transcript` correctly accumulating turns rather than starting over — confirmed both via the API responses and a direct look at the `chat_sessions` table.
+
+**Where things stand:** chat sessions are genuinely per-client now, and there's somewhere to put identity fields as they're collected. Next: the tool-calling plumbing (Chunk B, below) and then real conversational identity extraction feeding `pending_identity`.
+
+---
+
 ## 2026-07-24 — Week 1, Day 2: Everything moves into containers 🐳
 
 **Theme:** `docker-compose.yml` grows from just `postgres` to all three services — `frontend`, `backend`, `postgres` — running together.
