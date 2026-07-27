@@ -66,10 +66,10 @@ No virtual environment tool needed beyond Python's built-in `venv` — one fewer
 - [x] Copy Section 6 diagrams from `REQUIREMENTS.md` into `docs/diagrams/` as the starting reference (will be corrected in Week 5)
 
 **Monday demo checklist (Week 2's Monday):**
-- [ ] `docker-compose up` brings up the stack from a clean clone
-- [ ] Brief narration of how Claude Code was used to scaffold the repo
-- [ ] Live chat message → real Ollama response, shown in the browser
-- [ ] Deliberately ask something it shouldn't answer yet (no gate exists) — show it just answers, and say plainly that this is expected/temporary
+- [x] `docker-compose up` brings up the stack from a clean clone
+- [x] Brief narration of how Claude Code was used to scaffold the repo
+- [x] Live chat message → real Ollama response, shown in the browser
+- [x] Deliberately ask something it shouldn't answer yet (no gate exists) — show it just answers, and say plainly that this is expected/temporary
 
 ---
 
