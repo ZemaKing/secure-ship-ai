@@ -13,30 +13,41 @@ from db.session import SessionLocal  # noqa: E402
 from models import Customer, Package, Shipment  # noqa: E402
 from models.shipment import ShipmentStatus  # noqa: E402
 
-# Mixed English/US, Serbian, and Russian names — a nod to a realistically international customer base.
-FIRST_NAMES = [
-    # English/US
-    "James", "Mary", "Robert", "Patricia", "John", "Jennifer", "Michael", "Linda",
-    "David", "Elizabeth", "William", "Barbara", "Richard", "Susan", "Joseph", "Jessica",
-    # Serbian
-    "Milos", "Ana", "Nikola", "Jovana", "Stefan", "Marija", "Aleksandar", "Milica",
-    "Petar", "Jelena", "Nemanja", "Ivana", "Dusan", "Tamara", "Vladimir", "Sofija",
-    # Russian
-    "Ivan", "Olga", "Dmitri", "Ekaterina", "Sergei", "Natalia", "Alexei", "Svetlana",
-    "Nikolai", "Anastasia", "Mikhail", "Tatiana", "Andrei", "Irina", "Viktor", "Yulia",
-]
-
-LAST_NAMES = [
-    # English/US
-    "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis",
-    "Rodriguez", "Martinez", "Wilson", "Anderson", "Taylor", "Moore", "Jackson",
-    # Serbian
-    "Jovanovic", "Petrovic", "Nikolic", "Markovic", "Djordjevic", "Stojanovic",
-    "Ilic", "Stankovic", "Pavlovic", "Milosevic", "Popovic", "Simic",
-    # Russian
-    "Ivanov", "Petrov", "Smirnov", "Kuznetsov", "Volkov", "Sokolov",
-    "Popov", "Fedorov", "Morozov", "Novikov", "Egorov", "Orlov",
-]
+# Mixed English/US, Serbian, and Russian names — a nod to a realistically international customer
+# base. First/last names are grouped by nationality so a customer's surname always matches their
+# given name's origin (no "Milos Smith" / "James Petrovic" mismatches).
+NAME_POOLS = {
+    "us": {
+        "first": [
+            "James", "Mary", "Robert", "Patricia", "John", "Jennifer", "Michael", "Linda",
+            "David", "Elizabeth", "William", "Barbara", "Richard", "Susan", "Joseph", "Jessica",
+        ],
+        "last": [
+            "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis",
+            "Rodriguez", "Martinez", "Wilson", "Anderson", "Taylor", "Moore", "Jackson",
+        ],
+    },
+    "serbian": {
+        "first": [
+            "Milos", "Ana", "Nikola", "Jovana", "Stefan", "Marija", "Aleksandar", "Milica",
+            "Petar", "Jelena", "Nemanja", "Ivana", "Dusan", "Tamara", "Vladimir", "Sofija",
+        ],
+        "last": [
+            "Jovanovic", "Petrovic", "Nikolic", "Markovic", "Djordjevic", "Stojanovic",
+            "Ilic", "Stankovic", "Pavlovic", "Milosevic", "Popovic", "Simic",
+        ],
+    },
+    "russian": {
+        "first": [
+            "Ivan", "Olga", "Dmitri", "Ekaterina", "Sergei", "Natalia", "Alexei", "Svetlana",
+            "Nikolai", "Anastasia", "Mikhail", "Tatiana", "Andrei", "Irina", "Viktor", "Yulia",
+        ],
+        "last": [
+            "Ivanov", "Petrov", "Smirnov", "Kuznetsov", "Volkov", "Sokolov",
+            "Popov", "Fedorov", "Morozov", "Novikov", "Egorov", "Orlov",
+        ],
+    },
+}
 
 STREET_NAMES = [
     "Main St", "Oak Ave", "Maple Dr", "Cedar Ln", "Elm St", "Park Ave", "Pine St",
@@ -86,15 +97,18 @@ def random_tracking_number() -> str:
 
 
 def build_customers(count: int) -> list[Customer]:
-    return [
-        Customer(
-            first_name=random.choice(FIRST_NAMES),
-            last_name=random.choice(LAST_NAMES),
-            phone_number=random_phone_number(),
-            address=random_address(),
+    customers = []
+    for _ in range(count):
+        pool = random.choice(list(NAME_POOLS.values()))
+        customers.append(
+            Customer(
+                first_name=random.choice(pool["first"]),
+                last_name=random.choice(pool["last"]),
+                phone_number=random_phone_number(),
+                address=random_address(),
+            )
         )
-        for _ in range(count)
-    ]
+    return customers
 
 
 def build_shipment(customer: Customer) -> Shipment:
