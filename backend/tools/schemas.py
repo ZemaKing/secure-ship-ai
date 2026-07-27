@@ -4,14 +4,18 @@ these tools lives elsewhere in `tools/` — this module only defines what the
 model is told it can call.
 """
 
+IDENTITY_FIELDS = ("first_name", "last_name", "phone_number", "address")
+
 VERIFY_IDENTITY_TOOL_SCHEMA = {
     "type": "function",
     "function": {
         "name": "verify_identity",
         "description": (
-            "Check a visitor's stated identity (first name, last name, phone number, "
-            "address) against known customer records. Call this once all four fields "
-            "have been collected from the conversation."
+            "Record a visitor's identity details as they're mentioned in the conversation, "
+            "so they can be checked against known customer records. Call this whenever the "
+            "visitor gives any of first name, last name, phone number, or address — even if "
+            "it's only one field, or none yet and you're just starting to ask. Omit any field "
+            "you don't have; call it again each time the visitor provides more."
         ),
         "parameters": {
             "type": "object",
@@ -21,7 +25,6 @@ VERIFY_IDENTITY_TOOL_SCHEMA = {
                 "phone_number": {"type": "string"},
                 "address": {"type": "string"},
             },
-            "required": ["first_name", "last_name", "phone_number", "address"],
         },
     },
 }

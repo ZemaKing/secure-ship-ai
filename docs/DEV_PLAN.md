@@ -79,11 +79,12 @@ No virtual environment tool needed beyond Python's built-in `venv` — one fewer
 **Progress so far (built in small chunks, tracked here since none complete a full checklist item below on their own):**
 - [x] Chunk A — per-client `ChatSession` lookup by `session_id` (fixes Week 1's "everyone shares one session" shortcut); `ChatRequest`/`ChatResponse` extracted into `schemas/`; `ChatSession` gained `pending_customer_id`/`pending_identity` columns as scratch space for in-progress identity collection
 - [x] Chunk B — tool-calling plumbing in the LLM layer: `ollama_client.chat()` returns a `ChatCompletionResult(content, tool_calls)` instead of a bare string; `tools/schemas.py` defines `VERIFY_IDENTITY_TOOL_SCHEMA`; `services/prompting.py` builds the system prompt from known-so-far identity fields. Nothing calls `verify_identity` yet and no extraction populates `pending_identity` — that's next.
+- [x] Chunk C — identity collection state machine: `tools/verify_identity.py` merges/matches fields (PARTIAL/REJECTED/MATCHED); `routes/chat.py`'s `_tools_for_state`/`_dispatch_tool` offer and allowlist-enforce `verify_identity`; neutral rejection wording; `Anonymous → CollectingIdentity` transition. Verified live against the real model, not mocked. `MATCHED` reply is still a placeholder — Chunk D wires the actual 2FA send.
 
-- [ ] Conversational identity collection: assistant asks for first name, last name, address, phone number when a shipment question comes up (Epic B1)
-- [ ] Basic extraction of fields from free-form user replies, not a rigid one-field-at-a-time form (Epic B2)
-- [ ] `verify_identity` tool: matches collected fields against `Customer` table
-- [ ] Neutral failure messaging — "we couldn't verify that," never "no customer found" (Epic B3 — enumeration/privacy leak otherwise)
+- [x] Conversational identity collection: assistant asks for first name, last name, address, phone number when a shipment question comes up (Epic B1)
+- [x] Basic extraction of fields from free-form user replies, not a rigid one-field-at-a-time form (Epic B2)
+- [x] `verify_identity` tool: matches collected fields against `Customer` table
+- [x] Neutral failure messaging — "we couldn't verify that," never "no customer found" (Epic B3 — enumeration/privacy leak otherwise)
 - [ ] `send_verification_code` tool: generates a mock 6-digit code, tied to session, logged to console (never to a persistent log file — no-PII-in-logs rule starts now)
 - [ ] Code expiry (5–10 min) and attempt limit (e.g. 3 tries then regenerate/cool down) — pick specific numbers and note them in code comments
 - [ ] `POST /verify-code` endpoint + `check_verification_code` tool — correct code transitions session to `Verified`; incorrect doesn't

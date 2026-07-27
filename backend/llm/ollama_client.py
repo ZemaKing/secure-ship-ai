@@ -15,9 +15,15 @@ MODEL = "qwen3:8b"
 
 
 @dataclass
+class ToolCall:
+    name: str
+    arguments: dict
+
+
+@dataclass
 class ChatCompletionResult:
-    content: str
-    tool_calls: list[dict] | None = None
+    content: str | None
+    tool_calls: list[ToolCall]
 
 
 def chat(messages: list[dict], tools: list[dict] | None = None) -> ChatCompletionResult:
@@ -37,7 +43,11 @@ def chat(messages: list[dict], tools: list[dict] | None = None) -> ChatCompletio
     response = requests.post(OLLAMA_URL, json=payload)
     response.raise_for_status()
     message = response.json()["message"]
-    return ChatCompletionResult(content=message.get("content", ""), tool_calls=message.get("tool_calls"))
+    tool_calls = [
+        ToolCall(name=call["function"]["name"], arguments=call["function"].get("arguments") or {})
+        for call in message.get("tool_calls") or []
+    ]
+    return ChatCompletionResult(content=message.get("content") or None, tool_calls=tool_calls)
 
 
 def main() -> None:
