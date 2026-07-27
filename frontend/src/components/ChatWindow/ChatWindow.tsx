@@ -39,6 +39,7 @@ function formatTimestamp() {
 function ChatWindow() {
   const [messages, setMessages] = useState<ChatMessageData[]>(SEED_MESSAGES)
   const [draft, setDraft] = useState('')
+  const [sessionId, setSessionId] = useState<string>()
   const chatMutation = useChat()
   const messageListRef = useRef<HTMLDivElement>(null)
 
@@ -58,10 +59,13 @@ function ChatWindow() {
     setDraft('')
 
     chatMutation.mutate(
-      { data: { message: text } },
+      { data: { message: text, session_id: sessionId } },
       {
         onSuccess: (response) => {
           const replyText = response.status === 200 ? response.data.reply : ERROR_REPLY_TEXT
+          if (response.status === 200) {
+            setSessionId(response.data.session_id)
+          }
           setMessages((prev) => [
             ...prev,
             { id: makeMessageId(), role: 'bot', text: replyText, timestamp: formatTimestamp() },

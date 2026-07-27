@@ -1,12 +1,13 @@
+import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from db.session import get_db
 from llm import ollama_client
 from models.chat_session import ChatSession, ChatSessionState
+from schemas.chat import ChatRequest, ChatResponse
 
 router = APIRouter()
 
@@ -16,35 +17,34 @@ SYSTEM_PROMPT = (
 )
 
 
-class ChatRequest(BaseModel):
-    message: str
+def _get_or_create_session(db: Session, session_id: str | None) -> ChatSession:
+    """Per-client session lookup — a given session_id only ever sees its own state."""
+    if session_id is not None:
+        try:
+            session_uuid = uuid.UUID(session_id)
+        except ValueError:
+            session_uuid = None
+        if session_uuid is not None:
+            session = (
+                db.query(ChatSession)
+                .filter(ChatSession.id == session_uuid, ChatSession.ended_at.is_(None))
+                .first()
+            )
+            if session is not None:
+                return session
 
-
-class ChatResponse(BaseModel):
-    reply: str
-
-
-def _get_or_create_session(db: Session) -> ChatSession:
-    """Naive single-session lookup for Week 1 — real state-machine handling is Week 2 scope."""
-    session = (
-        db.query(ChatSession)
-        .filter(ChatSession.ended_at.is_(None))
-        .order_by(ChatSession.started_at.desc())
-        .first()
+    session = ChatSession(
+        state=ChatSessionState.ANONYMOUS,
+        started_at=datetime.now(timezone.utc),
+        transcript=[],
     )
-    if session is None:
-        session = ChatSession(
-            state=ChatSessionState.ANONYMOUS,
-            started_at=datetime.now(timezone.utc),
-            transcript=[],
-        )
-        db.add(session)
+    db.add(session)
     return session
 
 
 @router.post("/chat", operation_id="chat")
 def send_chat_message(request: ChatRequest, db: Session = Depends(get_db)) -> ChatResponse:
-    session = _get_or_create_session(db)
+    session = _get_or_create_session(db, request.session_id)
     transcript = list(session.transcript or [])
     transcript.append(
         {"role": "user", "content": request.message, "timestamp": datetime.now(timezone.utc).isoformat()}
@@ -62,4 +62,4 @@ def send_chat_message(request: ChatRequest, db: Session = Depends(get_db)) -> Ch
     session.transcript = transcript
     db.commit()
 
-    return ChatResponse(reply=reply)
+    return ChatResponse(session_id=str(session.id), reply=reply, state=session.state.value)

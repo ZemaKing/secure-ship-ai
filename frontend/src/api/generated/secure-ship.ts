@@ -25,10 +25,20 @@ import type {
 
 export interface ChatRequest {
   message: string;
+  session_id?: string | null;
+}
+
+export interface EscalationPayload {
+  human_name: string;
+  greeting?: string | null;
 }
 
 export interface ChatResponse {
+  session_id: string;
   reply: string;
+  state: string;
+  event?: string | null;
+  escalation?: EscalationPayload | null;
 }
 
 export type ValidationErrorCtx = { [key: string]: unknown };

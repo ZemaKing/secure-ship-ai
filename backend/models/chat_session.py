@@ -25,6 +25,10 @@ class ChatSession(Base):
     customer_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("customers.id"), nullable=True
     )
+    pending_customer_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("customers.id"), nullable=True
+    )
+    pending_identity: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     state: Mapped[ChatSessionState] = mapped_column(
         Enum(
             ChatSessionState,
