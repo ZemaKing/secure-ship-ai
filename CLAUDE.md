@@ -10,12 +10,12 @@ Week 1 is in progress. `backend/` is real and running, with seeded mock data; `f
 - FastAPI app (`main.py`) with `GET /health` and `POST /chat` (ungated — no session/gating logic yet, matches Week 1 scope); CORS middleware allows the `FRONTEND_ORIGIN` env var (`.env`-driven, defaults to `http://localhost:5173`) so the Vite dev server can call it cross-origin
 - `POST /chat` now persists both turns of every call into `ChatSession.transcript` (JSONB) — creates-or-reuses a single naive open session (`ended_at IS NULL`), no session id from the client yet. The model is still only ever sent the system prompt + latest message (not the accumulated transcript) — replaying full history back to Ollama was tried and reverted, see `CHANGE_LOG.md` 2026-07-24.
 - `llm/ollama_client.py` — `chat(messages, tools=None)` wrapping calls to the local Ollama server; base URL is `OLLAMA_HOST` env-driven (defaults to `http://localhost:11434` for host-native runs; the containerized backend sets it to `http://host.docker.internal:11434`)
-- `Dockerfile` — `python:3.13-slim`, installs `requirements.txt`, runs `uvicorn main:app --host 0.0.0.0`
+- `Dockerfile` — `python:3.13-slim`, installs `requirements.txt`, startup runs `alembic upgrade head && uvicorn main:app --host 0.0.0.0` — migrations apply automatically on container start, no manual step needed
 - `db/` (SQLAlchemy engine/session, `.env`-driven `DATABASE_URL`) and `models/` (`Customer`, `Shipment`, `Package`, `ChatSession` — schema per REQUIREMENTS.md §4.4/§4.6)
 - Alembic initialized and migrated (`alembic/`) — all four tables exist in Postgres
 
 **What exists in `scripts/` so far:**
-- `seed_data.py` — populates Postgres with mock customers (English/US, Serbian, and Russian names), shipments (realistic status distribution), and packages, straight through the ORM models. Already run once — the DB has live mock data, not just empty tables.
+- `seed_data.py` — populates Postgres with mock customers (English/US, Serbian, and Russian first/last names, grouped so a customer's surname always matches their given name's nationality — no "Milos Smith" mismatches), shipments (realistic status distribution), and packages, straight through the ORM models. No truncate/reset step — safe to re-run, but re-running just adds more rows on top of what's there. The DB has live mock data, not just empty tables.
 
 **What exists in `frontend/` so far:**
 - Vite + React + TS scaffold (`npm create vite@latest . -- --template react-ts`), global SCSS + BEM baseline (`src/styles/_variables.scss`, `_mixins.scss`, `global.scss`) — no CSS Modules, no Tailwind
@@ -24,7 +24,7 @@ Week 1 is in progress. `backend/` is real and running, with seeded mock data; `f
 - `orval.config.ts` + `src/api/generated/secure-ship.ts` — Orval installed and configured (`client: 'react-query'`, `httpClient: 'fetch'`, no axios dependency), generated against the backend's live `/openapi.json`; exports `useChat()` (mutation, from `POST /chat`, `operation_id="chat"` set backend-side for a clean hook name) plus `ChatRequest`/`ChatResponse` types. Regenerate manually via `npm run generate:api` whenever backend routes/models change. `QueryClientProvider` wired up in `main.tsx`.
 - `Dockerfile` — `node:24-slim`, runs `npm run dev -- --host 0.0.0.0` (dev-mode container, not a production build — matches how the project runs everywhere else right now)
 
-**Root-level:** `docker-compose.yml` now brings up all three services — `postgres`, `backend`, `frontend`. Container-to-host networking: the containerized backend reaches Postgres via the `postgres` service name and Ollama via `host.docker.internal` (both env-driven, overridden in `docker-compose.yml`'s `backend.environment`); the browser still talks to `localhost:5173`/`:8000` as before, since Docker Desktop maps those container ports back out. **Not yet done:** no automatic Alembic migration on container startup — a fresh clean-clone `docker compose up` won't have tables until `alembic upgrade head` is run manually against the `postgres` service; validating the true "clean clone" path is deferred to the next session (`DEV_PLAN.md`'s Monday demo checklist).
+**Root-level:** `docker-compose.yml` now brings up all three services — `postgres`, `backend`, `frontend`. Container-to-host networking: the containerized backend reaches Postgres via the `postgres` service name and Ollama via `host.docker.internal` (both env-driven, overridden in `docker-compose.yml`'s `backend.environment`); the browser still talks to `localhost:5173`/`:8000` as before, since Docker Desktop maps those container ports back out. `postgres` has a `pg_isready` healthcheck; `backend` depends on it with `condition: service_healthy` and runs `alembic upgrade head` before `uvicorn` starts — a genuinely clean clone's `docker compose up` now creates all tables automatically, no manual migration step. Verified end-to-end against a fresh `pgdata` volume (`DEV_PLAN.md`'s Monday demo checklist, item 1).
 
 **Commands that work today (from `backend/`, with the venv active):**
 - `uvicorn main:app --reload` — runs the API on `:8000`, see `/docs` for Swagger UI
@@ -41,6 +41,13 @@ Week 1 is in progress. `backend/` is real and running, with seeded mock data; `f
 - `docker compose up -d` — brings up all three services (`postgres`, `backend` on `:8000`, `frontend` on `:5173`)
 - `docker compose build backend frontend` — rebuild after dependency/Dockerfile changes
 - `python scripts/seed_data.py` — (re-)seeds mock data into Postgres; safe to re-run, just adds more rows each time (no truncate/reset step yet).
+
+**Full rebuild from scratch** (containers, images, and the Postgres volume all deleted — e.g. proving the clean-clone path, or recovering from a stale image after a `Dockerfile` change):
+- Ensure Ollama is running host-native (`ollama serve`, or already running) — it's not containerized, so nothing here starts it
+- `docker compose down -v` — removes containers, network, and the `pgdata` volume; add `--rmi local` to also drop the built `backend`/`frontend` images
+- `docker compose up -d --build` — rebuilds images (`--build` is required if images were deleted or a `Dockerfile` changed since the last build; plain `up -d` silently reuses a stale image) and starts all three services; watch `docker compose logs backend` for the `alembic upgrade head` migration lines
+- `curl http://localhost:8000/health` — should return `{"status":"ok"}`
+- `cd backend && source .venv/Scripts/activate && python ../scripts/seed_data.py` — the fresh volume has no data until reseeded
 
 No test suite yet — update this section again as that lands.
 
