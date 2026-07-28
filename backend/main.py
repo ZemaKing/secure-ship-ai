@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from routes.chat import router as chat_router
+from routes.verify import router as verify_router
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
@@ -19,6 +20,7 @@ app.add_middleware(
 )
 
 app.include_router(chat_router)
+app.include_router(verify_router)
 
 
 @app.get("/health")

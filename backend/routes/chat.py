@@ -11,12 +11,16 @@ from models.chat_session import ChatSession, ChatSessionState
 from schemas.chat import ChatRequest, ChatResponse
 from services.prompting import build_system_prompt
 from tools.schemas import IDENTITY_FIELDS, VERIFY_IDENTITY_TOOL_SCHEMA
+from tools.send_verification_code import send_verification_code
 from tools.verify_identity import IdentityOutcome, IdentityStatus, verify_identity
 
 router = APIRouter()
 
 NEUTRAL_IDENTITY_MESSAGE = "We couldn't verify that information — could you double check and try again?"
-IDENTITY_MATCHED_MESSAGE = "Thanks, I've found your account — hold on while I verify it's really you."
+CODE_SENT_MESSAGE = (
+    "Thanks, I've found your account — I just sent a 6-digit verification code. "
+    "Please enter it to confirm it's really you."
+)
 IDENTITY_COLLECTING_STATES = (ChatSessionState.ANONYMOUS, ChatSessionState.COLLECTING_IDENTITY)
 SHIPMENT_KEYWORDS = ("shipment", "package", "parcel", "order", "tracking", "deliver")
 
@@ -108,9 +112,9 @@ def send_chat_message(request: ChatRequest, db: Session = Depends(get_db)) -> Ch
                 reply = NEUTRAL_IDENTITY_MESSAGE
                 event = "identity_rejected"
             elif outcome.status == IdentityStatus.MATCHED:
-                # Chunk D replaces this placeholder with a real send_verification_code() call.
-                reply = IDENTITY_MATCHED_MESSAGE
-                event = "identity_matched"
+                send_verification_code(db, session)
+                reply = CODE_SENT_MESSAGE
+                event = "code_sent"
             else:
                 followup = ollama_client.chat(
                     [
@@ -126,6 +130,23 @@ def send_chat_message(request: ChatRequest, db: Session = Depends(get_db)) -> Ch
         reply = result.content or ""
         if session.state == ChatSessionState.ANONYMOUS and _mentions_shipment(request.message):
             session.state = ChatSessionState.COLLECTING_IDENTITY
+        elif session.state == ChatSessionState.COLLECTING_IDENTITY and all(
+            (session.pending_identity or {}).get(field) for field in IDENTITY_FIELDS
+        ):
+            # The model saw nothing new to report (every field is already known — e.g. a
+            # session that just landed back here after a code lockout/expiry) so it had no
+            # reason to re-call verify_identity itself. Re-run it deterministically instead
+            # of leaving the visitor stuck despite their fields being "retained" — this can
+            # never clobber a live code, since CollectingIdentity only exists here once any
+            # previous verification_store entry has already been cleared.
+            outcome = verify_identity(db, session)
+            if outcome.status == IdentityStatus.REJECTED:
+                reply = NEUTRAL_IDENTITY_MESSAGE
+                event = "identity_rejected"
+            elif outcome.status == IdentityStatus.MATCHED:
+                send_verification_code(db, session)
+                reply = CODE_SENT_MESSAGE
+                event = "code_sent"
 
     transcript.append(
         {"role": "assistant", "content": reply, "timestamp": datetime.now(timezone.utc).isoformat()}

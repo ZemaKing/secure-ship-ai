@@ -55,6 +55,19 @@ export interface HTTPValidationError {
   detail?: ValidationError[];
 }
 
+export interface VerifyCodeRequest {
+  session_id: string;
+  code: string;
+}
+
+export interface VerifyCodeResponse {
+  session_id: string;
+  success: boolean;
+  reply: string;
+  state: string;
+  attempts_remaining?: number | null;
+}
+
 export type HealthHealthGet200 = {[key: string]: string};
 
 const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
@@ -167,6 +180,103 @@ export const useChat = <TError = HTTPValidationError,
         TContext
       > => {
       return useMutation(getChatMutationOptions(options), queryClient);
+    }
+
+export type verifyCodeResponse200 = {
+  data: VerifyCodeResponse
+  status: 200
+}
+
+export type verifyCodeResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type verifyCodeResponseSuccess = (verifyCodeResponse200) & {
+  headers: Headers;
+};
+export type verifyCodeResponseError = (verifyCodeResponse422) & {
+  headers: Headers;
+};
+
+export type verifyCodeResponse = (verifyCodeResponseSuccess | verifyCodeResponseError)
+
+export const getVerifyCodeUrl = () => {
+
+
+
+
+  return `http://localhost:8000/verify-code`
+}
+
+/**
+ * @summary Verify Code
+ */
+export const verifyCode = async (verifyCodeRequest: VerifyCodeRequest, options?: RequestInit): Promise<verifyCodeResponse> => {
+
+  const res = await fetch(getVerifyCodeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(verifyCodeRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: verifyCodeResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as verifyCodeResponse
+}
+
+
+
+
+
+export const getVerifyCodeMutationOptions = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyCode>>, TError,{data: VerifyCodeRequest}, TContext>, fetch?: RequestInit}
+): UseMutationOptions<Awaited<ReturnType<typeof verifyCode>>, TError,{data: VerifyCodeRequest}, TContext> => {
+
+const mutationKey = ['verifyCode'];
+const {mutation: mutationOptions, fetch: fetchOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, fetch: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyCode>>, {data: VerifyCodeRequest}> = (props) => {
+          const {data} = props ?? {};
+
+          return  verifyCode(data,fetchOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VerifyCodeMutationResult = NonNullable<Awaited<ReturnType<typeof verifyCode>>>
+    export type VerifyCodeMutationBody = VerifyCodeRequest
+    export type VerifyCodeMutationError = HTTPValidationError
+
+    /**
+ * @summary Verify Code
+ */
+export const useVerifyCode = <TError = HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyCode>>, TError,{data: VerifyCodeRequest}, TContext>, fetch?: RequestInit}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof verifyCode>>,
+        TError,
+        {data: VerifyCodeRequest},
+        TContext
+      > => {
+      return useMutation(getVerifyCodeMutationOptions(options), queryClient);
     }
 
 export type healthHealthGetResponse200 = {
