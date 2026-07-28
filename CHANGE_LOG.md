@@ -6,6 +6,19 @@ Full technical scope and week-by-week milestones live in `docs/DEV_PLAN.md` — 
 
 ---
 
+## 2026-07-28 — Week 2, Day 3: Session state moves into its own hook 🪝
+
+**Theme:** Chunk F — frontend session plumbing. No new behavior, just getting `sessionId`/`state`/`event`/`escalation` out of `ChatWindow.tsx`'s own `useState` calls and into a dedicated hook, so later chunks (the code modal, the escalation banner) have somewhere to read those fields from without `ChatWindow` growing further.
+
+- 🪝 New `src/hooks/useChatSession.ts` — a small hook, not a global store (consistent with the project's existing no-context/no-reducer convention: React Query is the only shared state manager this project uses). Holds `sessionId`/`state`/`event`/`escalation` and exposes one `applyResponse(response: ChatResponse)` function that pulls all four out of a real backend response in one call.
+- 🔌 `ChatWindow.tsx` swapped its own `const [sessionId, setSessionId] = useState<string>()` for `const { sessionId, applyResponse } = useChatSession()`, and its `onSuccess` handler now calls `applyResponse(response.data)` instead of `setSessionId(response.data.session_id)` directly. Purely a relocation — the request/response wiring (`session_id` sent on every request, read back from every response) behaves identically to Chunk A, just owned by the hook instead of the component.
+- 🧪 **Verification note, different from earlier chunks:** no browser-automation tool was available this session, so — unlike Chunks A/B/C's headless-Playwright-script verification — the actual two-tab, cross-session-isolation check was driven manually by the user rather than by an automated script. Backend-level distinctness (`POST /chat` with no `session_id` from two independent calls → two different UUIDs) was re-confirmed directly as a sanity check first, since that's the piece Chunk F's refactor could theoretically have broken if the hook were built wrong.
+- ✅ User-confirmed live: two real seeded identities (Viktor Ivanov, Jovana Markovic) in two separate browser tabs each matched, got their *own* mock 2FA code, and never saw or referenced the other tab's name/session — full cross-tab isolation holds. "New Chat" mid-conversation issues a fresh `session_id` rather than resuming the old one, confirmed to be intentional (re-verification is required per-session by design, not a bug to fix).
+
+**Where things stand:** the frontend's session/event/escalation state now lives in one reusable spot instead of scattered `useState` calls — nothing renders `event`/`escalation` yet (still text-only replies), but the plumbing is ready for the code modal (Chunk G) and escalation banner (Chunk H) to consume it. Next: Chunk G or H, whichever the 5-day split calls for.
+
+---
+
 ## 2026-07-28 — Week 2, Day 3: A fake human named Melany shows up 🎭
 
 **Theme:** Chunk E — human-escalation theater. Purely cosmetic per Epic G, but the identity gate has to keep holding underneath it.

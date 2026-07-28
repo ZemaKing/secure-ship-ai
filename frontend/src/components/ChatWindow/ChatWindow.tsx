@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import ChatMessage from './ChatMessage'
 import { useChat } from '../../api/generated/secure-ship'
+import { useChatSession } from '../../hooks/useChatSession'
 import type { ChatMessageData } from './types'
 import './ChatWindow.scss'
 
@@ -39,7 +40,7 @@ function formatTimestamp() {
 function ChatWindow() {
   const [messages, setMessages] = useState<ChatMessageData[]>(SEED_MESSAGES)
   const [draft, setDraft] = useState('')
-  const [sessionId, setSessionId] = useState<string>()
+  const { sessionId, applyResponse } = useChatSession()
   const chatMutation = useChat()
   const messageListRef = useRef<HTMLDivElement>(null)
 
@@ -64,7 +65,7 @@ function ChatWindow() {
         onSuccess: (response) => {
           const replyText = response.status === 200 ? response.data.reply : ERROR_REPLY_TEXT
           if (response.status === 200) {
-            setSessionId(response.data.session_id)
+            applyResponse(response.data)
           }
           setMessages((prev) => [
             ...prev,
