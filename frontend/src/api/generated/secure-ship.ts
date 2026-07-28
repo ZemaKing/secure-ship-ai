@@ -29,8 +29,9 @@ export interface ChatRequest {
 }
 
 export interface EscalationPayload {
-  human_name: string;
-  greeting?: string | null;
+  lines: string[];
+  agent_name: string;
+  first_name?: string | null;
 }
 
 export interface ChatResponse {
