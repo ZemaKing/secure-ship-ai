@@ -8,7 +8,9 @@ from db.session import get_db
 from llm import ollama_client
 from llm.ollama_client import ToolCall
 from models.chat_session import ChatSession, ChatSessionState
-from schemas.chat import ChatRequest, ChatResponse
+from models.customer import Customer
+from schemas.chat import ChatRequest, ChatResponse, EscalationPayload
+from services.escalation import wants_escalation
 from services.prompting import build_system_prompt
 from tools.schemas import IDENTITY_FIELDS, VERIFY_IDENTITY_TOOL_SCHEMA
 from tools.send_verification_code import send_verification_code
@@ -23,6 +25,14 @@ CODE_SENT_MESSAGE = (
 )
 IDENTITY_COLLECTING_STATES = (ChatSessionState.ANONYMOUS, ChatSessionState.COLLECTING_IDENTITY)
 SHIPMENT_KEYWORDS = ("shipment", "package", "parcel", "order", "tracking", "deliver")
+AGENT_NAME = "Melany"
+# Only the actual scripted *text* (§6.2b's "chat window changes color" step carries no
+# text of its own — it's a frontend-only visual cue, Chunk H's concern, not a chat line).
+ESCALATION_SCRIPT_LINES = (
+    "Thank you for your patience, switching you to a human",
+    "Melany has entered the chat",
+    "Hello, my name is Melany, let me just read through the chat...",
+)
 
 
 def _mentions_shipment(message: str) -> bool:
@@ -60,6 +70,46 @@ def _get_or_create_session(db: Session, session_id: str | None) -> ChatSession:
     return session
 
 
+def _resolve_known_first_name(db: Session, session: ChatSession) -> str | None:
+    """Only ever pulled from identity data the gate itself already collected/confirmed —
+    a verified Customer row, or fields verify_identity has recorded so far — never from
+    the escalation-triggering message itself (Epic G4: no gate bypass via "Melany").
+    """
+    pending_first_name = (session.pending_identity or {}).get("first_name")
+    if pending_first_name:
+        return pending_first_name
+    if session.customer_id is None:
+        return None
+    customer = db.query(Customer).filter(Customer.id == session.customer_id).first()
+    return customer.first_name if customer is not None else None
+
+
+def _handle_escalation(db: Session, session: ChatSession, transcript: list) -> ChatResponse:
+    first_name = _resolve_known_first_name(db, session)
+    greeting = (
+        f"Hey {first_name}, I'm up to speed, how can I help?"
+        if first_name
+        else "Hey, I'm up to speed, how can I help?"
+    )
+    lines = [*ESCALATION_SCRIPT_LINES, greeting]
+    reply = "\n".join(lines)
+
+    session.state = ChatSessionState.ESCALATED_TO_HUMAN
+    transcript.append(
+        {"role": "assistant", "content": reply, "timestamp": datetime.now(timezone.utc).isoformat()}
+    )
+    session.transcript = transcript
+    db.commit()
+
+    return ChatResponse(
+        session_id=str(session.id),
+        reply=reply,
+        state=session.state.value,
+        event="escalated",
+        escalation=EscalationPayload(lines=lines, agent_name=AGENT_NAME, first_name=first_name),
+    )
+
+
 def _tools_for_state(state: ChatSessionState) -> list[dict]:
     if state in IDENTITY_COLLECTING_STATES:
         return [VERIFY_IDENTITY_TOOL_SCHEMA]
@@ -90,10 +140,21 @@ def send_chat_message(request: ChatRequest, db: Session = Depends(get_db)) -> Ch
         {"role": "user", "content": request.message, "timestamp": datetime.now(timezone.utc).isoformat()}
     )
 
+    if session.state != ChatSessionState.ESCALATED_TO_HUMAN and wants_escalation(request.message):
+        return _handle_escalation(db, session, transcript)
+
     collecting_identity = session.state in IDENTITY_COLLECTING_STATES
+    unverified_escalation = session.state == ChatSessionState.ESCALATED_TO_HUMAN and session.customer_id is None
     result = ollama_client.chat(
         [
-            {"role": "system", "content": build_system_prompt(session.pending_identity, collecting_identity=collecting_identity)},
+            {
+                "role": "system",
+                "content": build_system_prompt(
+                    session.pending_identity,
+                    collecting_identity=collecting_identity,
+                    unverified_escalation=unverified_escalation,
+                ),
+            },
             {"role": "user", "content": request.message},
         ],
         tools=_tools_for_state(session.state) or None,

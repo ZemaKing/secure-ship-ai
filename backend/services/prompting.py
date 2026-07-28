@@ -14,16 +14,36 @@ IDENTITY_COLLECTION_INSTRUCTIONS = (
     "call it again each time the visitor gives you more."
 )
 
+# Applied after the (cosmetic) human-escalation handoff when the visitor was never actually
+# verified beforehand — without this, the model happily offers to look up a tracking
+# number since it doesn't otherwise know it's still gated (Epic G4: "Melany" isn't a
+# gate bypass). No tool is offered in this state, so this is prompt-only, not enforcement
+# — the real enforcement is _tools_for_state() never granting a data-lookup tool here.
+POST_ESCALATION_UNVERIFIED_INSTRUCTIONS = (
+    "The visitor's identity has not been verified. Even though a human has joined the "
+    "chat, do not share, guess, or offer to look up any specific shipment, tracking, or "
+    "account details — explain that you'll still need to verify their identity first, "
+    "the same as before."
+)
 
-def build_system_prompt(known_identity: dict | None = None, *, collecting_identity: bool = False) -> str:
+
+def build_system_prompt(
+    known_identity: dict | None = None,
+    *,
+    collecting_identity: bool = False,
+    unverified_escalation: bool = False,
+) -> str:
     """Build the system prompt for one turn — appends the identity-collection
-    instructions while a session is still Anonymous/CollectingIdentity, and
-    any identity fields already known for this session so the model doesn't
-    ask the visitor to repeat themselves.
+    instructions while a session is still Anonymous/CollectingIdentity, the
+    post-escalation-but-unverified instructions while ESCALATED_TO_HUMAN with no
+    confirmed customer_id, and any identity fields already known for this session
+    so the model doesn't ask the visitor to repeat themselves.
     """
     prompt = BASE_SYSTEM_PROMPT
     if collecting_identity:
         prompt = f"{prompt}\n\n{IDENTITY_COLLECTION_INSTRUCTIONS}"
+    if unverified_escalation:
+        prompt = f"{prompt}\n\n{POST_ESCALATION_UNVERIFIED_INSTRUCTIONS}"
 
     if not known_identity:
         return prompt

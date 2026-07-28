@@ -2,8 +2,9 @@ from pydantic import BaseModel
 
 
 class EscalationPayload(BaseModel):
-    human_name: str
-    greeting: str | None = None
+    lines: list[str]
+    agent_name: str
+    first_name: str | None = None
 
 
 class ChatRequest(BaseModel):

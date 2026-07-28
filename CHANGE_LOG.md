@@ -6,6 +6,20 @@ Full technical scope and week-by-week milestones live in `docs/DEV_PLAN.md` — 
 
 ---
 
+## 2026-07-28 — Week 2, Day 3: A fake human named Melany shows up 🎭
+
+**Theme:** Chunk E — human-escalation theater. Purely cosmetic per Epic G, but the identity gate has to keep holding underneath it.
+
+- 🗣️ New `services/escalation.py`: `wants_escalation(message)`, a plain substring check against a small set of phrases ("talk to a human", "speak to a person", etc.) — evaluated before any Ollama call, same philosophy as Chunk C's `_mentions_shipment()`: a state transition this important shouldn't depend on whether the model feels like recognizing the intent this turn.
+- 🎬 `routes/chat.py` gained `_handle_escalation()`: short-circuits at the very top of `send_chat_message` (right after the user's turn is appended to the transcript, before any Ollama call) whenever `wants_escalation()` fires and the session isn't already `EscalatedToHuman`. Builds the 3 actual scripted lines from §6.2b ("Thank you for your patience...", "Melany has entered the chat", "Hello, my name is Melany...") plus a 4th, personalized greeting line — the diagram's "chat window changes color" step is a 5th *state*, not a 5th line of text, so it's left as a frontend-only visual cue for Chunk H, not something the backend emits as a string.
+- 🪪 The greeting's `first_name` is resolved by `_resolve_known_first_name()` — pulled only from `session.pending_identity` or a `Customer` row via `session.customer_id`, never from the escalation-triggering message itself. This is the concrete code-level enforcement of Epic G4: "Melany" can't be talked into anything, because nothing about her greeting is attacker-controlled.
+- 🔒 **Found live, not in review:** with no tool offered in `EscalatedToHuman` (correctly — `_tools_for_state()` already excluded it), a shipment question asked right after escalating while still unverified couldn't leak real data, but it *sounded* wrong — the model cheerfully asked for a tracking number and promised to "check right away," instead of the neutral decline Epic A3/G4 calls for. Fixed with a new `build_system_prompt(unverified_escalation=...)` addendum in `services/prompting.py`, applied whenever a session is `EscalatedToHuman` with no confirmed `customer_id` — tells the model explicitly that the visitor still isn't verified even though "a human" has joined. This is prompt-only, not enforcement (the real enforcement is still that no data-lookup tool exists for this state) but it closes the UX gap the acceptance criteria actually asked for.
+- ✅ Verified against the real running `qwen3:8b`: escalating from a fresh `Anonymous` session returns all 4 scripted lines plus a generic "Hey, I'm up to speed" greeting, `agent_name: "Melany"`, `event: "escalated"`; escalating mid-identity-collection (after giving a first name) returns the same sequence with "Hey Viktor, I'm up to speed..."; asking about a package status in the same still-unverified session immediately after escalating gets a reply that explicitly asks to verify identity first rather than proceeding — confirming "Melany" isn't a gate bypass. Rebuilt the Docker backend for both the initial implementation and the prompt fix.
+
+**Where things stand:** the identity gate, 2FA, and escalation theater are all real end-to-end via the API — still with zero frontend surface for any of it (no code modal, no escalation banner/color-shift). Next: Chunk F, the Orval "Cutover" step, or whichever the 5-day split calls for next.
+
+---
+
 ## 2026-07-28 — Week 2, Day 2: A real (mocked) 2FA code, end to end 🔐
 
 **Theme:** Chunk D — the identity match from yesterday now actually sends a code, and there's a real endpoint to check it against. `MATCHED` is no longer a placeholder.
