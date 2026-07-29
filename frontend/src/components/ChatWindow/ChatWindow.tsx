@@ -108,7 +108,9 @@ function ChatWindow() {
       />
       <header className="chat-window__header">
         <div className="chat-window__greeting">
-          <h1 className="chat-window__greeting-title">Hello! 👋</h1>
+          <h1 className="chat-window__greeting-title">
+            Hello! <img className="chat-window__greeting-wave-icon" src="/icons/hand-wave.svg" alt="" />
+          </h1>
           <p className="chat-window__greeting-subtitle">Ask me anything about your shipments.</p>
         </div>
         <div className="chat-window__disclaimer-banner">

@@ -19,8 +19,15 @@
   }
 
   &__greeting-title {
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
     margin: 0 0 v.$space-1;
     font-size: v.$font-size-xl;
+  }
+
+  &__greeting-wave-icon {
+    @include m.icon(28px);
   }
 
   &__greeting-subtitle {

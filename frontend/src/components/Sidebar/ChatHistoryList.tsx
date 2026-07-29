@@ -14,6 +14,7 @@ function ChatHistoryList() {
       <ul className="sidebar__chat-history">
         {HARDCODED_HISTORY.map((item) => (
           <li key={item.id} className="sidebar__chat-history-item">
+            <img className="sidebar__chat-history-item-icon" src="/icons/chat-conversation.svg" alt="" />
             <span className="sidebar__chat-history-item-label">{item.label}</span>
             <span className="sidebar__chat-history-item-time">{item.time}</span>
           </li>

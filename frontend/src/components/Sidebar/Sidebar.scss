@@ -42,10 +42,15 @@
 
   &__new-chat-button {
     @include m.button-reset;
-    @include m.flex-center;
+    display: flex;
+    align-items: center;
     gap: v.$space-2;
     width: 100%;
     padding: v.$space-3;
+    // Compensates for the left border below, so the icon lands at the same
+    // x-position as the Chat History label/items' icons (all 12px in).
+    padding-left: calc(#{v.$space-3} - 3px);
+    border-left: 3px solid v.$color-primary;
     margin-bottom: v.$space-5;
     border-radius: v.$radius-sm;
     background: v.$color-primary-light;
@@ -69,17 +74,16 @@
   &__section-label {
     display: flex;
     align-items: center;
-    gap: v.$space-1;
-    font-size: v.$font-size-xs;
+    gap: v.$space-2;
+    padding-left: v.$space-3;
+    font-size: v.$font-size-md;
     font-weight: 600;
-    color: v.$color-text-muted;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
+    color: v.$color-text;
     margin-bottom: v.$space-2;
   }
 
   &__section-label-icon {
-    @include m.icon(14px);
+    @include m.icon(18px);
   }
 
   &__chat-history {
@@ -90,8 +94,8 @@
 
   &__chat-history-item {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    align-items: center;
+    gap: v.$space-2;
     padding: v.$space-2 v.$space-3;
     border-radius: v.$radius-sm;
 
@@ -101,13 +105,20 @@
     }
   }
 
+  &__chat-history-item-icon {
+    @include m.icon(16px);
+    flex-shrink: 0;
+  }
+
   &__chat-history-item-label {
     @include m.truncate-text;
+    flex: 1;
     font-size: v.$font-size-sm;
     color: v.$color-text;
   }
 
   &__chat-history-item-time {
+    flex-shrink: 0;
     font-size: v.$font-size-xs;
     color: v.$color-text-subtle;
   }
