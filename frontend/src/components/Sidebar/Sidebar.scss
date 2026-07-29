@@ -19,12 +19,12 @@
   }
 
   &__brand-icon {
-    @include m.flex-center;
-    width: 40px;
-    height: 40px;
+    @include m.icon(40px);
+    flex-shrink: 0;
+    box-sizing: border-box;
+    padding: v.$space-2;
     border-radius: v.$radius-pill;
     background: v.$color-primary-light;
-    font-size: v.$font-size-lg;
   }
 
   &__brand-title {
@@ -43,6 +43,7 @@
   &__new-chat-button {
     @include m.button-reset;
     @include m.flex-center;
+    gap: v.$space-2;
     width: 100%;
     padding: v.$space-3;
     margin-bottom: v.$space-5;
@@ -57,18 +58,28 @@
     }
   }
 
+  &__new-chat-icon {
+    @include m.icon(18px);
+  }
+
   &__section {
     margin-bottom: v.$space-4;
   }
 
   &__section-label {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: v.$space-1;
     font-size: v.$font-size-xs;
     font-weight: 600;
     color: v.$color-text-muted;
     text-transform: uppercase;
     letter-spacing: 0.03em;
     margin-bottom: v.$space-2;
+  }
+
+  &__section-label-icon {
+    @include m.icon(14px);
   }
 
   &__chat-history {
@@ -111,10 +122,17 @@
   }
 
   &__admin-card-title {
+    display: flex;
+    align-items: center;
+    gap: v.$space-1;
     margin: 0 0 v.$space-1;
     font-size: v.$font-size-sm;
     font-weight: 600;
     color: v.$color-text;
+  }
+
+  &__admin-card-icon {
+    @include m.icon(16px);
   }
 
   &__admin-card-text {

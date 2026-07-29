@@ -14,12 +14,12 @@
   }
 
   &__header-icon {
-    @include m.flex-center;
-    width: 28px;
-    height: 28px;
+    @include m.icon(28px);
+    flex-shrink: 0;
+    box-sizing: border-box;
+    padding: v.$space-1;
     border-radius: v.$radius-sm;
     background: v.$color-primary-light;
-    font-size: v.$font-size-sm;
   }
 
   &__title {
@@ -81,6 +81,9 @@
   }
 
   &__items-title {
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
     margin: 0 0 v.$space-2;
     font-size: v.$font-size-sm;
     font-weight: 600;

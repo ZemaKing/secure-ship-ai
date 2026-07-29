@@ -17,9 +17,7 @@ function ShipmentCard({ data }: ShipmentCardProps) {
   return (
     <div className="shipment-card">
       <div className="shipment-card__header">
-        <span className="shipment-card__header-icon" aria-hidden="true">
-          📦
-        </span>
+        <img className="shipment-card__header-icon" src="/icons/shipment.svg" alt="" />
         <p className="shipment-card__title">Shipment Overview</p>
         <span className={`shipment-card__status-badge shipment-card__status-badge--${data.status}`}>
           {STATUS_LABELS[data.status]}
@@ -54,7 +52,10 @@ function ShipmentCard({ data }: ShipmentCardProps) {
       </div>
 
       <div className="shipment-card__items">
-        <p className="shipment-card__items-title">Shipment Items ({data.items.length})</p>
+        <p className="shipment-card__items-title">
+          <img className="shipment-card__header-icon" src="/icons/package.svg" alt="" />
+          Shipment Items ({data.items.length})
+        </p>
         <table className="shipment-card__items-table">
           <thead>
             <tr>

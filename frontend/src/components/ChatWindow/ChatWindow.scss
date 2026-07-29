@@ -43,6 +43,12 @@
     color: v.$color-text;
   }
 
+  &__disclaimer-icon {
+    @include m.icon(16px);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
   &__message-list {
     flex: 1;
     overflow-y: auto;
@@ -78,6 +84,14 @@
     &:hover {
       opacity: 0.9;
     }
+  }
+
+  &__send-icon {
+    @include m.icon(16px);
+    // The source SVG is drawn in the brand blue, same as the button background it
+    // sits on — force it white so it's actually visible, rather than exporting/
+    // maintaining a second white copy of the same icon.
+    filter: brightness(0) invert(1);
   }
 
   &__footer-disclaimer {

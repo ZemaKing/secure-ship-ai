@@ -27,3 +27,10 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+@mixin icon($size: 20px) {
+  display: block;
+  width: $size;
+  height: $size;
+  object-fit: contain;
+}

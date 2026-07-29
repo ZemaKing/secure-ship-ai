@@ -7,7 +7,10 @@ const HARDCODED_HISTORY = [
 function ChatHistoryList() {
   return (
     <div className="sidebar__section">
-      <span className="sidebar__section-label">Chat History</span>
+      <span className="sidebar__section-label">
+        <img className="sidebar__section-label-icon" src="/icons/chat-history.svg" alt="" />
+        Chat History
+      </span>
       <ul className="sidebar__chat-history">
         {HARDCODED_HISTORY.map((item) => (
           <li key={item.id} className="sidebar__chat-history-item">

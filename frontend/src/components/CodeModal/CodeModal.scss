@@ -41,7 +41,10 @@
     margin: 0 auto v.$space-4;
     border-radius: v.$radius-pill;
     background: v.$color-primary-light;
-    font-size: v.$font-size-xl;
+
+    img {
+      @include m.icon(28px);
+    }
   }
 
   &__title {
@@ -133,8 +136,16 @@
   }
 
   &__footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: v.$space-1;
     margin: 0;
     font-size: v.$font-size-xs;
     color: v.$color-text-subtle;
+  }
+
+  &__footer-icon {
+    @include m.icon(14px);
   }
 }

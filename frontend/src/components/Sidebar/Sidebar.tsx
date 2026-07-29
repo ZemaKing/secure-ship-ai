@@ -10,9 +10,7 @@ function Sidebar({ onNewChat }: SidebarProps) {
   return (
     <aside className="sidebar">
       <div className="sidebar__brand">
-        <span className="sidebar__brand-icon" aria-hidden="true">
-          🤖
-        </span>
+        <img className="sidebar__brand-icon" src="/icons/chat-bot.svg" alt="" />
         <div>
           <p className="sidebar__brand-title">AI Shipment Assistant</p>
           <p className="sidebar__brand-subtitle">Your smart logistics partner</p>
@@ -20,7 +18,8 @@ function Sidebar({ onNewChat }: SidebarProps) {
       </div>
 
       <button type="button" className="sidebar__new-chat-button" onClick={onNewChat}>
-        + New Chat
+        <img className="sidebar__new-chat-icon" src="/icons/new-chat.svg" alt="" />
+        New Chat
       </button>
 
       <ChatHistoryList />

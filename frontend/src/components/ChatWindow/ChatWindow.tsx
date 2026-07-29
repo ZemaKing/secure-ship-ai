@@ -112,7 +112,7 @@ function ChatWindow() {
           <p className="chat-window__greeting-subtitle">Ask me anything about your shipments.</p>
         </div>
         <div className="chat-window__disclaimer-banner">
-          <span aria-hidden="true">ℹ️</span>
+          <img className="chat-window__disclaimer-icon" src="/icons/info.svg" alt="" />
           <span>
             This AI can make mistakes. <br /> Please verify important details.
           </span>
@@ -145,7 +145,7 @@ function ChatWindow() {
           aria-label="Send message"
           disabled={chatMutation.isPending}
         >
-          ➤
+          <img className="chat-window__send-icon" src="/icons/send.svg" alt="" />
         </button>
       </form>
       <p className="chat-window__footer-disclaimer">

@@ -113,7 +113,9 @@ function CodeModal({ open, sessionId, onVerified }: CodeModalProps) {
           ×
         </button>
 
-        <div className="code-modal__icon" aria-hidden="true">🔒</div>
+        <div className="code-modal__icon">
+          <img src="/icons/modal-security-lock.svg" alt="" />
+        </div>
         <h2 className="code-modal__title" id="code-modal-title">
           Enter Verification Code
         </h2>
@@ -161,7 +163,10 @@ function CodeModal({ open, sessionId, onVerified }: CodeModalProps) {
           </button>
         </div>
 
-        <p className="code-modal__footer">🔒 For your security, this code will expire in 5 minutes.</p>
+        <p className="code-modal__footer">
+          <img className="code-modal__footer-icon" src="/icons/modal-securitycheck.svg" alt="" />
+          For your security, this code will expire in 5 minutes.
+        </p>
       </div>
     </div>
   )

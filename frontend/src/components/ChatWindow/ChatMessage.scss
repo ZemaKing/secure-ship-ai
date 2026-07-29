@@ -12,13 +12,12 @@
   }
 
   &__avatar {
-    @include m.flex-center;
+    @include m.icon(32px);
     flex-shrink: 0;
-    width: 32px;
-    height: 32px;
+    box-sizing: border-box;
+    padding: 6px;
     border-radius: v.$radius-pill;
     background: v.$color-primary-light;
-    font-size: v.$font-size-md;
   }
 
   &__content {

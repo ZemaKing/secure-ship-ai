@@ -11,11 +11,7 @@ function ChatMessage({ message }: ChatMessageProps) {
 
   return (
     <div className={`chat-message chat-message--${message.role}`}>
-      {isBot && (
-        <span className="chat-message__avatar" aria-hidden="true">
-          🤖
-        </span>
-      )}
+      {isBot && <img className="chat-message__avatar" src="/icons/chat-bot.svg" alt="" />}
 
       <div className="chat-message__content">
         <div className="chat-message__bubble">
@@ -25,11 +21,7 @@ function ChatMessage({ message }: ChatMessageProps) {
         {message.shipment && <ShipmentCard data={message.shipment} />}
       </div>
 
-      {!isBot && (
-        <span className="chat-message__avatar" aria-hidden="true">
-          🧑
-        </span>
-      )}
+      {!isBot && <img className="chat-message__avatar" src="/icons/user.svg" alt="" />}
     </div>
   )
 }
