@@ -8,14 +8,14 @@
   margin-bottom: v.$space-4;
 
   &--user {
-    flex-direction: row-reverse;
+    justify-content: flex-end;
   }
 
   &__avatar {
     @include m.icon(32px);
     flex-shrink: 0;
     box-sizing: border-box;
-    padding: 6px;
+    padding: 4px;
     border-radius: v.$radius-pill;
     background: v.$color-primary-light;
   }

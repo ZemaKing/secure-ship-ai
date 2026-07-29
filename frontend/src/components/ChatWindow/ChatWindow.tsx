@@ -114,7 +114,9 @@ function ChatWindow() {
         <div className="chat-window__disclaimer-banner">
           <img className="chat-window__disclaimer-icon" src="/icons/info.svg" alt="" />
           <span>
-            This AI can make mistakes. <br /> Please verify important details.
+            <strong>This AI can make mistakes.</strong>
+            <br />
+            Please verify important details.
           </span>
         </div>
       </header>

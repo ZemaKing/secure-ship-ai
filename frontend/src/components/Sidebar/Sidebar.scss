@@ -22,7 +22,7 @@
     @include m.icon(40px);
     flex-shrink: 0;
     box-sizing: border-box;
-    padding: v.$space-2;
+    padding: v.$space-1;
     border-radius: v.$radius-pill;
     background: v.$color-primary-light;
   }
@@ -30,7 +30,7 @@
   &__brand-title {
     margin: 0;
     font-size: v.$font-size-sm;
-    font-weight: 600;
+    font-weight: 700;
     color: v.$color-text;
   }
 
