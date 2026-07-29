@@ -6,6 +6,21 @@ Full technical scope and week-by-week milestones live in `docs/DEV_PLAN.md` — 
 
 ---
 
+## 2026-07-28 — Week 2, Day 3: The 2FA code gets an actual UI 🔢
+
+**Theme:** Chunk G — the first real frontend surface for any of Week 2's gating work. Before today, the entire identity/2FA/escalation flow was only testable via curl/Swagger — now the code modal is real, on-demand, and wired to the actual `POST /verify-code` endpoint.
+
+- 🔢 New `src/components/CodeModal/CodeModal.tsx`: a controlled component (`open`, `sessionId`, `onVerified`) with 6 individual digit inputs (regex-filtered to digits only, auto-advance focus forward on entry, backspace moves focus back, Enter submits) — no form library, matching the project's existing convention. Calls the generated `useVerifyCode()` mutation directly.
+- 🎨 Styled to match `ai-chatbot-modal-mockup.png` (shield icon, centered card, digit boxes, Cancel/Verify Code buttons) — but built as `CodeModal.scss` with the project's normal BEM convention, not the `.module.scss` (CSS Modules) the pasted spec named, since `DEV_PLAN.md`'s locked styling decision already rules out CSS Modules project-wide. Added the one missing design token this needed, `$z-modal`, to `_variables.scss`.
+- 🔁 **Design decision, reasoned through rather than found live:** `ChatWindow.tsx` renders `<CodeModal key={codeModalKey} open={sessionEvent === 'code_sent'} .../>`, where `codeModalKey` is a plain counter bumped every time a response's `event` is `"code_sent"`. This matters because the hook's `event` field doesn't reset itself between chat turns — after a 2FA lockout reverts to `CollectingIdentity` and the backend's Chunk D fallback auto-resends a fresh code, the new response's `event` is the *same string value* (`"code_sent"`) as before, which React would otherwise treat as unchanged and never re-run any reset logic. Forcing a fresh `key` guarantees `CodeModal` fully remounts (clean digits, cleared dismissed/verified/locked flags) on every genuinely new code, not just the first one.
+- 🔒 Wrong-code handling shows the exact `attempts_remaining` count from the backend's response inline (no client-side guess at "how many attempts are allowed" before a real attempt has been made, since the backend doesn't expose `MAX_ATTEMPTS` proactively — showing a hardcoded starting number risked silently drifting from the real constant in `services/verification_store.py`). A generic `data.state !== "awaiting_code"` check (rather than string-matching the reply text) detects both `LOCKED_OUT` and `EXPIRED` the same way, disabling further input and leaving Cancel as the only way out — deliberately reusing Chunk D's own state transition instead of re-deriving the same logic client-side.
+- 🚪 Dismissible via Escape or a backdrop click, with no `onClose` prop — the "closed" state lives entirely inside `CodeModal` itself, and only clears when a fresh `code_sent` event triggers a remount. Confirmed live this has a real, if narrow, UX consequence: once dismissed, there's no manual "reopen" affordance — the modal only comes back on an actual new code being sent (e.g. after a lockout-triggered resend), not on demand.
+- ✅ **User-verified live** (no browser-automation tool available this session, same as Chunk F): dismissing via Escape mid-flow closes the modal cleanly with the rest of the chat still fully responsive afterward; a full lockout-then-resend sequence (3 wrong codes typed directly into the modal, then an ordinary follow-up chat message) correctly triggered the backend's auto-resend fallback and the modal reopened fresh — confirming the `codeModalKey` remount fix actually works, not just in theory.
+
+**Where things stand:** the 2FA half of the gate is now fully testable end-to-end through the browser alone — no more pairing curl/Swagger with the UI. Escalation still has zero UI surface (Chunk H). Next: Chunk H, or whichever the 5-day split calls for.
+
+---
+
 ## 2026-07-28 — Week 2, Day 3: Session state moves into its own hook 🪝
 
 **Theme:** Chunk F — frontend session plumbing. No new behavior, just getting `sessionId`/`state`/`event`/`escalation` out of `ChatWindow.tsx`'s own `useState` calls and into a dedicated hook, so later chunks (the code modal, the escalation banner) have somewhere to read those fields from without `ChatWindow` growing further.

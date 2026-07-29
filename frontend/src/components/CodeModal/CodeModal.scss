@@ -1,0 +1,140 @@
+@use '../../styles/variables' as v;
+@use '../../styles/mixins' as m;
+
+.code-modal {
+  &__overlay {
+    position: fixed;
+    inset: 0;
+    @include m.flex-center;
+    z-index: v.$z-modal;
+    padding: v.$space-4;
+    background: rgba(17, 24, 39, 0.5);
+  }
+
+  &__dialog {
+    @include m.card-surface;
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    padding: v.$space-6;
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(17, 24, 39, 0.2);
+  }
+
+  &__close {
+    @include m.button-reset;
+    position: absolute;
+    top: v.$space-4;
+    right: v.$space-4;
+    font-size: v.$font-size-lg;
+    color: v.$color-text-muted;
+
+    &:hover {
+      color: v.$color-text;
+    }
+  }
+
+  &__icon {
+    @include m.flex-center;
+    width: 56px;
+    height: 56px;
+    margin: 0 auto v.$space-4;
+    border-radius: v.$radius-pill;
+    background: v.$color-primary-light;
+    font-size: v.$font-size-xl;
+  }
+
+  &__title {
+    margin: 0 0 v.$space-2;
+    font-size: v.$font-size-lg;
+    color: v.$color-text;
+  }
+
+  &__subtitle {
+    margin: 0 0 v.$space-5;
+    font-size: v.$font-size-sm;
+    color: v.$color-text-muted;
+  }
+
+  &__digits {
+    display: flex;
+    justify-content: center;
+    gap: v.$space-2;
+    margin-bottom: v.$space-4;
+  }
+
+  &__digit-input {
+    width: 44px;
+    height: 52px;
+    border: 1px solid v.$color-border;
+    border-radius: v.$radius-sm;
+    text-align: center;
+    font-size: v.$font-size-lg;
+    color: v.$color-text;
+    font-family: inherit;
+
+    &:focus {
+      outline: none;
+      border-color: v.$color-primary;
+      box-shadow: 0 0 0 3px v.$color-primary-border;
+    }
+
+    &:disabled {
+      background: v.$color-bg-muted;
+      color: v.$color-text-subtle;
+    }
+  }
+
+  &__feedback {
+    margin: 0 0 v.$space-4;
+    font-size: v.$font-size-sm;
+    color: v.$color-status-exception;
+  }
+
+  &__actions {
+    display: flex;
+    gap: v.$space-3;
+    margin-bottom: v.$space-5;
+  }
+
+  &__cancel-button,
+  &__verify-button {
+    @include m.button-reset;
+    flex: 1;
+    padding: v.$space-3;
+    border-radius: v.$radius-sm;
+    font-size: v.$font-size-sm;
+    font-weight: 600;
+  }
+
+  &__cancel-button {
+    border: 1px solid v.$color-border;
+    color: v.$color-text;
+    background: v.$color-bg;
+
+    &:hover {
+      background: v.$color-bg-muted;
+    }
+  }
+
+  &__verify-button {
+    border: none;
+    background: v.$color-primary;
+    color: v.$color-bg;
+
+    &:hover {
+      opacity: 0.9;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  &__footer {
+    margin: 0;
+    font-size: v.$font-size-xs;
+    color: v.$color-text-subtle;
+  }
+}

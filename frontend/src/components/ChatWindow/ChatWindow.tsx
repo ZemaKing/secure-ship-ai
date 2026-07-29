@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import ChatMessage from './ChatMessage'
+import CodeModal from '../CodeModal/CodeModal'
 import { useChat } from '../../api/generated/secure-ship'
 import { useChatSession } from '../../hooks/useChatSession'
 import type { ChatMessageData } from './types'
@@ -40,7 +41,8 @@ function formatTimestamp() {
 function ChatWindow() {
   const [messages, setMessages] = useState<ChatMessageData[]>(SEED_MESSAGES)
   const [draft, setDraft] = useState('')
-  const { sessionId, applyResponse } = useChatSession()
+  const { sessionId, event: sessionEvent, applyResponse } = useChatSession()
+  const [codeModalKey, setCodeModalKey] = useState(0)
   const chatMutation = useChat()
   const messageListRef = useRef<HTMLDivElement>(null)
 
@@ -66,6 +68,13 @@ function ChatWindow() {
           const replyText = response.status === 200 ? response.data.reply : ERROR_REPLY_TEXT
           if (response.status === 200) {
             applyResponse(response.data)
+            if (response.data.event === 'code_sent') {
+              // Forces CodeModal to remount with fresh internal state (digits/dismissed/
+              // verified) every time a genuinely new code is sent — including a resend
+              // after a lockout, where the event string value is identical to before and
+              // wouldn't otherwise be seen as "changed."
+              setCodeModalKey((key) => key + 1)
+            }
           }
           setMessages((prev) => [
             ...prev,
@@ -82,8 +91,21 @@ function ChatWindow() {
     )
   }
 
+  function handleCodeVerified(message: string) {
+    setMessages((prev) => [
+      ...prev,
+      { id: makeMessageId(), role: 'bot', text: message, timestamp: formatTimestamp() },
+    ])
+  }
+
   return (
     <section className="chat-window">
+      <CodeModal
+        key={codeModalKey}
+        open={sessionEvent === 'code_sent'}
+        sessionId={sessionId ?? ''}
+        onVerified={handleCodeVerified}
+      />
       <header className="chat-window__header">
         <div className="chat-window__greeting">
           <h1 className="chat-window__greeting-title">Hello! 👋</h1>
