@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-Week 2 is in progress — Chunks A–H of a 10-chunk plan are done (see `docs/DEV_PLAN.md`'s Week 2 progress notes for the chunk list, and `CHANGE_LOG.md` for the day-by-day narrative). The chat is no longer ungated: a visitor asking about a shipment gets conversationally asked for their identity, extracted across multiple turns in any order, matched (or neutrally rejected) against seeded `Customer` records, and — on a match — actually gets sent a mock 6-digit 2FA code (console-only) that a real `POST /verify-code` call checks, now through a real on-demand modal in the browser (Chunk G) rather than curl/Swagger. Saying something like "I want to talk to a human," from any state, now also triggers a scripted, cosmetic handoff to "Melany" (Chunk E) with a real staggered-reveal banner and a color shift in the browser (Chunk H) — it doesn't bypass the gate: an unverified visitor who escalates still gets declined on shipment specifics. The frontend's session/event/escalation bookkeeping lives in its own hook (Chunk F) rather than scattered across `ChatWindow`. Chunks I–J of the 10-chunk plan haven't started yet.
+Week 2 is in progress — Chunks A–I of a 10-chunk plan are done (see `docs/DEV_PLAN.md`'s Week 2 progress notes for the chunk list, and `CHANGE_LOG.md` for the day-by-day narrative). The chat is no longer ungated: a visitor asking about a shipment gets conversationally asked for their identity, extracted across multiple turns in any order, matched (or neutrally rejected) against seeded `Customer` records, and — on a match — actually gets sent a mock 6-digit 2FA code (console-only) that a real `POST /verify-code` call checks, now through a real on-demand modal in the browser (Chunk G) rather than curl/Swagger. Saying something like "I want to talk to a human," from any state, now also triggers a scripted, cosmetic handoff to "Melany" (Chunk E) with a real staggered-reveal banner and a color shift in the browser (Chunk H) — it doesn't bypass the gate: an unverified visitor who escalates still gets declined on shipment specifics. The frontend's session/event/escalation bookkeeping lives in its own hook (Chunk F) rather than scattered across `ChatWindow`. All of this is now also covered by a real automated test suite (`backend/tests/`, Chunk I) rather than only ever-run-by-hand curl checks. Chunk J of the 10-chunk plan hasn't started yet.
 
 **What exists in `backend/` so far:**
 - FastAPI app (`main.py`) with `GET /health` and `POST /chat`; CORS middleware allows the `FRONTEND_ORIGIN` env var (`.env`-driven, defaults to `http://localhost:5173`) so the Vite dev server can call it cross-origin
@@ -23,6 +23,7 @@ Week 2 is in progress — Chunks A–H of a 10-chunk plan are done (see `docs/DE
 - `Dockerfile` — `python:3.13-slim`, installs `requirements.txt`, startup runs `alembic upgrade head && uvicorn main:app --host 0.0.0.0` — migrations apply automatically on container start, no manual step needed
 - `db/` (SQLAlchemy engine/session, `.env`-driven `DATABASE_URL`) and `models/` (`Customer`, `Shipment`, `Package`, `ChatSession` — schema per REQUIREMENTS.md §4.4/§4.6). `ChatSession` has grown two nullable columns beyond the original schema: `pending_customer_id` (FK → `customers.id`) and `pending_identity` (JSONB) — scratch space for identity collected mid-conversation, before `customer_id`/`Verified` is confirmed
 - Alembic initialized and migrated (`alembic/`) — the original four-table migration, plus a second migration adding the two `pending_*` columns to `chat_sessions`
+- `tests/` (Chunk I, `pytest.ini` sets `pythonpath = .`) — 12 tests across 5 files, run against the real dev Postgres via a transaction-per-test rollback fixture in `conftest.py` (no second test DB, no truncate step) plus an autouse fixture clearing the in-memory 2FA store between tests. Covers session isolation, identical-rejection-wording across every single-field identity mismatch, the full 2FA flow (lockout/match/expiry — expiry via a monkeypatched clock, not a mutated `expires_at`), the tool allowlist rejecting both a hallucinated name and a real tool once a state stops offering it, and post-escalation gating while unverified (with `ollama_client.chat` mocked so the real model is never needed for this assertion)
 
 **What exists in `scripts/` so far:**
 - `seed_data.py` — populates Postgres with mock customers (English/US, Serbian, and Russian first/last names, grouped so a customer's surname always matches their given name's nationality — no "Milos Smith" mismatches), shipments (realistic status distribution), and packages, straight through the ORM models. No truncate/reset step — safe to re-run, but re-running just adds more rows on top of what's there. The DB has live mock data, not just empty tables.
@@ -43,6 +44,7 @@ Week 2 is in progress — Chunks A–H of a 10-chunk plan are done (see `docs/DE
 - `uvicorn main:app --reload` — runs the API on `:8000`, see `/docs` for Swagger UI
 - `alembic revision --autogenerate -m "..."` / `alembic upgrade head` — schema migrations
 - `python llm/ollama_client.py` — standalone Ollama connectivity check
+- `pytest` — runs `backend/tests/` (12 tests, Chunk I); requires the dev Postgres to be up and migrated (`DATABASE_URL` in `.env`), but never calls the real Ollama model — each test runs in its own rolled-back transaction, so nothing it writes persists
 
 **Commands that work today (from `frontend/`):**
 - `npm run dev` — runs the Vite dev server on `:5173`
@@ -62,7 +64,7 @@ Week 2 is in progress — Chunks A–H of a 10-chunk plan are done (see `docs/DE
 - `curl http://localhost:8000/health` — should return `{"status":"ok"}`
 - `cd backend && source .venv/Scripts/activate && python ../scripts/seed_data.py` — the fresh volume has no data until reseeded
 
-No test suite yet — update this section again as that lands.
+`backend/tests/` (Chunk I) now covers session isolation, neutral-rejection wording, the full 2FA flow (lockout/match/expiry), the state-scoped tool allowlist, and post-escalation gating while unverified — 12/12 passing. No frontend test suite yet.
 
 See `TECH_NOTES.md` for a per-file technical breakdown and `CHANGE_LOG.md` for the day-by-day narrative of what's been built.
 
