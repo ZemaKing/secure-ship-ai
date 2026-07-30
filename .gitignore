@@ -219,3 +219,6 @@ __marimo__/
 
 /ai-chatbot-ui-mockup.png
 /ai-chatbot-modal-mockup.png
+
+# Local demo/presentation prep — not part of the shipped project
+/demo/
