@@ -52,4 +52,49 @@
     font-size: v.$font-size-xs;
     color: v.$color-text-subtle;
   }
+
+  &__typing-indicator {
+    --loader-size: 0.35px;
+
+    @include m.flex-center;
+    width: calc(128 * var(--loader-size));
+    height: calc(32 * var(--loader-size));
+  }
+
+  &__typing-loader {
+    display: block;
+    width: calc(32 * var(--loader-size));
+    height: calc(32 * var(--loader-size));
+    position: relative;
+    border-radius: 50%;
+    color: v.$color-primary;
+    animation: chat-message-loader-fill 1s ease-in infinite alternate;
+
+    &::before,
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      height: 100%;
+      width: 100%;
+      border-radius: 50%;
+      left: calc(48 * var(--loader-size));
+      animation: chat-message-loader-fill 0.9s ease-in infinite alternate;
+    }
+
+    &::after {
+      left: auto;
+      right: calc(48 * var(--loader-size));
+      animation-duration: 1.1s;
+    }
+  }
+}
+
+@keyframes chat-message-loader-fill {
+  0% {
+    box-shadow: 0 0 0 calc(2 * var(--loader-size)) inset;
+  }
+  100% {
+    box-shadow: 0 0 0 calc(10 * var(--loader-size)) inset;
+  }
 }

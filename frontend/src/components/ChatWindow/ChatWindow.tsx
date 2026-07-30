@@ -144,7 +144,13 @@ function ChatWindow() {
         ))}
         {chatMutation.isPending && (
           <ChatMessage
-            message={{ id: 'typing-indicator', role: 'bot', text: 'Typing…', timestamp: formatTimestamp() }}
+            message={{
+              id: 'typing-indicator',
+              role: 'bot',
+              text: 'Typing…',
+              timestamp: formatTimestamp(),
+              isTyping: true,
+            }}
           />
         )}
       </div>

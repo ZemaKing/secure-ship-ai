@@ -21,8 +21,16 @@ function ChatMessage({ message, onHumanJoined }: ChatMessageProps) {
 
       <div className="chat-message__content">
         <div className="chat-message__bubble">
-          <span className="chat-message__text">{message.text}</span>
-          <span className="chat-message__timestamp">{message.timestamp}</span>
+          {message.isTyping ? (
+            <span className="chat-message__typing-indicator" role="status" aria-label={message.text}>
+              <span className="chat-message__typing-loader" aria-hidden="true" />
+            </span>
+          ) : (
+            <>
+              <span className="chat-message__text">{message.text}</span>
+              <span className="chat-message__timestamp">{message.timestamp}</span>
+            </>
+          )}
         </div>
         {message.shipment && <ShipmentCard data={message.shipment} />}
       </div>

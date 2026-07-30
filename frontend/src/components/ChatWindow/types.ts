@@ -34,4 +34,5 @@ export type ChatMessageData = {
   timestamp: string
   shipment?: ShipmentCardData
   escalation?: EscalationPayload
+  isTyping?: boolean
 }
