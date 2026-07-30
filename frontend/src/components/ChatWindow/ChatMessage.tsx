@@ -1,6 +1,7 @@
 import type { ChatMessageData } from './types'
 import ShipmentCard from './ShipmentCard'
 import EscalationBanner from '../EscalationBanner/EscalationBanner'
+import { useTypewriter } from '../../hooks/useTypewriter'
 import './ChatMessage.scss'
 
 type ChatMessageProps = {
@@ -9,11 +10,17 @@ type ChatMessageProps = {
 }
 
 function ChatMessage({ message, onHumanJoined }: ChatMessageProps) {
+  const isBot = message.role === 'bot'
+  // Called unconditionally (before the escalation early return below) since hooks
+  // can't be called conditionally — harmless no-op for escalation/user messages,
+  // which never read `displayedText` anyway.
+  const displayedText = useTypewriter(message.text, { enabled: isBot && !message.isTyping })
+
   if (message.role === 'escalation' && message.escalation) {
     return <EscalationBanner escalation={message.escalation} onHumanJoined={onHumanJoined} />
   }
 
-  const isBot = message.role === 'bot'
+  const isTypingOut = isBot && !message.isTyping && displayedText.length < message.text.length
 
   return (
     <div className={`chat-message chat-message--${message.role}`}>
@@ -27,7 +34,10 @@ function ChatMessage({ message, onHumanJoined }: ChatMessageProps) {
             </span>
           ) : (
             <>
-              <span className="chat-message__text">{message.text}</span>
+              <span className="chat-message__text">
+                {displayedText}
+                {isTypingOut && <span className="chat-message__text-cursor" aria-hidden="true" />}
+              </span>
               <span className="chat-message__timestamp">{message.timestamp}</span>
             </>
           )}
