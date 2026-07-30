@@ -1,12 +1,18 @@
 import type { ChatMessageData } from './types'
 import ShipmentCard from './ShipmentCard'
+import EscalationBanner from '../EscalationBanner/EscalationBanner'
 import './ChatMessage.scss'
 
 type ChatMessageProps = {
   message: ChatMessageData
+  onHumanJoined?: () => void
 }
 
-function ChatMessage({ message }: ChatMessageProps) {
+function ChatMessage({ message, onHumanJoined }: ChatMessageProps) {
+  if (message.role === 'escalation' && message.escalation) {
+    return <EscalationBanner escalation={message.escalation} onHumanJoined={onHumanJoined} />
+  }
+
   const isBot = message.role === 'bot'
 
   return (

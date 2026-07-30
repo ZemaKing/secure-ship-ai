@@ -43,6 +43,7 @@ function ChatWindow() {
   const [draft, setDraft] = useState('')
   const { sessionId, event: sessionEvent, applyResponse } = useChatSession()
   const [codeModalKey, setCodeModalKey] = useState(0)
+  const [humanJoined, setHumanJoined] = useState(false)
   const chatMutation = useChat()
   const messageListRef = useRef<HTMLDivElement>(null)
 
@@ -75,6 +76,20 @@ function ChatWindow() {
               // wouldn't otherwise be seen as "changed."
               setCodeModalKey((key) => key + 1)
             }
+            const { escalation } = response.data
+            if (response.data.event === 'escalated' && escalation) {
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: makeMessageId(),
+                  role: 'escalation',
+                  text: replyText,
+                  timestamp: formatTimestamp(),
+                  escalation,
+                },
+              ])
+              return
+            }
           }
           setMessages((prev) => [
             ...prev,
@@ -99,7 +114,7 @@ function ChatWindow() {
   }
 
   return (
-    <section className="chat-window">
+    <section className={`chat-window${humanJoined ? ' chat-window--human-joined' : ''}`}>
       <CodeModal
         key={codeModalKey}
         open={sessionEvent === 'code_sent'}
@@ -125,7 +140,7 @@ function ChatWindow() {
 
       <div className="chat-window__message-list" ref={messageListRef}>
         {messages.map((message) => (
-          <ChatMessage key={message.id} message={message} />
+          <ChatMessage key={message.id} message={message} onHumanJoined={() => setHumanJoined(true)} />
         ))}
         {chatMutation.isPending && (
           <ChatMessage

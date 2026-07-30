@@ -6,6 +6,20 @@ Full technical scope and week-by-week milestones live in `docs/DEV_PLAN.md` — 
 
 ---
 
+## 2026-07-30 — Week 2, Day 4: Melany finally shows up on screen 🎭
+
+**Theme:** Chunk H — the frontend half of Chunk E's escalation theater. The backend has sent a real `EscalationPayload` since Chunk E; until today nothing rendered it.
+
+- 🎬 New `src/components/EscalationBanner/EscalationBanner.tsx`: takes the `escalation` payload `ChatWindow` already receives and reveals its 4 lines one at a time (~700ms apart) — purely a client-side pacing effect over data the backend already sent in a single response, per Epic G3's "cosmetic only." Styled as `EscalationBanner.scss` (plain BEM), not the `.module.scss` the pasted spec named — same locked no-CSS-Modules deviation as Chunk G's `CodeModal`, documented the same way.
+- 🟢 Color shift: a fixed index into `escalation.lines` (position 1, "Melany has entered the chat" — stable because the backend always builds this array from `ESCALATION_SCRIPT_LINES` in the same order) fires an `onHumanJoined` callback exactly once, guarded by a ref so React re-renders can't double-fire it. `ChatWindow.tsx` uses that to flip a `humanJoined` flag, toggling a new `chat-window--human-joined` class that fades the whole window to a soft mint green (`$color-human-joined-bg`/`$color-human-joined-border`, new tokens in `_variables.scss`) — a deliberately different color from the app's usual blue, so "a human joined" reads as its own kind of event.
+- 🧩 `ChatMessageData`/`ChatRole` (`types.ts`) gained an `'escalation'` variant and an optional `escalation?: EscalationPayload` field — the same "optionally attach a variant" precedent `shipment?: ShipmentCardData` already set, rather than inventing a new message shape. `ChatMessage.tsx` renders `<EscalationBanner>` full-width in place of the normal bubble/avatar when that role is set.
+- 🔌 `ChatWindow.tsx`'s `onSuccess` now branches on `event === "escalated"` before the generic bot-bubble push: destructures `escalation` off the response first (checking `response.data.escalation` inline tripped a TS control-flow narrowing error against the generated `EscalationPayload | null | undefined` type), pushes an `escalation`-role message carrying it, and returns early.
+- ✅ Verified: `tsc -b`/`vite build`/`oxlint` all clean. Backend contract re-confirmed via direct `curl` (not just trusted from Chunk E) — escalating from a fresh session returns exactly 4 lines with "Melany has entered the chat" at index 1 and `first_name: null`; re-verified **Epic G4** by asking a shipment question in the same still-unverified, post-escalation session and getting a neutral identity request, not shipment data. The banner/color-shift CSS was screenshot-checked via a static HTML harness reusing the real compiled bundle (no interactive browser-automation tool available this session, same limitation as Chunks F/G). The actual timed reveal + color fade, in both directions — nameless greeting triggered from a from-scratch `Anonymous` session, and a personalized "Hey Jovana, ..." greeting after a full identity-verify round-trip with real seeded customer Jovana Markovic — was user-confirmed live in the browser.
+
+**Where things stand:** every piece of Week 2's gating/escalation work now has a real frontend surface — no more curl/Swagger needed anywhere in the flow. Next: Chunks I–J, whichever the remaining 10-chunk split calls for.
+
+---
+
 ## 2026-07-28 — Week 2, Day 3: The 2FA code gets an actual UI 🔢
 
 **Theme:** Chunk G — the first real frontend surface for any of Week 2's gating work. Before today, the entire identity/2FA/escalation flow was only testable via curl/Swagger — now the code modal is real, on-demand, and wired to the actual `POST /verify-code` endpoint.

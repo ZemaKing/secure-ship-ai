@@ -1,0 +1,39 @@
+@use '../../styles/variables' as v;
+@use '../../styles/mixins' as m;
+
+.escalation-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: v.$space-2;
+  max-width: 640px;
+  margin-bottom: v.$space-4;
+  padding: v.$space-3;
+  border: 1px solid v.$color-human-joined-border;
+  border-radius: v.$radius-md;
+  background: v.$color-human-joined-bg;
+
+  &__icon {
+    @include m.icon(32px);
+    flex-shrink: 0;
+    box-sizing: border-box;
+    padding: 4px;
+    border-radius: v.$radius-pill;
+    background: v.$color-bg;
+  }
+
+  &__lines {
+    display: flex;
+    flex-direction: column;
+    gap: v.$space-1;
+  }
+
+  &__line {
+    margin: 0;
+    font-size: v.$font-size-sm;
+    color: v.$color-text;
+
+    &:last-child {
+      font-weight: 600;
+    }
+  }
+}

@@ -1,3 +1,5 @@
+import type { EscalationPayload } from '../../api/generated/secure-ship'
+
 export type ShipmentStatus =
   | 'label_created'
   | 'in_transit'
@@ -23,7 +25,7 @@ export type ShipmentCardData = {
   items: PackageItem[]
 }
 
-export type ChatRole = 'user' | 'bot'
+export type ChatRole = 'user' | 'bot' | 'escalation'
 
 export type ChatMessageData = {
   id: string
@@ -31,4 +33,5 @@ export type ChatMessageData = {
   text: string
   timestamp: string
   shipment?: ShipmentCardData
+  escalation?: EscalationPayload
 }

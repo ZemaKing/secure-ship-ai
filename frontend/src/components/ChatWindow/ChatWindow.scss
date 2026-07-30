@@ -9,6 +9,11 @@
   min-width: 0;
   padding: v.$space-5;
   background: v.$color-bg;
+  transition: background-color 400ms ease;
+
+  &--human-joined {
+    background: v.$color-human-joined-bg;
+  }
 
   &__header {
     display: flex;
