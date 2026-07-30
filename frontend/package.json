@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "generate:api": "orval"
+    "generate:api": "orval",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@fontsource/inter": "^5.3.0",
@@ -17,14 +19,20 @@
     "react-dom": "^19.2.7"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^24.13.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
+    "@vitest/ui": "^4.1.10",
+    "jsdom": "^30.0.1",
     "orval": "^8.22.0",
     "oxlint": "^1.71.0",
     "sass": "^1.101.7",
     "typescript": "~6.0.2",
-    "vite": "^8.1.1"
+    "vite": "^8.1.1",
+    "vitest": "^4.1.10"
   }
 }
