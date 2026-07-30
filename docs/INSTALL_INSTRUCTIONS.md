@@ -221,6 +221,24 @@ Brings up `frontend`, `backend`, and `postgres` containers. Ollama stays on the 
 
 ---
 
+### 2.4 Testing tools (added Week 2)
+
+No separate install step — both are already pinned in `requirements.txt`/`package.json`, so they come in with the installs in 2.1/2.2 above.
+
+**Backend — pytest.** Runs against the real dev Postgres (a transaction-per-test rollback keeps it clean, no separate test DB) and never calls the real Ollama model. From `backend/`, venv active, dev Postgres up and migrated:
+
+```powershell
+pytest
+```
+
+**Frontend — Vitest + Testing Library.** No backend/Postgres/Ollama needed — the only thing mocked is `global.fetch`. From `frontend/`:
+
+```powershell
+npm test
+```
+
+---
+
 ## 3. Post-install sanity check
 
 Run once Docker and Ollama are installed:

@@ -101,6 +101,8 @@ No virtual environment tool needed beyond Python's built-in `venv` — one fewer
 - [x] Confirm escalation does **not** leak shipment data if triggered while still `Anonymous` (Epic G4) — verified live: no data-lookup tool is ever offered in `EscalatedToHuman`, and a post-escalation shipment question gets an explicit "verify your identity first" reply
 - [x] Session state stored server-side (in-memory dict is fine for now) — confirm a raw request to the backend without going through the proper flow cannot short-circuit to `Verified`
 
+**Week 2 status: build complete.** Every checklist item above is done — the identity gate, 2FA flow, and escalation theater are all live-verified against the real `qwen3:8b` model and real seeded Postgres data, not just claimed, and now backed by an automated test suite on both sides (Chunk I's `pytest` + a same-day frontend Vitest follow-up). What's left for Week 2 is the Monday demo itself (below), not more building.
+
 **Monday demo checklist (Week 3's Monday):**
 - [ ] Full gate walkthrough: anonymous → identity collection → code modal → verified
 - [ ] One deliberate failure case on screen (wrong code, or identity that doesn't match) — proving rejection, not just narrating it
