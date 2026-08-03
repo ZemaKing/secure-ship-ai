@@ -34,12 +34,33 @@ export interface EscalationPayload {
   first_name?: string | null;
 }
 
+export interface ShipmentPackagePayload {
+  id: string;
+  description: string;
+  /** @pattern ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$ */
+  weight_kg: string;
+  /** @pattern ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$ */
+  declared_value: string;
+}
+
+export interface ShipmentPayload {
+  tracking_number: string;
+  carrier: string;
+  origin: string;
+  destination: string;
+  status: string;
+  estimated_delivery: string;
+  last_update: string;
+  packages: ShipmentPackagePayload[];
+}
+
 export interface ChatResponse {
   session_id: string;
   reply: string;
   state: string;
   event?: string | null;
   escalation?: EscalationPayload | null;
+  shipments?: ShipmentPayload[] | null;
 }
 
 export type ValidationErrorCtx = { [key: string]: unknown };

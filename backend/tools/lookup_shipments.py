@@ -11,6 +11,7 @@ from models.shipment import Shipment
 
 @dataclass
 class PackageInfo:
+    id: str
     description: str
     weight_kg: Decimal
     declared_value: Decimal
@@ -56,6 +57,7 @@ def lookup_shipments(db: Session, session: ChatSession) -> list[ShipmentInfo]:
                 last_update=shipment.last_update,
                 packages=[
                     PackageInfo(
+                        id=str(package.id),
                         description=package.description,
                         weight_kg=package.weight_kg,
                         declared_value=package.declared_value,

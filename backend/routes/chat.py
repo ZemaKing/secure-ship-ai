@@ -9,7 +9,7 @@ from llm import ollama_client
 from llm.ollama_client import ToolCall
 from models.chat_session import ChatSession, ChatSessionState
 from models.customer import Customer
-from schemas.chat import ChatRequest, ChatResponse, EscalationPayload
+from schemas.chat import ChatRequest, ChatResponse, EscalationPayload, ShipmentPackagePayload, ShipmentPayload
 from services.escalation import wants_escalation
 from services.prompting import build_system_prompt
 from tools.lookup_shipments import ShipmentInfo, lookup_shipments
@@ -129,6 +129,34 @@ def _format_shipments(shipments: list[ShipmentInfo]) -> str:
     return "\n".join(lines)
 
 
+def _to_shipment_payloads(shipments: list[ShipmentInfo]) -> list[ShipmentPayload]:
+    """Maps the tool layer's internal ShipmentInfo dataclasses onto the API's own
+    Pydantic contract (schemas/chat.py) — keeps tools/ free of any dependency on the
+    wire format, same separation `_format_shipments()` keeps for the prompt-text format.
+    """
+    return [
+        ShipmentPayload(
+            tracking_number=shipment.tracking_number,
+            carrier=shipment.carrier,
+            origin=shipment.origin,
+            destination=shipment.destination,
+            status=shipment.status,
+            estimated_delivery=shipment.estimated_delivery,
+            last_update=shipment.last_update,
+            packages=[
+                ShipmentPackagePayload(
+                    id=package.id,
+                    description=package.description,
+                    weight_kg=package.weight_kg,
+                    declared_value=package.declared_value,
+                )
+                for package in shipment.packages
+            ],
+        )
+        for shipment in shipments
+    ]
+
+
 def _tools_for_state(state: ChatSessionState) -> list[dict]:
     if state in IDENTITY_COLLECTING_STATES:
         return [VERIFY_IDENTITY_TOOL_SCHEMA]
@@ -189,6 +217,7 @@ def send_chat_message(request: ChatRequest, db: Session = Depends(get_db)) -> Ch
     )
 
     event = None
+    shipments_payload: list[ShipmentPayload] | None = None
     if result.tool_calls:
         tool_call = result.tool_calls[0]
         outcome = _dispatch_tool(db, session, tool_call)
@@ -208,6 +237,9 @@ def send_chat_message(request: ChatRequest, db: Session = Depends(get_db)) -> Ch
                 ]
             )
             reply = followup.content or "I found your shipments, but couldn't summarize them just now — could you ask again?"
+            # Week 3, Chunk C: the same real result also goes to the frontend as
+            # structured data, so ShipmentCard can render it instead of only prose.
+            shipments_payload = _to_shipment_payloads(outcome)
         else:
             if session.state == ChatSessionState.ANONYMOUS:
                 session.state = ChatSessionState.COLLECTING_IDENTITY
@@ -258,4 +290,10 @@ def send_chat_message(request: ChatRequest, db: Session = Depends(get_db)) -> Ch
     session.transcript = transcript
     db.commit()
 
-    return ChatResponse(session_id=str(session.id), reply=reply, state=session.state.value, event=event)
+    return ChatResponse(
+        session_id=str(session.id),
+        reply=reply,
+        state=session.state.value,
+        event=event,
+        shipments=shipments_payload,
+    )

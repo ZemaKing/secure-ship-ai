@@ -2,33 +2,12 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import ChatMessage from './ChatMessage'
 import CodeModal from '../CodeModal/CodeModal'
 import { useChat } from '../../api/generated/secure-ship'
+import type { ShipmentPayload } from '../../api/generated/secure-ship'
 import { useChatSession } from '../../hooks/useChatSession'
-import type { ChatMessageData } from './types'
+import type { ChatMessageData, ShipmentCardData } from './types'
 import './ChatWindow.scss'
 
 const ERROR_REPLY_TEXT = "Sorry, something went wrong reaching the assistant. Please try again."
-
-const SEED_MESSAGES: ChatMessageData[] = [
-  {
-    id: 'seed-1',
-    role: 'bot',
-    text: 'Here are the details for shipment TS123456789',
-    timestamp: '2:30 PM',
-    shipment: {
-      trackingNumber: 'TS123456789',
-      carrier: 'DHL Express',
-      origin: 'Mumbai, India',
-      destination: 'New York, USA',
-      status: 'in_transit',
-      estimatedDelivery: 'May 16, 2024',
-      lastUpdate: 'May 13, 2024, 1:30 AM',
-      items: [
-        { id: 'item-1', description: 'Wireless Headphones', weightKg: 5.2, declaredValue: 520 },
-        { id: 'item-2', description: 'Smart Watch Series 9', weightKg: 2.75, declaredValue: 1375 },
-      ],
-    },
-  },
-]
 
 function makeMessageId() {
   return `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -38,8 +17,39 @@ function formatTimestamp() {
   return new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
 }
 
+function formatLastUpdate(iso: string) {
+  return new Date(iso).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
+}
+
+// timeZone: 'UTC' avoids a date-only string (no time component) shifting to the
+// previous day when the browser's local timezone is behind UTC.
+function formatDate(isoDate: string) {
+  return new Date(isoDate).toLocaleDateString([], { dateStyle: 'medium', timeZone: 'UTC' })
+}
+
+// The backend's wire format (snake_case, generated from schemas/chat.py) is kept
+// separate from ShipmentCardData (camelCase) — the component's own presentation
+// shape, unchanged since it was first built against a hardcoded mock (Week 1).
+function toShipmentCardData(payload: ShipmentPayload): ShipmentCardData {
+  return {
+    trackingNumber: payload.tracking_number,
+    carrier: payload.carrier,
+    origin: payload.origin,
+    destination: payload.destination,
+    status: payload.status as ShipmentCardData['status'],
+    estimatedDelivery: formatDate(payload.estimated_delivery),
+    lastUpdate: formatLastUpdate(payload.last_update),
+    items: payload.packages.map((item) => ({
+      id: item.id,
+      description: item.description,
+      weightKg: Number(item.weight_kg),
+      declaredValue: Number(item.declared_value),
+    })),
+  }
+}
+
 function ChatWindow() {
-  const [messages, setMessages] = useState<ChatMessageData[]>(SEED_MESSAGES)
+  const [messages, setMessages] = useState<ChatMessageData[]>([])
   const [draft, setDraft] = useState('')
   const { sessionId, event: sessionEvent, applyResponse } = useChatSession()
   const [codeModalKey, setCodeModalKey] = useState(0)
@@ -91,9 +101,11 @@ function ChatWindow() {
               return
             }
           }
+          const shipments =
+            response.status === 200 ? response.data.shipments?.map(toShipmentCardData) : undefined
           setMessages((prev) => [
             ...prev,
-            { id: makeMessageId(), role: 'bot', text: replyText, timestamp: formatTimestamp() },
+            { id: makeMessageId(), role: 'bot', text: replyText, timestamp: formatTimestamp(), shipments },
           ])
         },
         onError: () => {

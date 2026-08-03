@@ -2,7 +2,7 @@ import type { ShipmentCardData, ShipmentStatus } from './types'
 import './ShipmentCard.scss'
 
 const STATUS_LABELS: Record<ShipmentStatus, string> = {
-  label_created: 'Label Created',
+  label_created: 'Created',
   in_transit: 'In Transit',
   out_for_delivery: 'Out for Delivery',
   delivered: 'Delivered',

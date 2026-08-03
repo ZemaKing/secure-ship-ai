@@ -28,11 +28,16 @@ POST_ESCALATION_UNVERIFIED_INSTRUCTIONS = (
 
 # Used only for the second, tool-free model call that phrases a lookup_shipments answer
 # (Week 3, Chunk B) — the data block itself is built by routes/chat.py from the tool's
-# real result, never guessed by the model.
+# real result, never guessed by the model. Kept deliberately brief (Chunk C follow-up):
+# the full details (status, dates, origin/destination, contents) already render in a
+# visual ShipmentCard, so repeating them in prose is redundant, not helpful.
 SHIPMENT_DATA_INSTRUCTIONS = (
-    "Answer the visitor's question using only the shipment data below — it's already "
-    "been looked up for this verified visitor's own account. Don't invent any detail "
-    "it doesn't contain, and don't mention any other customer's shipments."
+    "The visitor's shipment details are already shown to them in a visual card below "
+    "this message, so don't restate the status, dates, origin/destination, or package "
+    "contents in your reply. Just briefly mention the tracking number(s) from the data "
+    "below and suggest checking the carrier's website or app for real-time tracking "
+    "updates. Keep it to one short sentence. Don't invent any detail not present in the "
+    "data, and don't mention any other customer's shipments."
 )
 
 

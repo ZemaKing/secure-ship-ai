@@ -6,6 +6,20 @@ Full technical scope and week-by-week milestones live in `docs/DEV_PLAN.md` — 
 
 ---
 
+## 2026-08-03 — Week 3, Day 3: The ShipmentCard finally shows real data 🖼️
+
+**Theme:** Chunk C — the frontend has had a `ShipmentCard` component since Week 1, but it only ever rendered one hardcoded mock message. Today real `lookup_shipments()` data reaches the browser and renders through that same component, unmodified.
+
+- 🧾 `schemas/chat.py` gained `ShipmentPayload`/`ShipmentPackagePayload` (the API's own wire-format contract, deliberately separate from `tools/lookup_shipments.py`'s internal dataclasses) and `ChatResponse.shipments: list[ShipmentPayload] | None`, populated only on a real `lookup_shipments` result via a new `_to_shipment_payloads()` mapper in `routes/chat.py`. `tools/lookup_shipments.py`'s `PackageInfo` gained an `id` field (the real `Package` primary key) since the frontend needs a stable key per package row.
+- 🔄 Orval regenerated — `ShipmentPayload`/`ShipmentPackagePayload` now real TS interfaces, with `weight_kg`/`declared_value` coming through as pattern-constrained strings (`Decimal`'s OpenAPI shape), not numbers.
+- 🗺️ `ChatWindow.tsx` gained a small `toShipmentCardData()` mapper — the backend's snake_case wire format in, the component's existing camelCase `ShipmentCardData` shape out (unchanged since Week 1, `Number(...)`-wrapping the two string fields). `ChatMessageData.shipments` is now plural (`ShipmentCardData[]`, was singular `shipment?`) since a real customer can have more than one shipment — Sergei Petrov, seeded, has three — and `ChatMessage.tsx` now maps over the array, rendering one `<ShipmentCard>` per real shipment.
+- 🧹 **Decision, made explicitly per this chunk's own ask:** the hardcoded seed message (kept since Week 1 so `ShipmentCard` stayed visually demoed before any real data existed) is gone — `messages` now starts empty. Keeping a permanent mock bubble alongside real ones would read as two different sources of "shipment truth" in the same window, and the component's whole job was always to eventually render real data instead.
+- ✅ **Verified end-to-end, not just curl-deep:** ran the entire real gate through curl first — fresh anonymous session, real identity match (seeded customer Jovana Markovic), real 2FA code read off `docker compose logs backend`, verified, then "Where is my package?" — confirming the `shipments` JSON matched the model's own prose reply exactly. Then, since this session has no interactive browser-automation tool, the user drove the identical flow live in the browser and confirmed: a real `ShipmentCard` rendered with her actual shipment (FedEx, `label_created`, a desk lamp, Boston → Seattle), sourced from Postgres, not a mock. `tsc -b`/`vite build`/`oxlint`/`npm test` (14/14) and `pytest backend/tests` (12/12) all stayed clean throughout.
+
+**Where things stand:** the full Week 3 goal — verified visitors getting real, data-backed answers, in the actual UI — is functionally complete. What's left is proving the enforcement point survives deliberate attack (Chunk D) and closing out the week's hardening/docs pass (Chunk E). Next: Chunk D, the adversarial pass.
+
+---
+
 ## 2026-08-03 — Week 3, Day 2: A verified visitor gets a real answer 📬
 
 **Theme:** Chunk B — wiring yesterday's `lookup_shipments` tool into an actual chat turn. Before today the tool existed and was exposed to the model, but nothing in `routes/chat.py` knew what to do if the model actually called it.

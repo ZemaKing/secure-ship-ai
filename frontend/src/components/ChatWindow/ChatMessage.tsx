@@ -42,7 +42,9 @@ function ChatMessage({ message, onHumanJoined }: ChatMessageProps) {
             </>
           )}
         </div>
-        {message.shipment && <ShipmentCard data={message.shipment} />}
+        {message.shipments?.map((shipment) => (
+          <ShipmentCard key={shipment.trackingNumber} data={shipment} />
+        ))}
       </div>
 
       {!isBot && <img className="chat-message__avatar" src="/icons/user.svg" alt="" />}

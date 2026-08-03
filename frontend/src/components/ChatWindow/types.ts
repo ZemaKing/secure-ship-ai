@@ -32,7 +32,7 @@ export type ChatMessageData = {
   role: ChatRole
   text: string
   timestamp: string
-  shipment?: ShipmentCardData
+  shipments?: ShipmentCardData[]
   escalation?: EscalationPayload
   isTyping?: boolean
 }
