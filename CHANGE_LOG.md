@@ -6,6 +6,19 @@ Full technical scope and week-by-week milestones live in `docs/DEV_PLAN.md` — 
 
 ---
 
+## 2026-08-03 — Week 3, Day 1: The shipment-lookup tool exists, but nobody's calling it yet 📦
+
+**Theme:** Chunk A of Week 3's 5-chunk plan (A–E, one per weekday) — backend-only groundwork. `lookup_shipments` now exists and is exposed to the model as a real tool definition once a session is `Verified`, but `routes/chat.py`'s dispatch logic doesn't call it yet — that's Chunk B, tomorrow.
+
+- 🔒 **The single enforcement point (Epic F3), written down on day one:** `tools/lookup_shipments.py`'s `lookup_shipments(db, session)` takes exactly two parameters — no `customer_id`, no tracking number, nothing a caller could use to name a different customer. The query scopes to `session.customer_id` only, the same column `check_verification_code.py` is the only place that ever sets. The tool's own schema (`LOOKUP_SHIPMENTS_TOOL_SCHEMA` in `tools/schemas.py`) mirrors this at the model layer: its `parameters` object is empty, not just missing a `required` list like `verify_identity`'s — there's nothing there for the model to fill in, let alone smuggle a foreign id into.
+- 🗂️ Returns plain `ShipmentInfo`/`PackageInfo` dataclasses (tracking number, carrier, origin/destination, status, dates, nested package list) rather than raw ORM rows — one query per shipment for its packages, kept simple since the mock dataset is small.
+- 🚦 `routes/chat.py`'s `_tools_for_state()` now returns `[LOOKUP_SHIPMENTS_TOOL_SCHEMA]` for `Verified` sessions (alongside the existing `Anonymous`/`CollectingIdentity` → `verify_identity` mapping) — `_dispatch_tool()` itself doesn't handle the name yet, so a live tool call would currently just fall through to the model's own prose. That wiring is Chunk B.
+- ✅ **Verified, unit-level, against the real seeded DB:** two different verified customers (Sergei Petrov — 3 shipments; Jovana Markovic — 1 shipment) produced two different, correctly-scoped result sets. `inspect.signature(lookup_shipments)` confirmed directly that `(db, session)` are the only parameters — no identifier argument exists to attack. `pytest backend/tests` stayed 12/12 after the `_tools_for_state()` change.
+
+**Where things stand:** the tool and its enforcement line exist and are provably scoped, but nothing in a real conversation calls them yet. Next: Chunk B — wire `lookup_shipments` into the actual chat turn, add the natural-language answer pass, and log the scoping decision to the terminal.
+
+---
+
 ## 2026-07-30 — Week 2, Day 4: The frontend gets its own test suite too 🧪
 
 **Theme:** a follow-on to Chunk I, not a lettered chunk of its own — backend just got a real `pytest` suite, and the obvious next question was whether the frontend should have equivalent coverage. Scoped deliberately narrow: the two places with real logic (a hook that merges response fields, a modal with a real state machine), not `ChatWindow`'s JSX layout or anything CSS/visual.

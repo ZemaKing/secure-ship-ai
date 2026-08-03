@@ -12,7 +12,7 @@ from models.customer import Customer
 from schemas.chat import ChatRequest, ChatResponse, EscalationPayload
 from services.escalation import wants_escalation
 from services.prompting import build_system_prompt
-from tools.schemas import IDENTITY_FIELDS, VERIFY_IDENTITY_TOOL_SCHEMA
+from tools.schemas import IDENTITY_FIELDS, LOOKUP_SHIPMENTS_TOOL_SCHEMA, VERIFY_IDENTITY_TOOL_SCHEMA
 from tools.send_verification_code import send_verification_code
 from tools.verify_identity import IdentityOutcome, IdentityStatus, verify_identity
 
@@ -113,6 +113,8 @@ def _handle_escalation(db: Session, session: ChatSession, transcript: list) -> C
 def _tools_for_state(state: ChatSessionState) -> list[dict]:
     if state in IDENTITY_COLLECTING_STATES:
         return [VERIFY_IDENTITY_TOOL_SCHEMA]
+    if state == ChatSessionState.VERIFIED:
+        return [LOOKUP_SHIPMENTS_TOOL_SCHEMA]
     return []
 
 

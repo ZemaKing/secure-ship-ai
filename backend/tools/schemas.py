@@ -28,3 +28,21 @@ VERIFY_IDENTITY_TOOL_SCHEMA = {
         },
     },
 }
+
+LOOKUP_SHIPMENTS_TOOL_SCHEMA = {
+    "type": "function",
+    "function": {
+        "name": "lookup_shipments",
+        "description": (
+            "Look up the verified visitor's own shipments — status, carrier, origin/"
+            "destination, estimated delivery, and package contents. Call this whenever "
+            "they ask about their order, package, or delivery. There is no way to look up "
+            "anyone else's shipments through this tool — it always returns the calling "
+            "visitor's own records."
+        ),
+        # Deliberately no parameters at all (Epic F3): a customer_id or tracking-number
+        # argument here would give the model something to smuggle another visitor's
+        # identifier through. Scoping is done server-side from session state instead.
+        "parameters": {"type": "object", "properties": {}},
+    },
+}
