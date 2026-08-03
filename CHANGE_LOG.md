@@ -6,6 +6,20 @@ Full technical scope and week-by-week milestones live in `docs/DEV_PLAN.md` — 
 
 ---
 
+## 2026-08-03 — Week 3, Day 2: A verified visitor gets a real answer 📬
+
+**Theme:** Chunk B — wiring yesterday's `lookup_shipments` tool into an actual chat turn. Before today the tool existed and was exposed to the model, but nothing in `routes/chat.py` knew what to do if the model actually called it.
+
+- 🔌 `_dispatch_tool()` now handles `lookup_shipments` alongside `verify_identity` — calls the real tool (no arguments to even consider, since the schema has none) and returns its result. The tool-name allowlist check above it (Epic F2) applies exactly the same way it always has — nothing special-cased for the new tool.
+- 🗣️ **Second model call, same shape as Week 2's identity `PARTIAL` follow-up:** once the real shipment data comes back, a second, tool-free `ollama_client.chat()` call phrases the actual reply. `services/prompting.py`'s `build_system_prompt()` grew a `shipment_data` parameter — the new `SHIPMENT_DATA_INSTRUCTIONS` block tells the model to answer only from the data it's given and never invent details or mention another customer's shipments. A new `_format_shipments()` helper turns the tool's `ShipmentInfo` dataclasses into the plain-text block that goes into the prompt.
+- 💬 Console log line on every call, console-only per the no-PII-in-logs rule: `[TOOL CALL] lookup_shipments customer_id=<uuid> shipment_count=<n>` — exactly the scoping decision (whose data, how much of it) that Epic F3 needs to be demoable live, not just true in the code.
+- 🔒 **The enforcement line itself got an explicit inline comment today** (on top of yesterday's docstring), directly on `db.query(Shipment).filter(Shipment.customer_id == session.customer_id)` in `tools/lookup_shipments.py` — the exact line to scroll to at the demo, no docstring-reading required.
+- ✅ **Verified live**, against the real running `qwen3:8b` and real seeded Postgres (rebuilt the Docker backend first, since it has no bind mount): inserted a real `Verified` `ChatSession` row for seeded customer Sergei Petrov, asked "Where is my package?" through the actual `POST /chat` endpoint, and got back all 3 of his real shipments — correct tracking numbers, carriers, statuses, and contents, nothing invented. The terminal showed `[TOOL CALL] lookup_shipments customer_id=11ab8fad-7b0d-4156-bf48-c5fe5ed23708 shipment_count=3` right alongside it. `pytest backend/tests` stayed 12/12 throughout.
+
+**Where things stand:** a verified visitor can now ask a real question and get a real, data-backed answer — the core of Week 3's goal. Still only reachable via curl/direct DB insert, not the browser (Chunk C), and the enforcement point hasn't been attacked on purpose yet (Chunk D). Next: Chunk C, real shipment data in the frontend.
+
+---
+
 ## 2026-08-03 — Week 3, Day 1: The shipment-lookup tool exists, but nobody's calling it yet 📦
 
 **Theme:** Chunk A of Week 3's 5-chunk plan (A–E, one per weekday) — backend-only groundwork. `lookup_shipments` now exists and is exposed to the model as a real tool definition once a session is `Verified`, but `routes/chat.py`'s dispatch logic doesn't call it yet — that's Chunk B, tomorrow.

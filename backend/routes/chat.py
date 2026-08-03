@@ -12,6 +12,7 @@ from models.customer import Customer
 from schemas.chat import ChatRequest, ChatResponse, EscalationPayload
 from services.escalation import wants_escalation
 from services.prompting import build_system_prompt
+from tools.lookup_shipments import ShipmentInfo, lookup_shipments
 from tools.schemas import IDENTITY_FIELDS, LOOKUP_SHIPMENTS_TOOL_SCHEMA, VERIFY_IDENTITY_TOOL_SCHEMA
 from tools.send_verification_code import send_verification_code
 from tools.verify_identity import IdentityOutcome, IdentityStatus, verify_identity
@@ -110,6 +111,24 @@ def _handle_escalation(db: Session, session: ChatSession, transcript: list) -> C
     )
 
 
+def _format_shipments(shipments: list[ShipmentInfo]) -> str:
+    """Plain-text rendering of a real lookup_shipments() result, fed into the second
+    model call's system prompt so it has something concrete to phrase an answer from.
+    """
+    if not shipments:
+        return "This visitor currently has no shipments on file."
+
+    lines = []
+    for shipment in shipments:
+        packages = ", ".join(package.description for package in shipment.packages) or "no listed packages"
+        lines.append(
+            f"- Tracking {shipment.tracking_number} via {shipment.carrier}: {shipment.status}, "
+            f"from {shipment.origin} to {shipment.destination}, estimated delivery "
+            f"{shipment.estimated_delivery}, last update {shipment.last_update}. Contents: {packages}."
+        )
+    return "\n".join(lines)
+
+
 def _tools_for_state(state: ChatSessionState) -> list[dict]:
     if state in IDENTITY_COLLECTING_STATES:
         return [VERIFY_IDENTITY_TOOL_SCHEMA]
@@ -118,7 +137,9 @@ def _tools_for_state(state: ChatSessionState) -> list[dict]:
     return []
 
 
-def _dispatch_tool(db: Session, session: ChatSession, tool_call: ToolCall) -> IdentityOutcome | None:
+def _dispatch_tool(
+    db: Session, session: ChatSession, tool_call: ToolCall
+) -> IdentityOutcome | list[ShipmentInfo] | None:
     """Executes a tool call the model made. Only allows tool names that were actually
     offered for this session's current state — rejects anything else, which hardens
     against a prompt-injected/hallucinated tool name (Epic F2).
@@ -130,6 +151,11 @@ def _dispatch_tool(db: Session, session: ChatSession, tool_call: ToolCall) -> Id
     if tool_call.name == "verify_identity":
         args = {field: tool_call.arguments.get(field) for field in IDENTITY_FIELDS}
         return verify_identity(db, session, **args)
+
+    if tool_call.name == "lookup_shipments":
+        shipments = lookup_shipments(db, session)
+        print(f"[TOOL CALL] lookup_shipments customer_id={session.customer_id} shipment_count={len(shipments)}")
+        return shipments
 
     return None
 
@@ -164,9 +190,24 @@ def send_chat_message(request: ChatRequest, db: Session = Depends(get_db)) -> Ch
 
     event = None
     if result.tool_calls:
-        outcome = _dispatch_tool(db, session, result.tool_calls[0])
+        tool_call = result.tool_calls[0]
+        outcome = _dispatch_tool(db, session, tool_call)
         if outcome is None:
             reply = result.content or "Sorry, I didn't catch that — could you rephrase?"
+        elif tool_call.name == "lookup_shipments":
+            # Second, tool-free model call — same shape as the identity PARTIAL
+            # follow-up below — phrases an answer from the real data already fetched
+            # above. The model never sees a customer_id or re-queries anything itself.
+            followup = ollama_client.chat(
+                [
+                    {
+                        "role": "system",
+                        "content": build_system_prompt(shipment_data=_format_shipments(outcome)),
+                    },
+                    {"role": "user", "content": request.message},
+                ]
+            )
+            reply = followup.content or "I found your shipments, but couldn't summarize them just now — could you ask again?"
         else:
             if session.state == ChatSessionState.ANONYMOUS:
                 session.state = ChatSessionState.COLLECTING_IDENTITY

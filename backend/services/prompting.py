@@ -26,24 +26,37 @@ POST_ESCALATION_UNVERIFIED_INSTRUCTIONS = (
     "the same as before."
 )
 
+# Used only for the second, tool-free model call that phrases a lookup_shipments answer
+# (Week 3, Chunk B) — the data block itself is built by routes/chat.py from the tool's
+# real result, never guessed by the model.
+SHIPMENT_DATA_INSTRUCTIONS = (
+    "Answer the visitor's question using only the shipment data below — it's already "
+    "been looked up for this verified visitor's own account. Don't invent any detail "
+    "it doesn't contain, and don't mention any other customer's shipments."
+)
+
 
 def build_system_prompt(
     known_identity: dict | None = None,
     *,
     collecting_identity: bool = False,
     unverified_escalation: bool = False,
+    shipment_data: str | None = None,
 ) -> str:
     """Build the system prompt for one turn — appends the identity-collection
     instructions while a session is still Anonymous/CollectingIdentity, the
     post-escalation-but-unverified instructions while ESCALATED_TO_HUMAN with no
-    confirmed customer_id, and any identity fields already known for this session
-    so the model doesn't ask the visitor to repeat themselves.
+    confirmed customer_id, any identity fields already known for this session so the
+    model doesn't ask the visitor to repeat themselves, and (Chunk B) a verified
+    visitor's own real shipment data for the model to phrase an answer from.
     """
     prompt = BASE_SYSTEM_PROMPT
     if collecting_identity:
         prompt = f"{prompt}\n\n{IDENTITY_COLLECTION_INSTRUCTIONS}"
     if unverified_escalation:
         prompt = f"{prompt}\n\n{POST_ESCALATION_UNVERIFIED_INSTRUCTIONS}"
+    if shipment_data:
+        prompt = f"{prompt}\n\n{SHIPMENT_DATA_INSTRUCTIONS}\n\n{shipment_data}"
 
     if not known_identity:
         return prompt

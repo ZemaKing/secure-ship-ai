@@ -37,6 +37,9 @@ def lookup_shipments(db: Session, session: ChatSession) -> list[ShipmentInfo]:
     F3's single enforcement point; see also `VERIFY_IDENTITY_TOOL_SCHEMA`'s sibling
     reasoning for why the tool schema itself carries no such argument either).
     """
+    # Epic F3 — the single enforcement point: scoped only to this session's own,
+    # server-set session.customer_id. Never a tool-call argument or request field —
+    # there is none, by design (see LOOKUP_SHIPMENTS_TOOL_SCHEMA's empty parameters).
     shipments = db.query(Shipment).filter(Shipment.customer_id == session.customer_id).all()
 
     results = []
