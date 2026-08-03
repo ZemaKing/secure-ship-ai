@@ -10,7 +10,8 @@ truncate step needed. Requires the dev Postgres to be up and already migrated
 project has always had.
 """
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
+from decimal import Decimal
 
 import pytest
 from sqlalchemy.orm import Session
@@ -18,6 +19,8 @@ from sqlalchemy.orm import Session
 from db.session import engine
 from models.chat_session import ChatSession, ChatSessionState
 from models.customer import Customer
+from models.package import Package
+from models.shipment import Shipment, ShipmentStatus
 from services import verification_store
 
 
@@ -77,5 +80,44 @@ def make_session(db_session):
         db_session.add(session)
         db_session.commit()
         return session
+
+    return _make
+
+
+@pytest.fixture()
+def make_shipment(db_session):
+    def _make(**overrides):
+        unique_suffix = uuid.uuid4().hex[:14].upper()
+        defaults = {
+            "tracking_number": f"1Z{unique_suffix}",
+            "status": ShipmentStatus.IN_TRANSIT,
+            "carrier": "Test Carrier",
+            "origin": "Testville, TS",
+            "destination": "Otherville, OS",
+            "estimated_delivery": date(2030, 1, 1),
+            "last_update": datetime.now(timezone.utc),
+        }
+        defaults.update(overrides)
+        shipment = Shipment(**defaults)
+        db_session.add(shipment)
+        db_session.commit()
+        return shipment
+
+    return _make
+
+
+@pytest.fixture()
+def make_package(db_session):
+    def _make(**overrides):
+        defaults = {
+            "description": "Test Item",
+            "weight_kg": Decimal("1.00"),
+            "declared_value": Decimal("10.00"),
+        }
+        defaults.update(overrides)
+        package = Package(**defaults)
+        db_session.add(package)
+        db_session.commit()
+        return package
 
     return _make
