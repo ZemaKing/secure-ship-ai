@@ -103,3 +103,31 @@ def test_smuggled_customer_id_argument_is_ignored(
     tracking_numbers = {shipment.tracking_number for shipment in (response.shipments or [])}
     assert tracking_numbers == {"1ZATTACKER02"}
     assert "1ZVICTIM0002" not in tracking_numbers
+
+
+def test_rejected_tool_call_never_leaks_model_narration_to_the_reply(
+    db_session, make_session, monkeypatch
+):
+    """An unverified session isn't offered lookup_shipments at all, so a model that
+    hallucinates calling it anyway gets rejected by _dispatch_tool's allowlist. The
+    model's own accompanying `content` for that turn can still name the tool/implementation
+    detail it just tried to use (real models narrate tool calls in prose) — the reply must
+    never surface that raw content, only the generic fallback.
+    """
+    session = make_session(state=ChatSessionState.COLLECTING_IDENTITY)
+
+    def fake_chat(messages, tools=None):
+        return ChatCompletionResult(
+            content="Let me call the lookup_shipments tool to check your customer_id...",
+            tool_calls=[ToolCall(name="lookup_shipments", arguments={})],
+        )
+
+    monkeypatch.setattr(chat_routes.ollama_client, "chat", fake_chat)
+
+    response = chat_routes.send_chat_message(
+        ChatRequest(message="Where is my package?", session_id=str(session.id)), db_session
+    )
+
+    assert response.reply == "Sorry, I didn't catch that — could you rephrase?"
+    assert "lookup_shipments" not in response.reply
+    assert "customer_id" not in response.reply

@@ -6,6 +6,18 @@ Full technical scope and week-by-week milestones live in `docs/DEV_PLAN.md` — 
 
 ---
 
+## 2026-08-04 — Post-Week-3 fix: a rejected tool call was leaking its own name to the customer 🔧
+
+**Theme:** caught during a live smoke test, not planned Week 4 work — a real gap in the "no technical detail in a customer-facing reply" guarantee, adjacent to but distinct from Chunk D's adversarial-scoping pass.
+
+- 🐛 `routes/chat.py`'s `send_chat_message()` had a fallback path for when `_dispatch_tool()` rejects a tool call the allowlist doesn't permit (a hallucinated tool name, or a real tool name the current session state doesn't offer — Epic F2): it fell back to `result.content`, the model's own raw narration accompanying that same rejected call. Since models narrate tool calls in prose, that content could itself name the tool (e.g. "Let me call the lookup_shipments tool...") — a rejected call means its narration is untrusted too, not just the call itself. Fixed by always using the existing generic fallback message in that branch instead, never the model's raw content.
+- 🧪 New test in `backend/tests/test_gating.py`, `test_rejected_tool_call_never_leaks_model_narration_to_the_reply` — mocks a hallucinated `lookup_shipments` call from a `CollectingIdentity` session (a state that doesn't offer that tool at all) paired with model content that explicitly names the tool and `customer_id`, asserts the reply is the plain generic fallback with neither string present.
+- ✅ `pytest backend/tests` — 17/17 passing (16 → 17).
+
+**Where things stand:** Week 3 remains build-complete; this was a targeted fix on top of it, not new Week 4 scope. Next: Week 4, Chunk A (Auth0 skeleton), per the just-finalized `docs/DEV_PLAN.md` chunk plan.
+
+---
+
 ## 2026-08-03 — Week 3, Day 5: Closing out the week — dry run, docs, done 🎬
 
 **Theme:** Chunk E — the same close-out pattern Chunk I used for Week 2: a full test re-run, docs brought current, and a live dry run of both Monday demo items back to back, not just each verified in isolation on its own day.

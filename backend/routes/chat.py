@@ -222,7 +222,11 @@ def send_chat_message(request: ChatRequest, db: Session = Depends(get_db)) -> Ch
         tool_call = result.tool_calls[0]
         outcome = _dispatch_tool(db, session, tool_call)
         if outcome is None:
-            reply = result.content or "Sorry, I didn't catch that — could you rephrase?"
+            # Never fall back to result.content here: the model's raw text accompanying
+            # a rejected tool call can name the tool itself (e.g. "lookup_shipments") or
+            # other implementation detail — a disallowed tool call means its narration
+            # is untrusted too, not just the call itself.
+            reply = "Sorry, I didn't catch that — could you rephrase?"
         elif tool_call.name == "lookup_shipments":
             # Second, tool-free model call — same shape as the identity PARTIAL
             # follow-up below — phrases an answer from the real data already fetched
