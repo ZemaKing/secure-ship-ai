@@ -152,14 +152,26 @@
     color: v.$color-text-muted;
   }
 
-  &__admin-card-link {
+  &__admin-card-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: v.$space-2;
+    width: 100%;
+    padding: v.$space-2 v.$space-3;
+    border-radius: v.$radius-sm;
+    background: v.$color-primary-light;
+    color: v.$color-primary;
     font-size: v.$font-size-xs;
     font-weight: 600;
-    color: v.$color-primary;
     text-decoration: none;
 
     &:hover {
-      text-decoration: underline;
+      background: v.$color-primary-border;
     }
+  }
+
+  &__admin-card-button-icon {
+    @include m.icon(16px);
   }
 }

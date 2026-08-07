@@ -10,8 +10,9 @@ function AdminAccessCard() {
       <p className="sidebar__admin-card-text">
         Only administrators can modify shipment data.
       </p>
-      <Link className="sidebar__admin-card-link" to="/admin">
-        Learn more
+      <Link className="sidebar__admin-card-button" to="/admin">
+        <img className="sidebar__admin-card-button-icon" src="/icons/admin-access.svg" alt="" />
+        Administrator Panel
       </Link>
     </div>
   )
