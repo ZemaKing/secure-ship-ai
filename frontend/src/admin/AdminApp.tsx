@@ -9,7 +9,7 @@ import './AdminApp.scss'
 // all needing the same Authorization header, that's the point to extract a shared
 // mechanism (a small hook, or a custom Orval fetch mutator), not before.
 function AdminApp() {
-  const { user, logout, getAccessTokenSilently } = useAuth0()
+  const { logout, getAccessTokenSilently } = useAuth0()
   const [accessToken, setAccessToken] = useState<string | null>(null)
 
   useEffect(() => {
@@ -29,7 +29,8 @@ function AdminApp() {
           className="admin-app__logout"
           onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
         >
-          Log out {user?.name ?? ''}
+          <img className="admin-app__logout-icon" src="/icons/logout.svg" alt="" />
+          Logout
         </button>
       </div>
 
