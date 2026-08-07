@@ -140,17 +140,66 @@ code --install-extension mrmlnc.vscode-scss
 
 ---
 
-### 1.9 Auth0 account — not needed yet
+### 1.9 Auth0 account (Week 4)
 
-Free sign-up: https://auth0.com
+Free sign-up: https://auth0.com — **Personal** account type is fine for this project (not a company signup).
 
-**Hold off until Week 4.** `DEV_PLAN.md` is explicit: create the tenant + application right before installing Auth0's Agent Skills, not before — no reason to have idle config sitting around.
+**Create the application and API** (Dashboard → manage.auth0.com):
 
-Week 4 setup (for reference, do not run yet):
+1. **Applications → Applications → Create Application**
+   - Name: `SecureShip Admin`
+   - Type: **Single Page Web Applications**
+2. In that application's **Settings** tab, set:
+   - Allowed Callback URLs: `http://localhost:5173, http://localhost:5173/admin`
+   - Allowed Logout URLs: `http://localhost:5173`
+   - Allowed Web Origins: `http://localhost:5173`
+   - Save Changes
+3. Note the **Domain** and **Client ID** from the top of that Settings tab.
+4. **Applications → APIs → Create API**
+   - Name: `SecureShip Admin API`
+   - Identifier: `https://secureship-admin-api` (becomes `AUTH0_AUDIENCE` — a URI-shaped string that's never actually called, just needs to be unique within the tenant)
+   - Signing Algorithm: RS256 (default)
+5. **Grant the application access to the API** — open the API → **Application Access** tab (older Auth0 UI: "Machine to Machine Applications", despite the name it also covers the Authorization Code/PKCE flow a SPA uses) → find the SPA application → toggle **User-Delegated Access** to Authorized → Save.
+   - Skipping this step fails login immediately with `invalid_request: Client "..." is not authorized to access resource server "..."`.
+
+No client secret is needed anywhere — the SPA uses PKCE, and the backend only ever *validates* tokens (never issues them), so it stays a stateless JWT validator.
+
+**Install the Auth0 Agent Skill** (drives the actual integration code — see `CLAUDE.md` §4.5):
 
 ```powershell
-npx skills add auth0/agent-skills
+npx skills add auth0/agent-skills --full-depth --skill auth0 -y
 ```
+
+The `--full-depth --skill auth0` flags matter — the bare `npx skills add auth0/agent-skills` installs the wrong skill (`author-auth0-skill`, Auth0's own internal meta-skill for authoring their skill docs, not one for building an app against).
+
+**Environment variables** — add to `backend/.env`:
+
+```
+AUTH0_DOMAIN=<your-tenant>.us.auth0.com
+AUTH0_AUDIENCE=https://secureship-admin-api
+```
+
+and to `frontend/.env`:
+
+```
+VITE_AUTH0_DOMAIN=<your-tenant>.us.auth0.com
+VITE_AUTH0_CLIENT_ID=<the SPA application's Client ID>
+VITE_AUTH0_AUDIENCE=https://secureship-admin-api
+```
+
+The same three values also go into `docker-compose.yml`'s `backend.environment`/`frontend.environment` blocks for the containerized path (already wired in — just swap in a new tenant's values if setting this up fresh).
+
+**Known gotcha, already fixed in code:** `Auth0Provider` must be given an explicit `redirect_uri` — leaving it to the SDK's default caused a real, 100%-reproducible `Unable to issue redirect for OAuth 2.0 transaction` error on Auth0's own login page (confirmed across two separate freshly-created tenants before the cause was found). Fixed in `frontend/src/auth/Auth0ProviderWithNavigate.tsx`; noted here in case a future SDK upgrade reintroduces it. Full debugging trail in `CHANGE_LOG.md`'s 2026-08-07 entry.
+
+**Not yet locked down (planned for Week 4, Chunk E):** right now, anyone who signs up on the Universal Login screen gets full admin access — there's no role/permission check yet, and public self-service Sign Up is still enabled on the connection. Chunk E adds an `admin:access` RBAC permission check and disables public Sign Up.
+
+Verify:
+
+```powershell
+curl -i http://localhost:8000/admin/me
+```
+
+Expected: `400 invalid_request` with no `Authorization` header — confirms the backend is validating against the real tenant, not just returning a generic error.
 
 ---
 
