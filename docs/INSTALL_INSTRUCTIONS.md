@@ -215,6 +215,29 @@ Expected: `400 invalid_request` with no `Authorization` header — confirms the 
 
 These aren't needed today. Listed here so every install command for this project lives in one file.
 
+### 2.0 Environment files (`.env`) — needed before anything runs host-native
+
+Both files are gitignored (never committed — no `.env.example` exists yet either), so a fresh clone has neither. Create them by hand.
+
+`backend/.env`:
+
+```
+DATABASE_URL=postgresql://user:pass@localhost:5432/secureship
+FRONTEND_ORIGIN=http://localhost:5173
+AUTH0_DOMAIN=<your-tenant>.us.auth0.com
+AUTH0_AUDIENCE=https://secureship-admin-api
+```
+
+`frontend/.env`:
+
+```
+VITE_AUTH0_DOMAIN=<your-tenant>.us.auth0.com
+VITE_AUTH0_CLIENT_ID=<the SPA application's Client ID>
+VITE_AUTH0_AUDIENCE=https://secureship-admin-api
+```
+
+The `AUTH0_*`/`VITE_AUTH0_*` values come from §1.9's tenant setup — **`backend/.env`'s two `AUTH0_*` lines are not optional**, even to just run the chat: `main.py` imports `routes.admin` unconditionally, and `auth/dependencies.py` reads `AUTH0_DOMAIN`/`AUTH0_AUDIENCE` at import time with no default, so the *entire* backend (including `/chat`/`/health`) fails to start without them set — not only `/admin/*`. Complete §1.9's Auth0 setup before running the backend at all. For the containerized path, the same values already live in `docker-compose.yml`'s `backend.environment`/`frontend.environment` blocks — only the `.env` files matter for host-native `uvicorn`/`npm run dev`.
+
 ### 2.1 Backend (Python / FastAPI)
 
 From `backend/`, once `requirements.txt` exists:
@@ -231,6 +254,12 @@ Core packages this project locks in (`DEV_PLAN.md` §1):
 pip install fastapi "pydantic>=2" sqlalchemy alembic "uvicorn[standard]"
 ```
 
+Apply migrations (needed once, and after every new migration — the Docker path does this automatically on container start, host-native doesn't):
+
+```powershell
+alembic upgrade head
+```
+
 Run the dev server:
 
 ```powershell
@@ -239,7 +268,7 @@ uvicorn main:app --reload
 
 ### 2.2 Frontend (Vite + React + TypeScript)
 
-From `frontend/`, scaffold (Week 1):
+From `frontend/`, scaffold (Week 1 only — for a clone of the finished repo, `package.json` already exists, so just run `npm install`):
 
 ```powershell
 npm create vite@latest . -- --template react-ts
@@ -251,6 +280,8 @@ Add Orval (generates React Query hooks from FastAPI's `/openapi.json` — never 
 ```powershell
 npm install --save-dev orval
 ```
+
+`src/api/generated/secure-ship.ts` (Orval's output) is committed to the repo, so `npm run generate:api` isn't required just to get the app running — only rerun it if backend routes/models changed since the last commit (requires the backend running on `:8000` first).
 
 Run the dev server:
 
@@ -265,6 +296,16 @@ Once `docker-compose.yml` exists at the repo root:
 ```powershell
 docker compose up --build
 ```
+
+### 2.3.1 Seed data (Week 1)
+
+The database has no rows until seeded — neither Docker's `alembic upgrade head` nor a host-native `alembic upgrade head` inserts any data, only tables. From the repo root, backend venv active, dev Postgres up and migrated:
+
+```powershell
+python scripts/seed_data.py
+```
+
+Populates mock customers/shipments/packages straight through the ORM models. No truncate/reset step — safe to re-run, but re-running just adds more rows on top of what's already there.
 
 Brings up `frontend`, `backend`, and `postgres` containers. Ollama stays on the host and is reached via `host.docker.internal:11434`.
 
