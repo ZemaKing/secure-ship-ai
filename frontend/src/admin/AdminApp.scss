@@ -1,0 +1,42 @@
+@use '../styles/variables' as v;
+
+.admin-app {
+  padding: v.$space-6;
+  font-family: v.$font-family;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: v.$space-5;
+  }
+
+  &__title {
+    font-size: v.$font-size-xl;
+    color: v.$color-text;
+    margin: 0;
+  }
+
+  &__logout {
+    padding: v.$space-2 v.$space-4;
+    border-radius: v.$radius-sm;
+    border: 1px solid v.$color-border;
+    background: v.$color-bg;
+    color: v.$color-text;
+    font-size: v.$font-size-sm;
+    cursor: pointer;
+
+    &:hover {
+      background: v.$color-bg-muted;
+    }
+  }
+
+  &__status {
+    color: v.$color-text-muted;
+    font-size: v.$font-size-md;
+
+    &--error {
+      color: v.$color-status-exception;
+    }
+  }
+}

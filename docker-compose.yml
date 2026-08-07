@@ -19,6 +19,8 @@ services:
       - DATABASE_URL=postgresql://user:pass@postgres:5432/secureship
       - FRONTEND_ORIGIN=http://localhost:5173
       - OLLAMA_HOST=http://host.docker.internal:11434
+      - AUTH0_DOMAIN=dev-0rhen6amw7vpuz4p.us.auth0.com
+      - AUTH0_AUDIENCE=https://secureship-admin-api
     ports: ["8000:8000"]
     depends_on:
       postgres:
@@ -26,6 +28,10 @@ services:
 
   frontend:
     build: ./frontend
+    environment:
+      - VITE_AUTH0_DOMAIN=dev-0rhen6amw7vpuz4p.us.auth0.com
+      - VITE_AUTH0_CLIENT_ID=ZwfVvX9MY5SkcuAgNBBJDmrot7bYFopw
+      - VITE_AUTH0_AUDIENCE=https://secureship-admin-api
     ports: ["5173:5173"]
     depends_on:
       - backend

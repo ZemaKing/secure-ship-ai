@@ -219,6 +219,15 @@ __marimo__/
 
 /ai-chatbot-ui-mockup.png
 /ai-chatbot-modal-mockup.png
+/ai-chatbot-admin-access.png
+/ai-chatbot-admin-authorization-shipments.png
 
 # Local demo/presentation prep — not part of the shipped project
 /demo/
+
+# Auth0 Agent Skills (Week 4, Section 4.5) — installed locally via
+# `npx skills add auth0/agent-skills --full-depth --skill auth0 -y`, regenerable,
+# not project code
+/.agents/
+/.claude/skills/
+/skills-lock.json

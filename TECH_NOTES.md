@@ -13,9 +13,9 @@ Written with JS/Node/TypeScript analogies throughout, since that's the backgroun
 | Line | What it does | JS/Node analogy |
 |---|---|---|
 | `from fastapi import FastAPI` | Imports the FastAPI web framework | `import express from 'express'` |
-| `from routes.chat import router as chat_router` / `from routes.verify import router as verify_router` | Imports the `APIRouter`s defined in `routes/chat.py` and (as of Chunk D) `routes/verify.py` | `import chatRouter from './routes/chat'; import verifyRouter from './routes/verify'` |
+| `from routes.chat import router as chat_router` / `from routes.verify import router as verify_router` / `from routes.admin import router as admin_router` (Week 4, Chunk A) | Imports the `APIRouter`s defined in `routes/chat.py`, `routes/verify.py`, and (new) `routes/admin.py` | `import chatRouter from './routes/chat'; import verifyRouter from './routes/verify'; import adminRouter from './routes/admin'` |
 | `app = FastAPI(title="SecureShip Backend")` | Creates the application instance everything else attaches routes to. `title` only labels the app in the auto-generated docs. | `const app = express()` |
-| `app.include_router(chat_router)` / `app.include_router(verify_router)` | Mounts every route defined on each router onto the main app | `app.use('/', chatRouter); app.use('/', verifyRouter)` |
+| `app.include_router(chat_router)` / `app.include_router(verify_router)` / `app.include_router(admin_router)` | Mounts every route defined on each router onto the main app | `app.use('/', chatRouter); app.use('/', verifyRouter); app.use('/', adminRouter)` |
 | `app.add_middleware(CORSMiddleware, allow_origins=[os.environ.get("FRONTEND_ORIGIN", ...)], ...)` | Allows the browser (a different origin — `localhost:5173` vs. `localhost:8000`) to actually read the response. Without this, the browser's own CORS check blocks the fetch client-side before the request even reaches a route — the request still hits the server (visible in `uvicorn`'s access log), but the response is thrown away by the browser. `FRONTEND_ORIGIN` is `.env`-driven (defaults to `http://localhost:5173`) rather than hardcoded, per the "configuration in environment variables" guideline | `app.use(cors({ origin: process.env.FRONTEND_ORIGIN }))` |
 | `@app.get("/health")` | A *decorator* — registers the function directly below it as the handler for `GET /health`. Python has no direct syntax equivalent to this, but it does the same job as chaining a route + handler. | `app.get('/health', (req, res) => {...})` |
 | `def health() -> dict[str, str]:` | A plain function. The `-> dict[str, str]` is a *type hint*: "returns an object with string keys and string values." Python doesn't enforce this by itself at runtime, but FastAPI reads it to validate the response shape and build the OpenAPI schema. | A TypeScript return type annotation |
@@ -48,6 +48,8 @@ Only six packages were installed directly (per `DEV_PLAN.md`'s locked stack); ev
 | `PyYAML` | YAML parsing | Transitive dependency pulled in by one of the above |
 | `requests`, `urllib3`, `certifi`, `charset-normalizer` | Synchronous HTTP client — used by `llm/ollama_client.py` to call Ollama's local API | Like `axios`. `urllib3`/`certifi`/`charset-normalizer` are its internals (connection pooling, SSL certs, encoding detection) | Direct dependency: `requests` |
 | `psycopg2-binary` | The actual database driver SQLAlchemy uses under the hood to talk to Postgres over the wire | Like `pg` (the driver npm package `Prisma`/`Knex` sit on top of) — SQLAlchemy is the ORM layer, this is the low-level connector it delegates to | Direct dependency |
+| `auth0-fastapi-api`, `auth0-api-python` (Week 4, Chunk A) | The Auth0 skill's own recommended SDK for validating access tokens in a FastAPI backend — JWKS fetch/cache and RS256/`aud`/`iss` validation all happen inside this package | Like an official `express-oauth2-jwt-bearer` equivalent, purpose-built for one provider | Direct dependency: `auth0-fastapi-api` |
+| `Authlib`, `joserfc`, `cryptography`, `cffi`, `pycparser`, `ada-url`, `httpx`, `httpcore` (Week 4, Chunk A) | `auth0-fastapi-api`'s own transitive dependencies — JOSE/JWT parsing and signature verification, the underlying crypto primitives, and the async HTTP client it uses to fetch JWKS | Same "one direct dependency pulls in a deep tree" pattern as everything else in this table |
 
 ---
 
@@ -64,7 +66,9 @@ Only six packages were installed directly (per `DEV_PLAN.md`'s locked stack); ev
 | `backend: build: ./backend` | Builds and runs `backend/Dockerfile` as a service instead of pulling a prebuilt image, since this is the project's own code | `build: .` pointing at a local `Dockerfile` |
 | `backend.environment: DATABASE_URL=...@postgres:5432/...` | Overrides the value `.env` has for host-native dev (`@localhost:5432`) — inside the container, `localhost` means "this container," so the backend has to reach Postgres via the Docker Compose network's service name (`postgres`) instead | Same idea as a container-specific `DATABASE_URL` in any Dockerized Node app talking to a sibling DB container |
 | `backend.environment: OLLAMA_HOST=http://host.docker.internal:11434` | Same problem, different fix — Ollama runs on the *host* machine, not in a container, so `host.docker.internal` (Docker Desktop's special DNS name for "the machine running Docker") is used instead of a service name | No real Node equivalent — this is Docker Desktop-specific plumbing |
+| `backend.environment: AUTH0_DOMAIN` / `AUTH0_AUDIENCE` (Week 4, Chunk A) | The backend's stateless JWT validator reads these to construct `Auth0FastAPI(...)` — no client secret anywhere, since the SPA application never needed one (PKCE, not a confidential client) | Same idea as any provider-specific env var pair (e.g. `AUTH0_DOMAIN`/`AUTH0_AUDIENCE` in an Express `express-oauth2-jwt-bearer` setup) |
 | `frontend: build: ./frontend` | Same pattern as `backend` — builds `frontend/Dockerfile` | — |
+| `frontend.environment: VITE_AUTH0_DOMAIN` / `VITE_AUTH0_CLIENT_ID` / `VITE_AUTH0_AUDIENCE` (Week 4, Chunk A) | A **new** `environment:` block for `frontend` — didn't exist before this chunk. Vite only exposes `VITE_`-prefixed vars present in the process environment at dev-server start, and the frontend container has no bind mount to pick up a local `.env` file otherwise, so these have to be set here explicitly | Same as any Vite-based frontend container needing build/runtime env vars baked in rather than read from a mounted `.env` |
 | `depends_on: [postgres]` / `[backend]` | Controls container *start order* only (not readiness) — `backend` starts after `postgres`'s container process exists, not after Postgres is actually accepting connections. Good enough here since nothing auto-migrates on startup yet (see below) | `depends_on` in Compose has this same "started, not ready" caveat generally |
 
 **Why it exists:** started with just `postgres` per REQUIREMENTS.md §4.7, extended (not replaced) on Day 2 once `backend`/`frontend` had working Dockerfiles. Ollama stays on the host per the locked architecture decision, so it's never in this file — the containerized backend reaches it via `host.docker.internal` instead.
@@ -301,6 +305,46 @@ Only six packages were installed directly (per `DEV_PLAN.md`'s locked stack); ev
 
 ---
 
+### `backend/auth/dependencies.py` (Week 4, Chunk A)
+
+| Line | What it does | JS/Node analogy |
+|---|---|---|
+| `load_dotenv(Path(__file__).resolve().parent.parent / ".env")` | Same explicit, self-sufficient `load_dotenv()` call `db/session.py` already makes — this module doesn't rely on import order elsewhere having already loaded `.env` | Each module that needs env vars calling `require('dotenv').config()` itself rather than trusting some other file already did |
+| `auth0 = Auth0FastAPI(domain=os.environ["AUTH0_DOMAIN"], audience=os.environ["AUTH0_AUDIENCE"])` | Constructs the SDK's client at **import time**, fail-fast via `os.environ[...]` (not `.get()` with a default) — same idiom `db/session.py` uses for `DATABASE_URL`. This is *the* enforcement point: JWKS fetch/cache and RS256/`aud`/`iss` validation all happen inside this one object, never hand-rolled | Constructing a single shared `express-oauth2-jwt-bearer` middleware instance once at module load, not per-request |
+| `get_current_admin = auth0.require_auth()` | The actual FastAPI dependency — an async function that validates the incoming request's `Authorization` header and returns the decoded JWT claims as a `dict`, or raises `400`/`401` per the SDK's own error contract | The middleware function itself, exported for use in route definitions |
+
+**Why it exists:** Epic E3's enforcement point, deliberately built the same way Epic F3's `lookup_shipments` scoping was — one small module, one auditable place, no hand-rolled cryptography. The Auth0 skill (`auth0/agent-skills`, the `auth0` skill specifically — see `CHANGE_LOG.md` for how the first install grabbed the wrong one) explicitly flags manual `python-jose`/`PyJWT` validation as a mistake to avoid; `auth0-fastapi-api` does the JWKS work instead.
+
+**Verified:** live against the real Auth0 tenant — `curl http://localhost:8000/admin/me` with no `Authorization` header → `400 invalid_request`; with a malformed bearer token (`Bearer garbage.invalid.token`) → `401 invalid_token`, both without any network call (header-presence and header-parsing failures are checked locally before any JWKS round trip). A real Universal Login round trip through the browser confirmed a valid token is accepted and `claims["sub"]`/`claims.get("email")` decode correctly.
+
+---
+
+### `backend/routes/admin.py` + `backend/schemas/admin.py` (Week 4, Chunk A)
+
+| Line | What it does | JS/Node analogy |
+|---|---|---|
+| `router = APIRouter(prefix="/admin", dependencies=[Depends(get_current_admin)])` | A **router-level** dependency, not a per-route one — every route added under this router (today just `/me`, growing through Chunks B-D) is protected by the same single line, impossible to accidentally forget on a new route | `router.use(checkJwt)` applied once to an Express Router instance, before any routes are defined on it |
+| `@router.get("/me", operation_id="adminMe")` `def admin_me(claims: dict = Depends(get_current_admin)) -> AdminMeResponse:` | The dependency is declared *again* as a parameter here — FastAPI caches a dependency's result per request by default, so this doesn't re-validate the token a second time, it just gets access to the already-computed `claims` return value | Reading `req.auth` (already populated by upstream middleware) inside a specific route handler |
+| `schemas/admin.py::AdminMeResponse(sub: str, email: str \| None = None)` | The wire-format contract — `email` is optional because Auth0 **access tokens** (unlike ID tokens) don't carry profile claims by default; observed live, not assumed | A Pydantic response model, same pattern as `schemas/chat.py`/`schemas/verify.py` |
+
+**Why it exists:** the stub route for Chunk A — proves the whole pipeline (router-level dependency → real claims → real response) before any actual CRUD logic exists. `schemas/admin.py` will grow `CustomerCreate`/`ShipmentCreate`/etc. through Chunks B-D, same shape as `schemas/chat.py`.
+
+**Verified:** `GET /admin/me` through the real running stack, with a real Auth0-issued access token from a completed browser login, returned `{"sub": "auth0|...", "email": null}` — `email` came back `null` because the access token (correctly) doesn't include it, confirming the schema's `| None` isn't just defensive typing.
+
+---
+
+### `backend/tests/test_admin_auth.py` (Week 4, Chunk A)
+
+The first test file in the suite to use `fastapi.testclient.TestClient` against the real `main.app` instead of calling a route function directly — necessary here since what's under test (header presence, HTTP status codes) only exists at the HTTP layer, not in a plain Python function call.
+
+| Test | What it proves |
+|---|---|
+| `test_admin_me_rejects_missing_auth_header` | `GET /admin/me` with no `Authorization` header → `400`, matching the SDK's real observed behavior (not the `401` originally assumed before live-testing) |
+| `test_admin_me_rejects_malformed_token` | A `Bearer garbage.invalid.token` value → `401`, entirely local (fails to base64-decode as a JWT header, no network call) |
+| `test_admin_me_returns_claims_for_an_authenticated_request` | Uses `app.dependency_overrides[get_current_admin] = lambda: {...}` (the standard FastAPI pattern for testing protected routes without a live Auth0 call) to prove the route itself — reading `sub`/`email` off whatever claims it receives — works correctly, cleaned up via `try/finally` so the override never leaks into another test |
+
+---
+
 ### `backend/db/base.py` + `backend/db/session.py`
 
 | Line | What it does | JS/Node analogy |
@@ -359,7 +403,7 @@ The other three files follow the identical pattern: `Customer` (plain string col
 
 ---
 
-### `backend/tests/` (`pytest.ini`, `conftest.py`, 7 test files)
+### `backend/tests/` (`pytest.ini`, `conftest.py`, 8 test files)
 
 | Construct | What it does | JS/Node analogy |
 |---|---|---|
@@ -380,7 +424,7 @@ The other three files follow the identical pattern: `Customer` (plain string col
 
 **Why it exists:** Chunk I — every one of these behaviors was already verified by hand, live, in an earlier chunk (Chunks A/B3/D/F2/G4), but only ever documented in `CHANGE_LOG.md` prose; nothing would have caught a regression. Several of the assertions above double as a guardrail on a *decision*, not just a behavior: `ollama_client.chat()` returning a `ChatCompletionResult` dataclass (Chunk B) has to hold for `test_escalation_no_leak.py`'s mock to even type-check against real call sites; the 300s/3-attempts constants (Chunk D) are imported directly (`CODE_TTL_SECONDS`) rather than re-hardcoded in the test, so the test can't silently drift from the real value; the in-memory-dict-not-Redis call (Chunk D) is exactly why `_clear_verification_store` has to exist as its own fixture at all. Week 3's Chunk D extends the same "pin the decision down with a test" philosophy to Epic F3 specifically — the enforcement point was always *true by construction* (no argument exists to misuse), but nothing proved it stayed true under deliberate, adversarial pressure until now.
 
-**Verified:** `pytest` (from `backend/`, venv active) — 12/12 passing as of Chunk I. Row counts in the real dev DB (`customers`, `chat_sessions`) confirmed identical before and after two full test runs, by hand via `psql` — direct evidence the rollback fixture leaves zero trace, not just an assumption about how the fixture *should* behave. **Week 3, Chunk D:** 16/16 passing with the two new files added; real-DB row counts (`customers`: 29, `shipments`: 54, `packages`: 105) reconfirmed identical before and after, matching the known seed counts exactly — the new `make_shipment`/`make_package` fixtures leave no more trace than the original ones did. **Post-Week-3 fix (2026-08-04):** 17/17 passing with the added `test_gating.py` reply-leak test.
+**Verified:** `pytest` (from `backend/`, venv active) — 12/12 passing as of Chunk I. Row counts in the real dev DB (`customers`, `chat_sessions`) confirmed identical before and after two full test runs, by hand via `psql` — direct evidence the rollback fixture leaves zero trace, not just an assumption about how the fixture *should* behave. **Week 3, Chunk D:** 16/16 passing with the two new files added; real-DB row counts (`customers`: 29, `shipments`: 54, `packages`: 105) reconfirmed identical before and after, matching the known seed counts exactly — the new `make_shipment`/`make_package` fixtures leave no more trace than the original ones did. **Post-Week-3 fix (2026-08-04):** 17/17 passing with the added `test_gating.py` reply-leak test. **Week 4, Chunk A:** 20/20 passing with the new `test_admin_auth.py` (3 tests) added — the first file using `TestClient` against a real running `main.app` instead of calling a route function directly.
 
 ---
 
@@ -426,16 +470,17 @@ Per-component SCSS files (`Sidebar.scss`, `ChatWindow.scss`, `ChatMessage.scss`,
 
 ---
 
-### `frontend/src/App.tsx`
+### `frontend/src/App.tsx` (routing added Week 4, Chunk A)
 
 | Construct | What it does |
 |---|---|
-| `const [sessionKey, setSessionKey] = useState(0)` | Owned by `App`, not `ChatWindow` — `ChatWindow` keeps its own `messages` state fully internal (per the "keep business logic out of shared/parent state unless needed" instinct), so `App` doesn't need to know anything about chat internals to reset it |
+| `const [sessionKey, setSessionKey] = useState(0)` | Owned by a new `ChatLayout` sub-component (was directly in `App` before Chunk A) — `ChatWindow` keeps its own `messages` state fully internal (per the "keep business logic out of shared/parent state unless needed" instinct), so neither `App` nor `ChatLayout` needs to know anything about chat internals to reset it |
 | `<ChatWindow key={sessionKey} />` | Passing a changing `key` is React's built-in "throw this subtree away and remount fresh" mechanism — clicking Sidebar's "New Chat" bumps `sessionKey`, which unmounts the old `ChatWindow` (and its state) and mounts a brand new one seeded back to the hardcoded message. No custom reset prop/effect needed. |
+| `<Routes><Route path="/" element={<ChatLayout />} /><Route path="/admin/*" element={<ProtectedRoute><AdminApp /></ProtectedRoute>} /></Routes>` (Week 4, Chunk A) | `App` itself now only does routing — the original `Sidebar`+`ChatWindow` layout moved into `ChatLayout` (a second component in this same file, same precedent as elsewhere in this project of a small local sub-component living alongside the one that uses it) so `/` behaves exactly as before, while `/admin/*` renders the new admin shell behind `ProtectedRoute` |
 
-**Why it exists:** the composition root — lays out `Sidebar` + `ChatWindow` side by side and is the one place that knows both exist, without either component needing to know about the other.
+**Why it exists:** the composition root — lays out `Sidebar` + `ChatWindow` side by side and is the one place that knows both exist, without either component needing to know about the other. As of Chunk A, it's also the one place that knows both the chat UI and the admin panel exist, keeping that same "the router is the only thing that needs to know both branches exist" property.
 
-**Verified:** clicking "New Chat" after sending a message reliably drops the list back to just the seed message (confirmed via headless-browser screenshot, see `ChatWindow` section below).
+**Verified:** clicking "New Chat" after sending a message reliably drops the list back to just the seed message (confirmed via headless-browser screenshot, see `ChatWindow` section below). **Week 4, Chunk A:** `/` renders the chat UI unchanged; `/admin` (unauthenticated) redirects to a real Auth0 Universal Login and, on success, lands back on `/admin` rendering `AdminApp` — confirmed live in the browser end to end.
 
 ---
 
@@ -445,7 +490,7 @@ Per-component SCSS files (`Sidebar.scss`, `ChatWindow.scss`, `ChatMessage.scss`,
 |---|---|
 | `Sidebar.tsx` | Static brand header, the "New Chat" button (calls the `onNewChat` prop `App` passes down — see above), and composes `ChatHistoryList` + `AdminAccessCard` |
 | `ChatHistoryList.tsx` | A hardcoded array of `{id, label, time}` rendered as a non-interactive list — a visual placeholder for real chat-history persistence, which doesn't exist yet (no session id, no `ChatSession` list endpoint) |
-| `AdminAccessCard.tsx` | Static card + a `href="#"` "Learn more" link — no Auth0 wired up (that's Week 4 per `DEV_PLAN.md`) |
+| `AdminAccessCard.tsx` | Static card, but (Week 4, Chunk A) the "Learn more" link is now a real `react-router-dom` `<Link to="/admin">` — its first real behavior since Week 1, replacing the dead `href="#"` |
 
 All three share one `Sidebar.scss` (all their classes are elements of the single `.sidebar` BEM block, so splitting the SCSS per-file would fragment one block's styles across three files for no benefit).
 
@@ -525,6 +570,50 @@ All three share one `Sidebar.scss` (all their classes are elements of the single
 
 Wraps `<App />` in `<QueryClientProvider client={queryClient}>` (a single `new QueryClient()` created at module scope) — required for any Orval-generated React Query hook (`useChat()`, etc.) to work at runtime; without a provider ancestor, calling the hook throws.
 
+**Week 4, Chunk A:** gained `<BrowserRouter>` (outermost — `react-router-dom` didn't exist in this project before today) wrapping a new `Auth0ProviderWithNavigate` (see below), wrapping the existing `QueryClientProvider`/`App` tree.
+
+---
+
+### `frontend/src/auth/Auth0ProviderWithNavigate.tsx` (Week 4, Chunk A)
+
+| Construct | What it does |
+|---|---|
+| `function Auth0ProviderWithNavigate({ children }) { const navigate = useNavigate(); return <Auth0Provider ...>{children}</Auth0Provider> }` | A thin wrapper around `Auth0Provider` that exists specifically to call `useNavigate()` — a hook, so it can only be used inside a function component, and `Auth0Provider` needs to be constructed *inside* `<BrowserRouter>`'s subtree for that hook to work at all. Split into its own file (rather than inlined in `main.tsx`) after `oxlint`'s `only-export-components` rule flagged mixing a component with the app's bootstrap code |
+| `authorizationParams={{ audience: ..., redirect_uri: window.location.origin }}` | `redirect_uri` is **explicit**, not left to the SDK's default (the current URL at the moment `loginWithRedirect()` is called) — omitting it was the actual, confirmed cause of a live `server_error: Unable to issue redirect for OAuth 2.0 transaction` that reproduced identically across two separate, freshly-created Auth0 tenants (see `CHANGE_LOG.md`'s Chunk A entry for the full debugging trail). Every working Auth0 SPA example sets this explicitly; this project's first attempt didn't, on the theory that the SDK's default would return the visitor to wherever they started (e.g. `/admin`) — it doesn't reliably, and this was the fix |
+| `onRedirectCallback={(appState) => navigate(appState?.returnTo ?? '/admin')}` | Since `redirect_uri` is now a fixed origin (always lands on `/` after Auth0's redirect back), this is what actually returns the visitor to `/admin` — reading `returnTo` out of the `appState` `ProtectedRoute` attaches when it triggers `loginWithRedirect()` |
+
+**Why it exists:** Epic E1's login integration point, and the resolution to this chunk's hardest bug — see `CHANGE_LOG.md` for the full list of things ruled out first (a misconfigured Application-Access grant — a real, separate bug fixed along the way — the Google social connection's dev keys, a StrictMode double-`loginWithRedirect()` call, custom Actions, Attack Protection, and even the tenant itself, before a web search surfaced the actual cause).
+
+**Verified:** live, twice — once after the `redirect_uri` fix alone (login succeeded, landed on `/`, confirmed via Auth0's own logs showing `Success Login` → `Success Exchange`), and again after adding `onRedirectCallback`/`appState.returnTo` (login now lands directly back on `/admin`, no extra click needed).
+
+---
+
+### `frontend/src/auth/ProtectedRoute.tsx` (Week 4, Chunk A)
+
+| Construct | What it does |
+|---|---|
+| `const location = useLocation(); ...; loginWithRedirect({ appState: { returnTo: location.pathname } })` | Captures the path the visitor was actually trying to reach before redirecting to login, so `Auth0ProviderWithNavigate`'s `onRedirectCallback` can send them back to it afterward |
+| `const redirectingRef = useRef(false)` guarding the `loginWithRedirect()` call inside `useEffect` | `loginWithRedirect()` is a side effect, so it belongs in an effect, not the render body (the Auth0 skill's own reference snippet calls it directly during render, which React StrictMode's dev-only double effect invocation would trigger twice). This ref-guard is genuinely necessary defense against that — though live-testing found it wasn't actually the cause of this chunk's main bug (see `Auth0ProviderWithNavigate` above) |
+| `if (isLoading \|\| !isAuthenticated) return null` | Renders nothing while Auth0 is still resolving session state or while the redirect-to-login effect is about to fire — avoids a flash of protected content |
+
+**Why it exists:** the E3 enforcement point on the frontend side — though the real enforcement is server-side (`auth/dependencies.py`'s `get_current_admin`), this is what keeps an unauthenticated visitor from ever seeing `AdminApp`'s UI at all, not just having its API calls rejected.
+
+**Verified:** see `Auth0ProviderWithNavigate` above — the same live round trip exercises this component's redirect trigger and its `returnTo` value.
+
+---
+
+### `frontend/src/admin/AdminApp.tsx` (+ `AdminApp.scss`) (Week 4, Chunk A)
+
+| Construct | What it does |
+|---|---|
+| `const { user, logout, getAccessTokenSilently } = useAuth0(); const [accessToken, setAccessToken] = useState<string \| null>(null); useEffect(() => { getAccessTokenSilently().then(setAccessToken) }, [...])` | Fetches a real access token once on mount and holds it in local state — deliberately inline/local rather than a shared hook, since this is the *only* admin endpoint call that exists yet. A shared token-attachment mechanism (a hook, or a custom Orval fetch mutator) is a natural extraction point once Chunks B-D add several more admin endpoints all needing the same header, not before — the project's own "no premature abstraction until a second real use case exists" rule |
+| `useAdminMe({ query: { enabled: !!accessToken }, fetch: { headers: { Authorization: \`Bearer ${accessToken}\` } } })` | Orval's generated hooks accept a `fetch: RequestInit` override per call — this is how the Bearer token actually reaches the backend, since Orval has no built-in Auth0 awareness of its own. `query.enabled` gates the call until the token is actually available, avoiding an unauthenticated first request |
+| `{data?.data.email ?? data?.data.sub}` | Falls back to `sub` when `email` is absent — observed live, not assumed: Auth0 **access tokens** don't carry profile claims like `email` by default (only **ID tokens** do), so this path is the normal case, not an edge case |
+
+**Why it exists:** the minimal proof-of-concept shell for Chunk A — just enough UI to demonstrate the full round trip (real login → real token → real protected API call → real claims rendered) before any CRUD screens exist. Chunks B-D will grow this into the real `CustomerManager`/`ShipmentManager`/`PackageManager`/`Dashboard` tabs.
+
+**Verified:** live in the browser after a real Universal Login — renders "Signed in as `auth0|...`" (the `sub`, since this access token had no `email` claim), confirming the whole chain works end to end, not just that the backend accepts a token in isolation.
+
 ---
 
 ### `frontend/src/api/generated/` (`secure-ship.ts`) + `frontend/orval.config.ts`
@@ -536,11 +625,11 @@ Wraps `<App />` in `<QueryClientProvider client={queryClient}>` (a single `new Q
 
 **Why it exists:** the locked "no hand-written fetch calls or duplicated TS types" decision (`DEV_PLAN.md`/`REQUIREMENTS.md` §4.8) — `ChatRequest`/`ChatResponse` are generated straight from the backend's Pydantic models via its OpenAPI schema, so the two can't silently drift. The backend's `/chat` route was given an explicit `operation_id="chat"` (`routes/chat.py`) purely so the generated hook name comes out as `useChat()` instead of an auto-derived `useSendChatMessageChatPost()`.
 
-**Verified:** `npm run generate:api` produces this file cleanly against the running backend each time it's been rerun (Chunk A, Chunk D, Chunk E's Cutover); `tsc -b`/`oxlint`/`npm run build` pass after every regeneration; see `ChatWindow.tsx`'s entry above for the `useChat()` runtime check. The Cutover regeneration confirmed `EscalationPayload`'s three fields (`lines`, `agent_name`, `first_name`) present with correct types and no other diff beyond that one interface.
+**Verified:** `npm run generate:api` produces this file cleanly against the running backend each time it's been rerun (Chunk A, Chunk D, Chunk E's Cutover); `tsc -b`/`oxlint`/`npm run build` pass after every regeneration; see `ChatWindow.tsx`'s entry above for the `useChat()` runtime check. The Cutover regeneration confirmed `EscalationPayload`'s three fields (`lines`, `agent_name`, `first_name`) present with correct types and no other diff beyond that one interface. **Week 4, Chunk A** regenerated again, adding `AdminMeResponse` and `useAdminMe()` — the first of what will be several admin-endpoint regens across this week's chunks (one per chunk that adds/changes admin routes, same discipline as every prior week).
 
 ---
 
-### `frontend` test infrastructure (`vitest.config.ts`, `src/test/setup.ts`) + `useChatSession.test.ts` / `CodeModal.test.tsx`
+### `frontend` test infrastructure (`vitest.config.ts`, `src/test/setup.ts`) + `useChatSession.test.ts` / `CodeModal.test.tsx` / `ProtectedRoute.test.tsx`
 
 | Construct | What it does |
 |---|---|
@@ -554,9 +643,11 @@ Wraps `<App />` in `<QueryClientProvider client={queryClient}>` (a single `new Q
 
 **`CodeModal.test.tsx`** — 6 tests. `mockVerifyResponse(body, status)` stubs `global.fetch` (`vi.stubGlobal`) with a response object shaped like what the generated `verifyCode()` client expects (`{ status, text: async () => JSON.stringify(body) }`) — this is the *only* thing mocked; `useVerifyCode()`'s real React Query mutation and `CodeModal`'s own `digits`/`locked`/`feedback`/`attemptsRemaining` state all run for real, wrapped in a real `<QueryClientProvider>`. Covers: digit auto-advance actually moves DOM focus box-to-box (`toHaveFocus()`, not just "the value updated"); Verify stays disabled until all 6 boxes are filled; a wrong code shows the backend's exact `reply` text plus `attempts_remaining`, clears all 6 boxes, and refocuses box 1; a `state !== "awaiting_code"` response (covering both `LOCKED_OUT`/`EXPIRED`, same generic check `CodeModal.tsx` itself uses) disables every digit input and the Verify button; a correct code calls `onVerified` with the backend's reply and the dialog unmounts (`queryByRole('dialog')` returns `null`); Escape dismisses with the fetch mock asserted as never called, not just inferred from the UI.
 
-**Why it exists:** a direct follow-up to Chunk I — once the backend had a real `pytest` suite, the natural next question was frontend parity. Deliberately scoped to the two places with actual branching logic (a hook merging response fields, a modal with a real lockout/retry state machine) rather than every component — `ChatWindow`'s JSX layout or `Sidebar`'s static markup wouldn't fail in a way a unit test would catch that a type error or a glance wouldn't already catch first.
+**`ProtectedRoute.test.tsx`** (Week 4, Chunk A) — 3 tests, wrapped in `<MemoryRouter initialEntries={['/admin']}>` since the component reads `useLocation()`. Only `useAuth0()` itself is mocked (`vi.mock('@auth0/auth0-react', ...)`) — same "mock only the true external boundary" principle as `CodeModal.test.tsx`'s `global.fetch` stub, since the real `Auth0Provider` needs a live tenant to do anything. Covers: children render once authenticated; nothing renders and `loginWithRedirect` isn't called while still loading; and once loading finishes unauthenticated, `loginWithRedirect` is called exactly once with `{ appState: { returnTo: '/admin' } }` — pinning down the `returnTo` value, not just that a redirect happens.
 
-**Verified:** `npm test` (`vitest run`) — 10/10 passing. `npm run build` (`tsc -b` + `vite build`) stays clean with the new `.test.ts(x)` files present, since `tsconfig.app.json`'s `include: ["src"]` type-checks them too, but Rollup's `vite build` never bundles them into the shipped app (nothing real imports a test file). `npm run lint` (oxlint) clean.
+**Why it exists:** a direct follow-up to Chunk I — once the backend had a real `pytest` suite, the natural next question was frontend parity. Deliberately scoped to the places with actual branching logic (a hook merging response fields, a modal with a real lockout/retry state machine, an auth guard's redirect logic) rather than every component — `ChatWindow`'s JSX layout or `Sidebar`'s static markup wouldn't fail in a way a unit test would catch that a type error or a glance wouldn't already catch first.
+
+**Verified:** `npm test` (`vitest run`) — 10/10 passing as of Chunk I; **17/17 as of Week 4, Chunk A** with `ProtectedRoute.test.tsx` added. `npm run build` (`tsc -b` + `vite build`) stays clean with the new `.test.ts(x)` files present, since `tsconfig.app.json`'s `include: ["src"]` type-checks them too, but Rollup's `vite build` never bundles them into the shipped app (nothing real imports a test file). `npm run lint` (oxlint) clean.
 
 ---
 

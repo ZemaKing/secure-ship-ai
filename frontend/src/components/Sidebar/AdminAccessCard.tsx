@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 function AdminAccessCard() {
   return (
     <div className="sidebar__admin-card">
@@ -8,9 +10,9 @@ function AdminAccessCard() {
       <p className="sidebar__admin-card-text">
         Only administrators can modify shipment data.
       </p>
-      <a className="sidebar__admin-card-link" href="#">
+      <Link className="sidebar__admin-card-link" to="/admin">
         Learn more
-      </a>
+      </Link>
     </div>
   )
 }

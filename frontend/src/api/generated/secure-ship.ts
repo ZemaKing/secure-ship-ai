@@ -4,24 +4,26 @@
  * SecureShip Backend
  * OpenAPI spec version: 0.1.0
  */
-import {
-  useMutation,
-  useQuery
-} from '@tanstack/react-query';
 import type {
-  DataTag,
-  DefinedInitialDataOptions,
-  DefinedUseQueryResult,
-  MutationFunction,
-  QueryClient,
-  QueryFunction,
-  QueryKey,
-  UndefinedInitialDataOptions,
-  UseMutationOptions,
-  UseMutationResult,
-  UseQueryOptions,
-  UseQueryResult
+    DataTag,
+    DefinedInitialDataOptions,
+    DefinedUseQueryResult,
+    MutationFunction,
+    QueryClient,
+    QueryFunction,
+    QueryKey,
+    UndefinedInitialDataOptions,
+    UseMutationOptions,
+    UseMutationResult,
+    UseQueryOptions,
+    UseQueryResult
 } from '@tanstack/react-query';
+import {useMutation, useQuery} from '@tanstack/react-query';
+
+export interface AdminMeResponse {
+    sub: string;
+    email?: string | null;
+}
 
 export interface ChatRequest {
   message: string;
@@ -300,6 +302,123 @@ export const useVerifyCode = <TError = HTTPValidationError,
       > => {
       return useMutation(getVerifyCodeMutationOptions(options), queryClient);
     }
+
+export type adminMeResponse200 = {
+    data: AdminMeResponse
+    status: 200
+};
+
+export type adminMeResponseSuccess = (adminMeResponse200) & {
+    headers: Headers;
+};
+
+export type adminMeResponse = (adminMeResponseSuccess)
+
+export const getAdminMeUrl = () => {
+    return `http://localhost:8000/admin/me`
+}
+
+/**
+ * @summary Admin Me
+ */
+export const adminMe = async (options?: RequestInit): Promise<adminMeResponse> => {
+    const res = await fetch(getAdminMeUrl(),
+        {
+            ...options,
+            method: 'GET'
+        }
+    )
+
+    const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+    const data: adminMeResponse['data'] = body ? JSON.parse(body) : {}
+    return {data, status: res.status, headers: res.headers} as adminMeResponse
+}
+
+export const getAdminMeQueryKey = () => {
+    return [
+        `http://localhost:8000/admin/me`
+    ] as const;
+}
+
+export const getAdminMeQueryOptions = <TData = Awaited<ReturnType<typeof adminMe>>, TError = unknown>(options?: {
+                                                                                                          query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof adminMe>>, TError, TData>>,
+                                                                                                          fetch?: RequestInit
+                                                                                                      }
+) => {
+    const {query: queryOptions, fetch: fetchOptions} = options ?? {};
+    const queryKey = queryOptions?.queryKey ?? getAdminMeQueryKey();
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminMe>>> = ({signal}) => adminMe({signal, ...fetchOptions});
+
+    return {
+        queryKey,
+        queryFn, ...queryOptions
+    } as UseQueryOptions<Awaited<ReturnType<typeof adminMe>>, TError, TData> & {
+        queryKey: DataTag<QueryKey, TData, TError>
+    }
+}
+
+export type AdminMeQueryResult = NonNullable<Awaited<ReturnType<typeof adminMe>>>
+export type AdminMeQueryError = unknown
+
+
+export function useAdminMe<TData = Awaited<ReturnType<typeof adminMe>>, TError = unknown>(
+    options: {
+        query: Partial<UseQueryOptions<Awaited<ReturnType<typeof adminMe>>, TError, TData>> & Pick<
+            DefinedInitialDataOptions<
+                Awaited<ReturnType<typeof adminMe>>,
+                TError,
+                Awaited<ReturnType<typeof adminMe>>
+            >, 'initialData'
+        >, fetch?: RequestInit
+    }
+    , queryClient?: QueryClient
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAdminMe<TData = Awaited<ReturnType<typeof adminMe>>, TError = unknown>(
+    options?: {
+        query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof adminMe>>, TError, TData>> & Pick<
+            UndefinedInitialDataOptions<
+                Awaited<ReturnType<typeof adminMe>>,
+                TError,
+                Awaited<ReturnType<typeof adminMe>>
+            >, 'initialData'
+        >, fetch?: RequestInit
+    }
+    , queryClient?: QueryClient
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAdminMe<TData = Awaited<ReturnType<typeof adminMe>>, TError = unknown>(
+    options?: {
+        query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof adminMe>>, TError, TData>>,
+        fetch?: RequestInit
+    }
+    , queryClient?: QueryClient
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Admin Me
+ */
+
+export function useAdminMe<TData = Awaited<ReturnType<typeof adminMe>>, TError = unknown>(
+    options?: {
+        query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof adminMe>>, TError, TData>>,
+        fetch?: RequestInit
+    }
+    , queryClient?: QueryClient
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+    const queryOptions = getAdminMeQueryOptions(options)
+
+    const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+        queryKey: DataTag<QueryKey, TData, TError>
+    };
+
+    return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export type healthHealthGetResponse200 = {
   data: HealthHealthGet200
