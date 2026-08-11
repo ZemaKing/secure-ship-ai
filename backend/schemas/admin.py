@@ -1,5 +1,6 @@
 import uuid
 from datetime import date, datetime
+from decimal import Decimal
 
 from pydantic import BaseModel
 
@@ -77,3 +78,29 @@ class ShipmentOut(BaseModel):
     destination: str
     estimated_delivery: date
     last_update: datetime
+
+
+class PackageCreate(BaseModel):
+    shipment_id: uuid.UUID
+    description: str
+    weight_kg: Decimal
+    declared_value: Decimal
+
+
+class PackageUpdate(BaseModel):
+    # No children hang off a Package (no FKs point at packages.id), so unlike
+    # ShipmentUpdate there's no row-action needing a partial merge — full-replace,
+    # same shape as CustomerUpdate.
+    shipment_id: uuid.UUID
+    description: str
+    weight_kg: Decimal
+    declared_value: Decimal
+
+
+class PackageOut(BaseModel):
+    id: uuid.UUID
+    shipment_id: uuid.UUID
+    tracking_number: str
+    description: str
+    weight_kg: Decimal
+    declared_value: Decimal

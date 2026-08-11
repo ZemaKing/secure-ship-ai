@@ -384,6 +384,39 @@ Reuses the `client` fixture now shared via `conftest.py` (see the note in `test_
 
 ---
 
+### `backend/services/admin_packages.py` + Package routes in `routes/admin.py` (Week 4, Chunk D1)
+
+| Construct | What it does | JS/Node analogy |
+|---|---|---|
+| `list_packages(db)` / `get_package(db, id)` / `create_package(db, data)` / `update_package(db, package, data)` / `delete_package(db, package)` | Same plain-function, no-repository shape as `admin_customers.py`/`admin_shipments.py`. `update_package` does a full `data.model_dump().items()` overwrite (no `exclude_unset`) — unlike `update_shipment`, since `PackageUpdate` isn't a partial-update schema | Same CRUD-module shape, one more level down the entity tree |
+| `schemas/admin.py::PackageUpdate` — **all fields required**, full-replace, same shape as `CustomerUpdate`, not `ShipmentUpdate`'s partial-merge one | No row action on the Packages table needs a partial update (there's no per-field toggle the way Shipments has a status dropdown), so there's no reason to carry the `exclude_unset=True` complexity here just for symmetry with Chunk C | A `PUT`-semantics DTO, chosen deliberately over `PATCH`-semantics because nothing in this UI needs the latter |
+| `routes/admin.py`'s `_to_package_out(db, package)` | Same hand-mapping pattern as `_to_shipment_out`, denormalizing one field: `tracking_number`, read via `admin_shipments.get_shipment(db, package.shipment_id)` — lets the Packages table show which shipment a package belongs to without a second client-side fetch | Same DTO-mapper-with-a-joined-display-field pattern, one level down |
+| `DELETE /admin/packages/{id}` — **no `try`/`except IntegrityError`** | Unlike Customer/Shipment delete, nothing has a foreign key pointing at `packages.id` — a Package delete can never violate a child's FK constraint, so there's no `409` case to catch. The first CRUD entity this week without one | A delete endpoint with no cascade-conflict handling, because nothing in the schema could ever produce one |
+
+**Why it exists:** Chunk D1 — the last entity Epic E2 requires full CRUD on. The one interesting design decision (`PackageUpdate` full-replace vs. `ShipmentUpdate` partial-merge) is a deliberate *non*-deviation — matching Chunk B's template rather than Chunk C's, because the UI need that justified Chunk C's departure doesn't exist here.
+
+**Verified:** live through the real running stack and browser UI — edited a real seeded package (a "Yoga mat" on Petar Popović's shipment `1ZA0D04F3352994D`), added a new package to the same shipment, deleted it. Also proven automatically — see `test_admin_packages.py` below.
+
+---
+
+### `backend/tests/test_admin_packages.py` (Week 4, Chunk D1)
+
+Reuses the shared `client` fixture from `conftest.py` (see `test_admin_customers.py`'s entry for why it lives there now). No delete-with-children test exists here — unlike `test_admin_customers.py`/`test_admin_shipments.py`, there's no FK-violation path to prove, since nothing references `packages.id`.
+
+| Test | What it proves |
+|---|---|
+| `test_list_packages_includes_tracking_number` | `GET /admin/packages` rows carry the denormalized `tracking_number`, not just `shipment_id` |
+| `test_create_package` | `POST /admin/packages` returns the new row with a real `id` |
+| `test_get_package_404s_for_unknown_id` | An unknown UUID 404s cleanly |
+| `test_update_package` | A full `PATCH` body persists every field |
+| `test_delete_package` | Delete succeeds (`204`), row genuinely gone |
+
+**Why it exists:** Chunk D1's test file — a shorter suite than `test_admin_shipments.py`'s 8 tests, precisely because there's no `409`-on-children case and no partial-update behavior to separately pin down.
+
+**Verified:** `pytest` — 5/5 new tests passing, full suite 39/39 (34 → 39).
+
+---
+
 ### `backend/tests/test_admin_customers.py` (Week 4, Chunk B) + a real fixture bug it found
 
 Uses the same `TestClient(main.app)` pattern as `test_admin_auth.py`, plus a second dependency override this file was the first to need: `app.dependency_overrides[get_db] = lambda: db_session`, routing the app's own `db.session.get_db` dependency onto the test's transactional `db_session` fixture. Without it, `TestClient` requests would open a second, real `SessionLocal()` connection and commit for real against the dev DB — silently defeating the whole transaction-per-test rollback convention every other test file relies on. **The `client` fixture itself (both overrides + `TestClient(app)`, yielded then popped in a `finally`) originally lived in this file; moved into `conftest.py` in Week 4, Chunk C once `test_admin_shipments.py` needed the identical setup — a second real consumer, per the project's own "extract once two use cases exist" rule, not before.**
@@ -471,7 +504,7 @@ The other three files follow the identical pattern: `Customer` (plain string col
 
 ---
 
-### `backend/tests/` (`pytest.ini`, `conftest.py`, 10 test files)
+### `backend/tests/` (`pytest.ini`, `conftest.py`, 11 test files)
 
 | Construct | What it does | JS/Node analogy |
 |---|---|---|
@@ -492,7 +525,7 @@ The other three files follow the identical pattern: `Customer` (plain string col
 
 **Why it exists:** Chunk I — every one of these behaviors was already verified by hand, live, in an earlier chunk (Chunks A/B3/D/F2/G4), but only ever documented in `CHANGE_LOG.md` prose; nothing would have caught a regression. Several of the assertions above double as a guardrail on a *decision*, not just a behavior: `ollama_client.chat()` returning a `ChatCompletionResult` dataclass (Chunk B) has to hold for `test_escalation_no_leak.py`'s mock to even type-check against real call sites; the 300s/3-attempts constants (Chunk D) are imported directly (`CODE_TTL_SECONDS`) rather than re-hardcoded in the test, so the test can't silently drift from the real value; the in-memory-dict-not-Redis call (Chunk D) is exactly why `_clear_verification_store` has to exist as its own fixture at all. Week 3's Chunk D extends the same "pin the decision down with a test" philosophy to Epic F3 specifically — the enforcement point was always *true by construction* (no argument exists to misuse), but nothing proved it stayed true under deliberate, adversarial pressure until now.
 
-**Verified:** `pytest` (from `backend/`, venv active) — 12/12 passing as of Chunk I. Row counts in the real dev DB (`customers`, `chat_sessions`) confirmed identical before and after two full test runs, by hand via `psql` — direct evidence the rollback fixture leaves zero trace, not just an assumption about how the fixture *should* behave. **Week 3, Chunk D:** 16/16 passing with the two new files added; real-DB row counts (`customers`: 29, `shipments`: 54, `packages`: 105) reconfirmed identical before and after, matching the known seed counts exactly — the new `make_shipment`/`make_package` fixtures leave no more trace than the original ones did. **Post-Week-3 fix (2026-08-04):** 17/17 passing with the added `test_gating.py` reply-leak test. **Week 4, Chunk A:** 20/20 passing with the new `test_admin_auth.py` (3 tests) added — the first file using `TestClient` against a real running `main.app` instead of calling a route function directly. **Week 4, Chunk B:** 26/26 passing with the new `test_admin_customers.py` (6 tests) added, including the fixture fix described above. **Week 4, Chunk C:** 34/34 passing with the new `test_admin_shipments.py` (8 tests) added, including the automated proof behind the Monday-demo status-update dry run.
+**Verified:** `pytest` (from `backend/`, venv active) — 12/12 passing as of Chunk I. Row counts in the real dev DB (`customers`, `chat_sessions`) confirmed identical before and after two full test runs, by hand via `psql` — direct evidence the rollback fixture leaves zero trace, not just an assumption about how the fixture *should* behave. **Week 3, Chunk D:** 16/16 passing with the two new files added; real-DB row counts (`customers`: 29, `shipments`: 54, `packages`: 105) reconfirmed identical before and after, matching the known seed counts exactly — the new `make_shipment`/`make_package` fixtures leave no more trace than the original ones did. **Post-Week-3 fix (2026-08-04):** 17/17 passing with the added `test_gating.py` reply-leak test. **Week 4, Chunk A:** 20/20 passing with the new `test_admin_auth.py` (3 tests) added — the first file using `TestClient` against a real running `main.app` instead of calling a route function directly. **Week 4, Chunk B:** 26/26 passing with the new `test_admin_customers.py` (6 tests) added, including the fixture fix described above. **Week 4, Chunk C:** 34/34 passing with the new `test_admin_shipments.py` (8 tests) added, including the automated proof behind the Monday-demo status-update dry run. **Week 4, Chunk D1:** 39/39 passing with the new `test_admin_packages.py` (5 tests) added — the shortest of the three admin CRUD test files, since Package has no delete-with-children case to prove.
 
 ---
 
@@ -544,11 +577,11 @@ Per-component SCSS files (`Sidebar.scss`, `ChatWindow.scss`, `ChatMessage.scss`,
 |---|---|
 | `const [sessionKey, setSessionKey] = useState(0)` | Owned by a new `ChatLayout` sub-component (was directly in `App` before Chunk A) — `ChatWindow` keeps its own `messages` state fully internal (per the "keep business logic out of shared/parent state unless needed" instinct), so neither `App` nor `ChatLayout` needs to know anything about chat internals to reset it |
 | `<ChatWindow key={sessionKey} />` | Passing a changing `key` is React's built-in "throw this subtree away and remount fresh" mechanism — clicking Sidebar's "New Chat" bumps `sessionKey`, which unmounts the old `ChatWindow` (and its state) and mounts a brand new one seeded back to the hardcoded message. No custom reset prop/effect needed. |
-| `<Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}><Route index element={<Navigate to="customers" replace />} /><Route path="customers" element={<CustomerManager />} /><Route path="shipments" element={<ShipmentManager />} /></Route>` (**Week 4, Chunk C** adds the `shipments` child route — same shape Chunk B established, no restructuring needed) | Real nested routing: `AdminLayout` renders the sidebar/header chrome plus a react-router `<Outlet />`, and the child `<Route>`s render into that outlet. The `index` route redirects `/admin` itself to `/admin/customers` so the panel has a real default tab instead of a blank shell. Packages/Dashboard child routes get added the same way in Chunk D — one more `<Route>` line each |
+| `<Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}><Route index element={<Navigate to="customers" replace />} /><Route path="customers" element={<CustomerManager />} /><Route path="shipments" element={<ShipmentManager />} /><Route path="packages" element={<PackageManager />} /></Route>` (**Week 4, Chunk D1** adds the `packages` child route — same shape Chunks B/C established, no restructuring needed) | Real nested routing: `AdminLayout` renders the sidebar/header chrome plus a react-router `<Outlet />`, and the child `<Route>`s render into that outlet. The `index` route redirects `/admin` itself to `/admin/customers` so the panel has a real default tab instead of a blank shell. Only a Dashboard child route (Chunk D2) remains |
 
 **Why it exists:** the composition root — lays out `Sidebar` + `ChatWindow` side by side and is the one place that knows both exist, without either component needing to know about the other. As of Chunk A, it's also the one place that knows both the chat UI and the admin panel exist, keeping that same "the router is the only thing that needs to know both branches exist" property.
 
-**Verified:** clicking "New Chat" after sending a message reliably drops the list back to just the seed message (confirmed via headless-browser screenshot, see `ChatWindow` section below). **Week 4, Chunk A:** `/` renders the chat UI unchanged; `/admin` (unauthenticated) redirects to a real Auth0 Universal Login and, on success, lands back on `/admin` — confirmed live in the browser end to end. **Week 4, Chunk B:** `/admin` now lands on the real `/admin/customers` tab automatically (via the `index` redirect), confirmed live alongside the full Customer CRUD walkthrough. **Week 4, Chunk C:** `/admin/shipments` confirmed live alongside the status-update dry run described in `ShipmentManager`'s entry below.
+**Verified:** clicking "New Chat" after sending a message reliably drops the list back to just the seed message (confirmed via headless-browser screenshot, see `ChatWindow` section below). **Week 4, Chunk A:** `/` renders the chat UI unchanged; `/admin` (unauthenticated) redirects to a real Auth0 Universal Login and, on success, lands back on `/admin` — confirmed live in the browser end to end. **Week 4, Chunk B:** `/admin` now lands on the real `/admin/customers` tab automatically (via the `index` redirect), confirmed live alongside the full Customer CRUD walkthrough. **Week 4, Chunk C:** `/admin/shipments` confirmed live alongside the status-update dry run described in `ShipmentManager`'s entry below. **Week 4, Chunk D1:** `/admin/packages` confirmed live alongside the edit/add/delete walkthrough described in `PackageManager`'s entry below.
 
 ---
 
@@ -674,26 +707,26 @@ Wraps `<App />` in `<QueryClientProvider client={queryClient}>` (a single `new Q
 
 | Construct | What it does |
 |---|---|
-| `NAV_ITEMS: AdminNavItem[]` — `{ label, path, icon, enabled }` for Dashboard/Customers/Shipments/Packages, `Customers`/`Shipments` `enabled: true` as of Chunk C | Data-driven nav so each chunk flips one `enabled: false → true` rather than restructuring the sidebar. Disabled items render as plain non-clickable `<span>`s with a "Soon" badge instead of dead `href="#"`-style links — same "no dead links" lesson already applied to `AdminAccessCard` back in Chunk A. Each item's icon is a real SVG asset (`admin-dashboard/customers/shipments/packages.svg`); inactive items' icons are grayscaled via CSS `filter` since they're hardcoded-color SVGs (a plain `<img>` can't be recolored by CSS `color`) |
+| `NAV_ITEMS: AdminNavItem[]` — `{ label, path, icon, enabled }` for Dashboard/Customers/Shipments/Packages, `Customers`/`Shipments`/`Packages` `enabled: true` as of Chunk D1, only `Dashboard` left `false` | Data-driven nav so each chunk flips one `enabled: false → true` rather than restructuring the sidebar. Disabled items render as plain non-clickable `<span>`s with a "Soon" badge instead of dead `href="#"`-style links — same "no dead links" lesson already applied to `AdminAccessCard` back in Chunk A. Each item's icon is a real SVG asset (`admin-dashboard/customers/shipments/packages.svg`); inactive items' icons are grayscaled via CSS `filter` since they're hardcoded-color SVGs (a plain `<img>` can't be recolored by CSS `color`) |
 | `<NavLink to={item.path} className={({ isActive }) => ...}>` | React Router's `NavLink` (not plain `Link`) specifically so the active-tab highlighting is automatic, driven by the real current URL, not manually tracked state. The active item's style is the same left-border-accent + light-blue-background treatment `Sidebar.scss`'s `__new-chat-button` already uses, not just a background/color swap |
 | Brand icon: `chat-admin.svg` | Deliberately different from the chat sidebar's `chat-bot.svg`, so the admin panel reads as its own space, not a reskinned chat window |
 | `.admin-layout__main { background: $color-bg-muted }` + `.admin-layout__content { background: $color-bg; border-radius; ... }` | The page canvas behind the header/content is light gray; the content area itself is a white rounded card floating on it — matches `admin-pages.png`'s panel look, added after the initial Chunk B build shipped with content sitting flush on plain white |
 
 **Why it exists:** Chunk A's `AdminApp.tsx` was a deliberately bare proof-of-concept (just "signed in as X"); Chunk B replaces it with the real, reusable admin shell per `admin-pages.png` — sidebar nav, header, `<Outlet />` for page content — that every subsequent chunk's manager component renders into, rather than each page rebuilding its own layout. Chunk B originally also had a working sidebar-collapse toggle, an "Admin Access Panel" footer badge, a border between sidebar and header, and a signed-in-identity chip in the header (backed by its own `useAdminMe()` call) — all four were explicitly requested removed once the shell was actually seen live, along with the border between sidebar and header; the `useAdminMe` fetch was removed too, not just hidden, since nothing was left to consume it.
 
-**Verified:** live in the browser — sidebar renders with Customers/Shipments active/clickable (Dashboard/Packages still "Soon"), each with its real icon; content renders as a white card; Logout is the only thing in the header now.
+**Verified:** live in the browser — sidebar renders with Customers/Shipments/Packages active/clickable (Dashboard still "Soon"), each with its real icon; content renders as a white card; Logout is the only thing in the header now.
 
 ---
 
 ### `frontend/src/admin/useAdminAccessToken.ts` (Week 4, Chunk B)
 
-Extracted once `AdminLayout` (originally, for `useAdminMe`) and `CustomerManager` (for four different customer endpoints) both needed the identical "fetch a token via `getAccessTokenSilently()`, hold it in state, attach it as a Bearer header" dance — the project's own "no premature abstraction until a second real use case exists" rule, explicitly deferred in Chunk A's `AdminApp.tsx` comment and resolved here. Exports `useAdminAccessToken()` (the token, or `null` while it's still resolving) and `authHeaders(token): RequestInit` (the `{ headers: { Authorization: 'Bearer ...' } }` object every Orval hook call needs). `AdminLayout` stopped using it once the identity chip was removed post-Chunk-B (see above); `CustomerManager` and, as of Chunk C, `ShipmentManager` are its real consumers now.
+Extracted once `AdminLayout` (originally, for `useAdminMe`) and `CustomerManager` (for four different customer endpoints) both needed the identical "fetch a token via `getAccessTokenSilently()`, hold it in state, attach it as a Bearer header" dance — the project's own "no premature abstraction until a second real use case exists" rule, explicitly deferred in Chunk A's `AdminApp.tsx` comment and resolved here. Exports `useAdminAccessToken()` (the token, or `null` while it's still resolving) and `authHeaders(token): RequestInit` (the `{ headers: { Authorization: 'Bearer ...' } }` object every Orval hook call needs). `AdminLayout` stopped using it once the identity chip was removed post-Chunk-B (see above); `CustomerManager`, `ShipmentManager`, and (Chunk D1) `PackageManager` are its real consumers now.
 
 ---
 
 ### `frontend/src/admin/ConfirmDialog/` (Week 4, Chunk B)
 
-A generic `open`/`title`/`message`/`confirmLabel`/`busy`/`onConfirm`/`onCancel` modal — the same overlay/dialog structural pattern `CodeModal` already established (`role="alertdialog"`, backdrop click + `stopPropagation()` on the inner card), built as its own component from day one rather than inlined into `CustomerManager`, since Chunks C/D's Shipment/Package managers need the exact same delete-confirmation UI, not a hypothetical future reuse. Confirmed reused as-is by `ShipmentManager` in Chunk C — no changes needed.
+A generic `open`/`title`/`message`/`confirmLabel`/`busy`/`onConfirm`/`onCancel` modal — the same overlay/dialog structural pattern `CodeModal` already established (`role="alertdialog"`, backdrop click + `stopPropagation()` on the inner card), built as its own component from day one rather than inlined into `CustomerManager`, since Chunks C/D's Shipment/Package managers need the exact same delete-confirmation UI, not a hypothetical future reuse. Confirmed reused as-is by `ShipmentManager` in Chunk C and `PackageManager` in Chunk D1 — no changes needed either time.
 
 ---
 
@@ -766,6 +799,35 @@ Same "mock only the true external boundary" discipline as `CustomerManager.test.
 
 ---
 
+### `frontend/src/admin/PackageManager/` (`PackageManager.tsx`, `PackageFormModal.tsx`, both + `.scss`) (Week 4, Chunk D1)
+
+| Construct | What it does |
+|---|---|
+| `useListPackages`/`useCreatePackage`/`useUpdatePackage`/`useDeletePackage` (Orval-generated), plus a second `useListShipments()` call (list-only, feeding the form modal's Shipment `<select>`) | Same shape as `ShipmentManager`'s dual-list pattern — fetching shipments here too rather than threading them down keeps `PackageManager` a self-contained page |
+| `PackageFormModal`'s Shipment `<select>` option label: `${shipment.tracking_number} — ${shipment.customer_name}` | Lets an admin pick a shipment by tracking number without needing to cross-reference the Shipments tab first — reuses the same `customer_name` denormalization `ShipmentOut` already carries |
+| `<PackageFormModal key={... 'create' \| pkg.id \| 'closed'} ...>`, form state via `useState<PackageCreate>(() => pkg ? { picked fields } : emptyForm(shipments))` | Both fixes `CustomerFormModal`/`ShipmentFormModal` needed applied from the start again — the remount `key`, and picking only the `PackageCreate`-shape fields off the `PackageOut` prop rather than spreading it (which would leak `id`/`tracking_number` into the request body) |
+| `weight_kg`/`declared_value` inputs: `type="number" step="0.01" min="0"`, form state kept as the raw string the input produces | No client-side `Number()` conversion before submit — `PackageCreate`'s generated type is `number \| string`, and the backend's `Decimal` field parses a numeric string directly, so passing the input's string value through unchanged is simplest, not a shortcut |
+| No status/409 handling anywhere in this file | Unlike `ShipmentManager`, there's no status-dropdown row action (`Package` has no status field) and no `409` branch in the delete handler (`DELETE /admin/packages/{id}` never returns one) — both omissions are intentional, not oversights, mirroring what `admin_packages.py`'s backend entry documents |
+
+**Why it exists:** Chunk D1's frontend deliverable, completing Epic E2's UI coverage. Table columns (Tracking Number/Description/Weight (kg)/Declared Value/Actions) and the Add/Edit modal's fields mirror `admin-pages.png`/`admin-modals.png`'s Packages tab.
+
+**Verified:** both automated (`PackageManager.test.tsx`, below) and live in the browser — edited a real seeded package ("Yoga mat" on Petar Popović's shipment), added one, deleted it.
+
+---
+
+### `frontend/src/admin/PackageManager/PackageManager.test.tsx` (Week 4, Chunk D1)
+
+Same "mock only the true external boundary" discipline as `CustomerManager.test.tsx`/`ShipmentManager.test.tsx` — `useAuth0()` and `global.fetch` only, with `mockFetch()` distinguishing the two `GET` list endpoints (packages vs. shipments) by URL substring. All 4 tests passed on the first run — the third manager component in a row to do so, since both bug classes (`CustomerFormModal`'s original remount-key/field-leak bugs) were pre-emptively avoided again.
+
+| Test | What it proves |
+|---|---|
+| `renders the table from the real (mocked-at-fetch) list response` | Table rows render from `useListPackages()`'s data, including the joined `tracking_number` |
+| `submits the expected payload when creating a package` | The Add form's submitted JSON body matches every typed field exactly, including the raw numeric-string weight/value |
+| `submits the expected payload when editing a package, targeting the right id` | The `PATCH` URL contains the right `packageId`, and the body reflects the edited field with no leaked `id` |
+| `deletes a package after confirming` | The confirm-dialog → `DELETE` flow — no `409`-message assertion needed here, unlike the Customer/Shipment equivalents, since Package delete never returns one |
+
+---
+
 ### `frontend/src/api/generated/` (`secure-ship.ts`) + `frontend/orval.config.ts`
 
 | Construct | What it does |
@@ -775,11 +837,11 @@ Same "mock only the true external boundary" discipline as `CustomerManager.test.
 
 **Why it exists:** the locked "no hand-written fetch calls or duplicated TS types" decision (`DEV_PLAN.md`/`REQUIREMENTS.md` §4.8) — `ChatRequest`/`ChatResponse` are generated straight from the backend's Pydantic models via its OpenAPI schema, so the two can't silently drift. The backend's `/chat` route was given an explicit `operation_id="chat"` (`routes/chat.py`) purely so the generated hook name comes out as `useChat()` instead of an auto-derived `useSendChatMessageChatPost()`.
 
-**Verified:** `npm run generate:api` produces this file cleanly against the running backend each time it's been rerun (Chunk A, Chunk D, Chunk E's Cutover); `tsc -b`/`oxlint`/`npm run build` pass after every regeneration; see `ChatWindow.tsx`'s entry above for the `useChat()` runtime check. The Cutover regeneration confirmed `EscalationPayload`'s three fields (`lines`, `agent_name`, `first_name`) present with correct types and no other diff beyond that one interface. **Week 4, Chunk A** regenerated again, adding `AdminMeResponse` and `useAdminMe()` — the first of what will be several admin-endpoint regens across this week's chunks (one per chunk that adds/changes admin routes, same discipline as every prior week). **Week 4, Chunk B** regenerated twice — once for the initial Customer CRUD routes, once more after adding the shared `ErrorDetail` response model to the `DELETE` route's `responses=` so the `409` conflict body is properly typed (`deleteCustomerResponse409: { data: ErrorDetail }`) instead of the frontend having to cast an undocumented error shape. **Week 4, Chunk C** regenerated once more, adding `ShipmentCreate`/`ShipmentUpdate`/`ShipmentOut` types and `useListShipments()`/`useCreateShipment()`/`useUpdateShipment()`/`useDeleteShipment()` hooks — `ShipmentOut.customer_name` came through as a plain `string`, and `ShipmentUpdate`'s fields all generated as optional, matching the backend's partial-update schema exactly.
+**Verified:** `npm run generate:api` produces this file cleanly against the running backend each time it's been rerun (Chunk A, Chunk D, Chunk E's Cutover); `tsc -b`/`oxlint`/`npm run build` pass after every regeneration; see `ChatWindow.tsx`'s entry above for the `useChat()` runtime check. The Cutover regeneration confirmed `EscalationPayload`'s three fields (`lines`, `agent_name`, `first_name`) present with correct types and no other diff beyond that one interface. **Week 4, Chunk A** regenerated again, adding `AdminMeResponse` and `useAdminMe()` — the first of what will be several admin-endpoint regens across this week's chunks (one per chunk that adds/changes admin routes, same discipline as every prior week). **Week 4, Chunk B** regenerated twice — once for the initial Customer CRUD routes, once more after adding the shared `ErrorDetail` response model to the `DELETE` route's `responses=` so the `409` conflict body is properly typed (`deleteCustomerResponse409: { data: ErrorDetail }`) instead of the frontend having to cast an undocumented error shape. **Week 4, Chunk C** regenerated once more, adding `ShipmentCreate`/`ShipmentUpdate`/`ShipmentOut` types and `useListShipments()`/`useCreateShipment()`/`useUpdateShipment()`/`useDeleteShipment()` hooks — `ShipmentOut.customer_name` came through as a plain `string`, and `ShipmentUpdate`'s fields all generated as optional, matching the backend's partial-update schema exactly. **Week 4, Chunk D1** regenerated once more, adding `PackageCreate`/`PackageUpdate`/`PackageOut` types and `useListPackages()`/`useCreatePackage()`/`useUpdatePackage()`/`useDeletePackage()` hooks — `weight_kg`/`declared_value` came through as `number | string` on the create/update side but a plain pattern-constrained `string` on `PackageOut`, the same Decimal-via-OpenAPI quirk Week 3, Chunk C's regen first surfaced for `ShipmentPayload`. This regen needed one extra step the prior three didn't: the already-running Docker backend container was still serving the pre-Chunk-D schema, so `npm run generate:api` against `localhost:8000` would have silently regenerated against stale routes — caught by diffing the output before committing to it, fixed by stopping the container and running a clean host-native backend for the regen instead.
 
 ---
 
-### `frontend` test infrastructure (`vitest.config.ts`, `src/test/setup.ts`) + `useChatSession.test.ts` / `CodeModal.test.tsx` / `ProtectedRoute.test.tsx` / `CustomerManager.test.tsx` / `ShipmentManager.test.tsx`
+### `frontend` test infrastructure (`vitest.config.ts`, `src/test/setup.ts`) + `useChatSession.test.ts` / `CodeModal.test.tsx` / `ProtectedRoute.test.tsx` / `CustomerManager.test.tsx` / `ShipmentManager.test.tsx` / `PackageManager.test.tsx`
 
 | Construct | What it does |
 |---|---|
@@ -797,9 +859,11 @@ Same "mock only the true external boundary" discipline as `CustomerManager.test.
 
 **`ShipmentManager.test.tsx`** (Week 4, Chunk C) — 4 tests, same shape as `CustomerManager.test.tsx`'s suite, described in that component's own section above.
 
+**`PackageManager.test.tsx`** (Week 4, Chunk D1) — 4 tests, same shape again, described in that component's own section above; the one Customer/Shipment-suite test pattern it doesn't need is the `409`-conflict-message assertion, since Package delete never returns one.
+
 **Why it exists:** a direct follow-up to Chunk I — once the backend had a real `pytest` suite, the natural next question was frontend parity. Deliberately scoped to the places with actual branching logic (a hook merging response fields, a modal with a real lockout/retry state machine, an auth guard's redirect logic) rather than every component — `ChatWindow`'s JSX layout or `Sidebar`'s static markup wouldn't fail in a way a unit test would catch that a type error or a glance wouldn't already catch first.
 
-**Verified:** `npm test` (`vitest run`) — 10/10 passing as of Chunk I; 17/17 as of Week 4, Chunk A with `ProtectedRoute.test.tsx` added; 21/21 as of Week 4, Chunk B with `CustomerManager.test.tsx` added (4 tests, two of which caught real bugs described in the `CustomerManager/` entry above). **25/25 as of Week 4, Chunk C** with `ShipmentManager.test.tsx` added (4 tests, all passing first-run since both bug classes were pre-emptively avoided). `npm run build` (`tsc -b` + `vite build`) stays clean with the new `.test.ts(x)` files present, since `tsconfig.app.json`'s `include: ["src"]` type-checks them too, but Rollup's `vite build` never bundles them into the shipped app (nothing real imports a test file). `npm run lint` (oxlint) clean.
+**Verified:** `npm test` (`vitest run`) — 10/10 passing as of Chunk I; 17/17 as of Week 4, Chunk A with `ProtectedRoute.test.tsx` added; 21/21 as of Week 4, Chunk B with `CustomerManager.test.tsx` added (4 tests, two of which caught real bugs described in the `CustomerManager/` entry above); 25/25 as of Week 4, Chunk C with `ShipmentManager.test.tsx` added (4 tests, all passing first-run since both bug classes were pre-emptively avoided). **29/29 as of Week 4, Chunk D1** with `PackageManager.test.tsx` added (4 tests, also passing first-run — the third manager component in a row to ship bug-free). `npm run build` (`tsc -b` + `vite build`) stays clean with the new `.test.ts(x)` files present, since `tsconfig.app.json`'s `include: ["src"]` type-checks them too, but Rollup's `vite build` never bundles them into the shipped app (nothing real imports a test file). `npm run lint` (oxlint) clean.
 
 ---
 

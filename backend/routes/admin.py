@@ -12,11 +12,14 @@ from schemas.admin import (
     CustomerOut,
     CustomerUpdate,
     ErrorDetail,
+    PackageCreate,
+    PackageOut,
+    PackageUpdate,
     ShipmentCreate,
     ShipmentOut,
     ShipmentUpdate,
 )
-from services import admin_customers, admin_shipments
+from services import admin_customers, admin_packages, admin_shipments
 
 # Epic E3 — a single router-level dependency is the one auditable enforcement point
 # for every /admin/* route, mirroring the Epic F3 philosophy already used for
@@ -146,3 +149,50 @@ def delete_shipment(shipment_id: uuid.UUID, db: Session = Depends(get_db)) -> No
             status_code=409,
             detail="This shipment has existing packages and can't be deleted.",
         )
+
+
+def _to_package_out(db: Session, package) -> PackageOut:
+    shipment = admin_shipments.get_shipment(db, package.shipment_id)
+    tracking_number = shipment.tracking_number if shipment is not None else "Unknown shipment"
+    return PackageOut(
+        id=package.id,
+        shipment_id=package.shipment_id,
+        tracking_number=tracking_number,
+        description=package.description,
+        weight_kg=package.weight_kg,
+        declared_value=package.declared_value,
+    )
+
+
+def _get_package_or_404(db: Session, package_id: uuid.UUID):
+    package = admin_packages.get_package(db, package_id)
+    if package is None:
+        raise HTTPException(status_code=404, detail="Package not found")
+    return package
+
+
+@router.get("/packages", operation_id="listPackages")
+def list_packages(db: Session = Depends(get_db)) -> list[PackageOut]:
+    return [_to_package_out(db, package) for package in admin_packages.list_packages(db)]
+
+
+@router.post("/packages", operation_id="createPackage")
+def create_package(data: PackageCreate, db: Session = Depends(get_db)) -> PackageOut:
+    return _to_package_out(db, admin_packages.create_package(db, data))
+
+
+@router.get("/packages/{package_id}", operation_id="getPackage")
+def get_package(package_id: uuid.UUID, db: Session = Depends(get_db)) -> PackageOut:
+    return _to_package_out(db, _get_package_or_404(db, package_id))
+
+
+@router.patch("/packages/{package_id}", operation_id="updatePackage")
+def update_package(package_id: uuid.UUID, data: PackageUpdate, db: Session = Depends(get_db)) -> PackageOut:
+    package = _get_package_or_404(db, package_id)
+    return _to_package_out(db, admin_packages.update_package(db, package, data))
+
+
+@router.delete("/packages/{package_id}", operation_id="deletePackage", status_code=204)
+def delete_package(package_id: uuid.UUID, db: Session = Depends(get_db)) -> None:
+    package = _get_package_or_404(db, package_id)
+    admin_packages.delete_package(db, package)

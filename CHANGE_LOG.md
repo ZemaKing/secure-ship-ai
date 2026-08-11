@@ -6,6 +6,22 @@ Full technical scope and week-by-week milestones live in `docs/DEV_PLAN.md` — 
 
 ---
 
+## 2026-08-11 — Week 4, Day 4 (D1): Package CRUD — completes Epic E2 📦📦
+
+**Theme:** Chunk D split into D1 (Package CRUD, today) and D2 (Dashboard, later) — D1 finishes full CRUD coverage of the required data model; nothing here blocks the other.
+
+**Backend:** `schemas/admin.py` grew `PackageCreate`/`PackageUpdate`/`PackageOut` — `Package` has no children (nothing has a foreign key pointing at `packages.id`), so `PackageUpdate` is a plain full-replace shape like `CustomerUpdate`, not `ShipmentUpdate`'s partial-merge one — there's no row-action driving a need for partial updates here. New `services/admin_packages.py` mirrors `admin_customers.py`'s plain-function shape exactly. `routes/admin.py` gained the five Package routes plus a `_to_package_out()` mapper that joins in the parent shipment's `tracking_number` for display, same denormalization pattern `_to_shipment_out()` already established for `customer_name`. `DELETE` has no `409` case to handle — first CRUD entity this week without one, since nothing hangs off a package.
+
+**Frontend:** Orval regen #4 (`PackageCreate`/`PackageUpdate`/`PackageOut` types, `useListPackages`/`useCreatePackage`/`useUpdatePackage`/`useDeletePackage` hooks) — required a clean host-native backend restart first, since the already-running Docker backend container was serving the pre-Chunk-D schema and `orval`'s `/openapi.json` fetch would otherwise have silently regenerated against stale routes (caught before it shipped, not after). New `admin/PackageManager/` — table (Tracking Number/Description/Weight (kg)/Declared Value/Actions), `PackageFormModal` (Add/Edit, with a Shipment `<select>` populated from `useListShipments()`) applying both fixes `CustomerFormModal`/`ShipmentFormModal` already learned (remount `key`, picking only editable fields off the `*Out` prop) from the start. `/admin/packages` is now a real nested route, and the sidebar's Packages nav item — the last "Soon" item besides Dashboard — is enabled.
+
+**Live-verified in the browser:** edited a real seeded package ("Yoga mat," Petar Popović's shipment `1ZA0D04F3352994D`) — weight/value changed, reflected in the table; added a new package to that same shipment; deleted it, confirmed it disappeared cleanly.
+
+- ✅ `pytest backend/tests` — 39/39 passing (34 → 39). `npm test` — 29/29 passing (25 → 29). `npm run build`/`npm run lint` clean.
+
+**Where things stand:** Epic E2 (full CRUD across Customer/Shipment/Package) is done. Dashboard (D2) and Chunk E's hardening/docs pass remain.
+
+---
+
 ## 2026-08-11 — Week 4, Day 3: Shipment CRUD + the status-dropdown demo gesture 📦
 
 **Theme:** Chunk C — full Shipment CRUD, with the status-update path as the literal Monday demo item #2, plus a round of admin-panel visual polish (real icons, sort, table styling) that landed on top of Chunk B's shell since its last doc pass.
