@@ -1,6 +1,9 @@
 import uuid
+from datetime import date, datetime
 
 from pydantic import BaseModel
+
+from models.shipment import ShipmentStatus
 
 
 class AdminMeResponse(BaseModel):
@@ -36,3 +39,41 @@ class CustomerOut(BaseModel):
     last_name: str
     phone_number: str
     address: str
+
+
+class ShipmentCreate(BaseModel):
+    customer_id: uuid.UUID
+    tracking_number: str
+    status: ShipmentStatus
+    carrier: str
+    origin: str
+    destination: str
+    estimated_delivery: date
+
+
+class ShipmentUpdate(BaseModel):
+    # All fields optional — a partial update, unlike CustomerUpdate's full-replace
+    # shape. Needed for real: the Shipments table's status-dropdown row action
+    # sends only {"status": ...}, not a full re-submission of every field, so the
+    # backend must only touch what's actually provided — see
+    # services/admin_shipments.py's model_dump(exclude_unset=True) merge.
+    customer_id: uuid.UUID | None = None
+    tracking_number: str | None = None
+    status: ShipmentStatus | None = None
+    carrier: str | None = None
+    origin: str | None = None
+    destination: str | None = None
+    estimated_delivery: date | None = None
+
+
+class ShipmentOut(BaseModel):
+    id: uuid.UUID
+    customer_id: uuid.UUID
+    customer_name: str
+    tracking_number: str
+    status: ShipmentStatus
+    carrier: str
+    origin: str
+    destination: str
+    estimated_delivery: date
+    last_update: datetime

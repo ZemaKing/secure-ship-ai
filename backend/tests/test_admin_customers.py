@@ -1,32 +1,10 @@
 """Week 4, Chunk B: Customer CRUD through the real /admin/customers routes.
 
 Uses FastAPI's TestClient against the real main.app (same pattern as
-test_admin_auth.py), but overrides both get_current_admin (bypass real Auth0,
-same as test_admin_auth.py) and get_db (route the app's own db.session.get_db
-dependency onto this test's own transactional db_session fixture) — without the
-get_db override, TestClient requests would open a second, real SessionLocal()
-connection and commit for real against the dev DB, defeating the whole
-transaction-per-test rollback convention every other test file relies on.
+test_admin_auth.py). The `client` fixture (get_current_admin + get_db overrides)
+lives in conftest.py — extracted there in Chunk C once test_admin_shipments.py
+needed the identical thing.
 """
-import pytest
-from fastapi.testclient import TestClient
-
-from auth.dependencies import get_current_admin
-from db.session import get_db
-from main import app
-
-
-@pytest.fixture()
-def client(db_session):
-    app.dependency_overrides[get_db] = lambda: db_session
-    app.dependency_overrides[get_current_admin] = lambda: {"sub": "auth0|test-admin", "email": "admin@example.com"}
-    try:
-        yield TestClient(app)
-    finally:
-        app.dependency_overrides.pop(get_db, None)
-        app.dependency_overrides.pop(get_current_admin, None)
-
-
 def _customer_payload(**overrides):
     payload = {
         "first_name": "Test",

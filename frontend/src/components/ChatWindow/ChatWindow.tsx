@@ -4,6 +4,7 @@ import CodeModal from '../CodeModal/CodeModal'
 import { useChat } from '../../api/generated/secure-ship'
 import type { ShipmentPayload } from '../../api/generated/secure-ship'
 import { useChatSession } from '../../hooks/useChatSession'
+import { formatDate, formatDateTime } from '../../utils/formatDate'
 import type { ChatMessageData, ShipmentCardData } from './types'
 import './ChatWindow.scss'
 
@@ -17,16 +18,6 @@ function formatTimestamp() {
   return new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
 }
 
-function formatLastUpdate(iso: string) {
-  return new Date(iso).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
-}
-
-// timeZone: 'UTC' avoids a date-only string (no time component) shifting to the
-// previous day when the browser's local timezone is behind UTC.
-function formatDate(isoDate: string) {
-  return new Date(isoDate).toLocaleDateString([], { dateStyle: 'medium', timeZone: 'UTC' })
-}
-
 // The backend's wire format (snake_case, generated from schemas/chat.py) is kept
 // separate from ShipmentCardData (camelCase) — the component's own presentation
 // shape, unchanged since it was first built against a hardcoded mock (Week 1).
@@ -38,7 +29,7 @@ function toShipmentCardData(payload: ShipmentPayload): ShipmentCardData {
     destination: payload.destination,
     status: payload.status as ShipmentCardData['status'],
     estimatedDelivery: formatDate(payload.estimated_delivery),
-    lastUpdate: formatLastUpdate(payload.last_update),
+    lastUpdate: formatDateTime(payload.last_update),
     items: payload.packages.map((item) => ({
       id: item.id,
       description: item.description,

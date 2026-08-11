@@ -14,9 +14,12 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from db.session import engine
+from auth.dependencies import get_current_admin
+from db.session import engine, get_db
+from main import app
 from models.chat_session import ChatSession, ChatSessionState
 from models.customer import Customer
 from models.package import Package
@@ -43,6 +46,22 @@ def db_session():
         session.close()
         transaction.rollback()
         connection.close()
+
+
+@pytest.fixture()
+def client(db_session):
+    # Extracted from test_admin_customers.py (Week 4, Chunk B) once
+    # test_admin_shipments.py (Chunk C) needed the identical thing — overrides both
+    # get_current_admin (bypass real Auth0) and get_db (route the app's own
+    # dependency onto this test's transactional db_session, so TestClient requests
+    # don't open a second, real, uncontrolled SessionLocal() connection).
+    app.dependency_overrides[get_db] = lambda: db_session
+    app.dependency_overrides[get_current_admin] = lambda: {"sub": "auth0|test-admin", "email": "admin@example.com"}
+    try:
+        yield TestClient(app)
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+        app.dependency_overrides.pop(get_current_admin, None)
 
 
 @pytest.fixture(autouse=True)

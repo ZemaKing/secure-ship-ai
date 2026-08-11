@@ -6,6 +6,24 @@ Full technical scope and week-by-week milestones live in `docs/DEV_PLAN.md` — 
 
 ---
 
+## 2026-08-11 — Week 4, Day 3: Shipment CRUD + the status-dropdown demo gesture 📦
+
+**Theme:** Chunk C — full Shipment CRUD, with the status-update path as the literal Monday demo item #2, plus a round of admin-panel visual polish (real icons, sort, table styling) that landed on top of Chunk B's shell since its last doc pass.
+
+**UI polish (Chunk B's shell, refined once real design assets/feedback arrived):** `AdminAccessCard`'s button is now a real "Administrator Panel" pill (icon + label, matching the "New Chat" button's style) instead of a plain "Learn more" link. `AdminLayout` lost the Collapse toggle and the "Admin Access Panel" footer badge (both explicitly unwanted), lost the border between sidebar and header, lost the signed-in-identity chip (and the now-unused `useAdminMe` fetch backing it), and gained real per-item icons (`admin-dashboard/customers/shipments/packages.svg`) plus a `chat-admin.svg` brand icon distinct from the chat sidebar's `chat-bot.svg`. The active nav item now uses the same left-border-accent treatment as the chat sidebar's "New Chat" button, and inactive items' icons are grayscaled via CSS `filter` (they're hardcoded-color SVGs, so `color` alone can't restyle them). `.admin-layout__content` is now a proper white rounded card sitting on a light-gray canvas, matching the mockup. `CustomerManager`'s table gained real Edit/Delete icon buttons (`table-edit.svg`/`table-delete.svg`, recolored via a `mask-image`+`currentColor` technique since both SVGs are hardcoded black) replacing plain text links, tightened row padding/line-height, and a two-direction Name-column sort (▲/▼, toggling on click).
+
+**Backend:** `schemas/admin.py` grew `ShipmentCreate`/`ShipmentUpdate`/`ShipmentOut` — `ShipmentUpdate` is deliberately a **partial**-update shape (every field optional), unlike `CustomerUpdate`'s full-replace shape, specifically so the status-dropdown row action can `PATCH` just `{"status": "..."}` without needing to resubmit the rest of the record. New `services/admin_shipments.py` mirrors `admin_customers.py`'s shape, with `update_shipment()` doing a `model_dump(exclude_unset=True)` merge instead of a blind overwrite, and both `create`/`update` auto-stamp `last_update` server-side (never admin-editable). `routes/admin.py` gained the five Shipment routes plus a `_to_shipment_out()` mapper that joins in the customer's name for display (`ShipmentOut.customer_name`) so the table doesn't need a second lookup. Delete-with-packages gets the same typed `409` treatment as Chunk B's delete-with-shipments, reusing the shared `ErrorDetail` model. The `client` test fixture (get_db/get_current_admin overrides) was extracted from `test_admin_customers.py` into `conftest.py` once `test_admin_shipments.py` needed the identical thing — the second real use case, not a speculative one.
+
+**Frontend:** New `admin/ShipmentManager/` — table (Tracking Number/Customer/Origin/Destination/Carrier/Status/Est. Delivery/Updated/Actions) matching `admin-pages.png`, with the Status column rendered as a real `<select>` styled as a colored pill (reusing the same status color tokens `ShipmentCard` already uses) — changing it fires an immediate `PATCH` with just `{status}`, the literal demo gesture. `ShipmentFormModal` (Add/Edit) adds a Customer `<select>` populated from `useListCustomers()`. New `frontend/src/utils/formatDate.ts` — `formatDate`/`formatDateTime` extracted from `ChatWindow.tsx` once `ShipmentManager` needed the identical formatting (second real use case). `/admin/shipments` is now a real nested route, and the sidebar's Shipments nav item is enabled.
+
+**Live-verified, the actual Monday item #2+#3 dry run, back to back:** updated seeded customer Patricia Garcia's shipment from "In Transit" to "Delivered" via the admin UI's status dropdown, then asked a freshly-verified chat session for that same customer "Where is my package?" — the answer reflected "Delivered," proving the admin write path and `lookup_shipments` share the same Postgres rows live, not just in tests. Also click-tested full Shipment CRUD (add/edit/delete, including the delete-with-packages `409` case) directly.
+
+- ✅ `pytest backend/tests` — 34/34 passing (26 → 34). `npm test` — 25/25 passing (21 → 25). `npm run build`/`npm run lint` clean.
+
+**Where things stand:** Shipment CRUD is fully real, live-verified, and the status-update path — the literal Monday demo gesture — works end to end against real Postgres data. Next: Chunk D, Package CRUD (completes Epic E2) + a lightweight Dashboard.
+
+---
+
 ## 2026-08-11 — Week 4, Day 2: Customer CRUD — the template Chunks C/D copy 👥
 
 **Theme:** Chunk B — full create/edit/delete on `Customer`, end to end. Also the day the admin panel got a real UI shell instead of Chunk A's bare proof-of-concept page.

@@ -1,0 +1,186 @@
+@use '../../styles/variables' as v;
+
+.shipment-manager {
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: v.$space-4;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: v.$font-size-xl;
+    color: v.$color-text;
+  }
+
+  &__subtitle {
+    margin: v.$space-1 0 0;
+    font-size: v.$font-size-sm;
+    color: v.$color-text-muted;
+  }
+
+  &__add {
+    flex-shrink: 0;
+    padding: v.$space-2 v.$space-4;
+    border-radius: v.$radius-sm;
+    border: none;
+    background: v.$color-primary;
+    color: v.$color-bg;
+    font-size: v.$font-size-sm;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover {
+      opacity: 0.9;
+    }
+  }
+
+  &__search {
+    width: 100%;
+    max-width: 420px;
+    box-sizing: border-box;
+    padding: v.$space-2 v.$space-3;
+    margin-bottom: v.$space-4;
+    border: 1px solid v.$color-border;
+    border-radius: v.$radius-sm;
+    font: inherit;
+    font-size: v.$font-size-sm;
+
+    &:focus {
+      outline: none;
+      border-color: v.$color-primary;
+    }
+  }
+
+  &__status {
+    color: v.$color-text-muted;
+    font-size: v.$font-size-sm;
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+
+    th,
+    td {
+      text-align: left;
+      padding: calc(#{v.$space-3} - 2px) v.$space-4;
+      font-size: v.$font-size-sm;
+      line-height: v.$font-size-sm;
+      border-bottom: 1px solid v.$color-border;
+      white-space: nowrap;
+    }
+
+    th {
+      color: v.$color-text-muted;
+      font-weight: 600;
+    }
+
+    td {
+      color: v.$color-text;
+    }
+  }
+
+  // A real <select>, styled as a colored pill per status — the "first-class row
+  // action" the demo gesture needs, not a plain-text cell.
+  &__status-select {
+    border: 1px solid transparent;
+    border-radius: v.$radius-pill;
+    padding: v.$space-1 v.$space-3;
+    font-size: v.$font-size-xs;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+
+    &--label_created {
+      color: v.$color-status-label-created;
+      background: v.$color-status-label-created-bg;
+    }
+
+    &--in_transit {
+      color: v.$color-status-in-transit;
+      background: v.$color-status-in-transit-bg;
+    }
+
+    &--out_for_delivery {
+      color: v.$color-status-out-for-delivery;
+      background: v.$color-status-out-for-delivery-bg;
+    }
+
+    &--delivered {
+      color: v.$color-status-delivered;
+      background: v.$color-status-delivered-bg;
+    }
+
+    &--exception {
+      color: v.$color-status-exception;
+      background: v.$color-status-exception-bg;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    gap: v.$space-3;
+  }
+
+  &__action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: none;
+    padding: v.$space-1;
+    border-radius: v.$radius-sm;
+    color: v.$color-primary;
+    cursor: pointer;
+
+    &:hover {
+      background: v.$color-primary-light;
+    }
+
+    &--danger {
+      color: v.$color-status-exception;
+
+      &:hover {
+        background: v.$color-status-exception-bg;
+      }
+    }
+  }
+
+  // Same mask-image technique as CustomerManager — table-edit.svg/table-delete.svg
+  // are solid-black SVGs, not currentColor, so they need masking to pick up the
+  // button's own color rather than a plain <img>.
+  &__action-icon {
+    display: block;
+    width: 16px;
+    height: 16px;
+    background-color: currentColor;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
+  }
+
+  &__action &__action-icon {
+    mask-image: url('/icons/table-edit.svg');
+    -webkit-mask-image: url('/icons/table-edit.svg');
+  }
+
+  &__action--danger &__action-icon {
+    mask-image: url('/icons/table-delete.svg');
+    -webkit-mask-image: url('/icons/table-delete.svg');
+  }
+
+  &__count {
+    margin-top: v.$space-3;
+    font-size: v.$font-size-xs;
+    color: v.$color-text-muted;
+  }
+}
