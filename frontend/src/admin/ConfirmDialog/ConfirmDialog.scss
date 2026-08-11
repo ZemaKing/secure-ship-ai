@@ -1,0 +1,79 @@
+@use '../../styles/variables' as v;
+@use '../../styles/mixins' as m;
+
+.confirm-dialog {
+  &__overlay {
+    position: fixed;
+    inset: 0;
+    @include m.flex-center;
+    z-index: v.$z-modal;
+    padding: v.$space-4;
+    background: rgba(17, 24, 39, 0.5);
+  }
+
+  &__dialog {
+    @include m.card-surface;
+    width: 100%;
+    max-width: 380px;
+    padding: v.$space-5;
+    box-shadow: 0 20px 40px rgba(17, 24, 39, 0.2);
+  }
+
+  &__title {
+    margin: 0 0 v.$space-2;
+    font-size: v.$font-size-lg;
+    color: v.$color-text;
+  }
+
+  &__message {
+    margin: 0 0 v.$space-5;
+    font-size: v.$font-size-sm;
+    color: v.$color-text-muted;
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: v.$space-3;
+  }
+
+  &__cancel {
+    padding: v.$space-2 v.$space-4;
+    border-radius: v.$radius-sm;
+    border: 1px solid v.$color-border;
+    background: v.$color-bg;
+    color: v.$color-text;
+    font-size: v.$font-size-sm;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover {
+      background: v.$color-bg-muted;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+  }
+
+  &__confirm {
+    padding: v.$space-2 v.$space-4;
+    border-radius: v.$radius-sm;
+    border: none;
+    background: v.$color-status-exception;
+    color: v.$color-bg;
+    font-size: v.$font-size-sm;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover {
+      opacity: 0.9;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+  }
+}

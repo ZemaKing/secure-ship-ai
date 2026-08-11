@@ -1,0 +1,170 @@
+@use '../styles/variables' as v;
+@use '../styles/mixins' as m;
+
+.admin-layout {
+  display: flex;
+  height: 100vh;
+  font-family: v.$font-family;
+
+  &__sidebar {
+    display: flex;
+    flex-direction: column;
+    width: v.$sidebar-width;
+    flex-shrink: 0;
+    padding: v.$space-4;
+    background: v.$color-bg-muted;
+  }
+
+  &__brand {
+    display: flex;
+    align-items: center;
+    gap: v.$space-3;
+    margin-bottom: v.$space-5;
+  }
+
+  &__brand-icon {
+    @include m.icon(40px);
+    flex-shrink: 0;
+    box-sizing: border-box;
+    padding: v.$space-1;
+    border-radius: v.$radius-pill;
+    background: v.$color-primary-light;
+  }
+
+  &__brand-title {
+    margin: 0;
+    font-size: v.$font-size-sm;
+    font-weight: 700;
+    color: v.$color-text;
+    white-space: nowrap;
+  }
+
+  &__brand-subtitle {
+    margin: 0;
+    font-size: v.$font-size-xs;
+    color: v.$color-text-muted;
+  }
+
+  &__nav {
+    display: flex;
+    flex-direction: column;
+    gap: v.$space-1;
+  }
+
+  &__nav-item {
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
+    padding: v.$space-3;
+    border-radius: v.$radius-sm;
+    font-size: v.$font-size-sm;
+    font-weight: 600;
+    color: v.$color-text;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+
+    &:hover {
+      background: v.$color-bg;
+    }
+
+    // Same treatment as Sidebar.scss's __new-chat-button — a left border accent
+    // plus a compensating padding-left so the icon still lands at the same
+    // x-position as every other nav item's icon.
+    &--active {
+      padding-left: calc(#{v.$space-3} - 3px);
+      border-left: 3px solid v.$color-primary;
+      background: v.$color-primary-light;
+      color: v.$color-primary;
+    }
+
+    &--disabled {
+      color: v.$color-text-subtle;
+      cursor: default;
+
+      &:hover {
+        background: none;
+      }
+
+      // Icons are hardcoded-blue SVGs rendered via <img> (same pattern as every
+      // other icon in this app), so CSS `color` can't restyle them — `filter`
+      // operates on the rendered image itself instead, regardless of the SVG's
+      // internal fill.
+      .admin-layout__nav-item-icon {
+        filter: grayscale(100%);
+        opacity: 0.6;
+      }
+    }
+  }
+
+  &__nav-item-icon {
+    @include m.icon(18px);
+    flex-shrink: 0;
+  }
+
+  &__nav-item-soon {
+    margin-left: auto;
+    font-size: v.$font-size-xs;
+    font-weight: 600;
+    color: v.$color-text-subtle;
+    background: v.$color-bg;
+    border: 1px solid v.$color-border;
+    border-radius: v.$radius-pill;
+    padding: 2px v.$space-2;
+  }
+
+  &__spacer {
+    flex: 1;
+  }
+
+  &__main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow-y: auto;
+    background: v.$color-bg-muted;
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: v.$space-3;
+    padding: v.$space-4 v.$space-6;
+  }
+
+  &__logout {
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
+    padding: v.$space-2 v.$space-4;
+    border-radius: v.$radius-pill;
+    border: 1px solid v.$color-border;
+    background: v.$color-bg;
+    color: v.$color-text;
+    font-size: v.$font-size-sm;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+
+    &:hover {
+      border-color: v.$color-status-exception;
+      color: v.$color-status-exception;
+      background: v.$color-status-exception-bg;
+    }
+  }
+
+  &__logout-icon {
+    @include m.icon(16px);
+  }
+
+  &__content {
+    flex: 1;
+    margin: 0;
+    padding: v.$space-6;
+    background: v.$color-bg;
+    border: 1px solid v.$color-border;
+    border-radius: v.$radius-md;
+  }
+}

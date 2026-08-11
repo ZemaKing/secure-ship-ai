@@ -28,7 +28,15 @@ from services import verification_store
 def db_session():
     connection = engine.connect()
     transaction = connection.begin()
-    session = Session(bind=connection)
+    # join_transaction_mode="create_savepoint": SQLAlchemy's documented recipe for
+    # joining a Session into an externally-managed transaction (here, the test's
+    # own rollback-everything transaction). Without it, code under test calling
+    # session.rollback() itself (Week 4, Chunk B's delete-with-children 409 handler
+    # is the first path that does) rolls back to the very start of the connection's
+    # transaction — wiping out this test's own fixture data, not just the failed
+    # operation. With it, commit()/rollback() inside the tested code only
+    # ends/restarts a SAVEPOINT, leaving the outer test transaction untouched.
+    session = Session(bind=connection, join_transaction_mode="create_savepoint")
     try:
         yield session
     finally:

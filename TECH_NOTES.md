@@ -333,6 +333,38 @@ Only six packages were installed directly (per `DEV_PLAN.md`'s locked stack); ev
 
 ---
 
+### `backend/services/admin_customers.py` + Customer routes in `routes/admin.py` (Week 4, Chunk B)
+
+| Construct | What it does | JS/Node analogy |
+|---|---|---|
+| `list_customers(db)` / `get_customer(db, id)` / `create_customer(db, data)` / `update_customer(db, customer, data)` / `delete_customer(db, customer)` | Plain functions doing `db.query(...)`/`db.add(...)`/`db.commit()` directly — no repository layer, same shape as `tools/lookup_shipments.py` and `services/verification_store.py`. `update_customer`/`delete_customer` take the already-loaded ORM object (not just an id) since `routes/admin.py`'s `_get_customer_or_404` helper already fetched it for the 404 check — no reason to query twice | A plain data-access module's exported CRUD functions, no ORM-repository abstraction layer |
+| `routes/admin.py`'s `_to_customer_out(customer)` | Maps the ORM `Customer` onto the wire-format `CustomerOut` by hand, field by field — same separation `_to_shipment_payloads()` already keeps between `tools/`'s internal shapes and the API's Pydantic contract | A manual DTO-mapping function instead of relying on an ORM's auto-serialization |
+| `@router.delete(..., status_code=204, responses={409: {"model": ErrorDetail, ...}})` `except IntegrityError: db.rollback(); raise HTTPException(409, ...)` | A customer with existing `Shipment` rows violates the FK constraint on delete — caught here and turned into a documented `409` (with a real Pydantic response model, so Orval generates a typed `ErrorDetail` shape) instead of an unhandled `500`. `db.rollback()` is required after any failed commit before the session can be used again — see the `conftest.py` fix below for why that one call needed a real fixture change | Catching a foreign-key-violation DB error and mapping it to a `409 Conflict` HTTP response instead of letting it surface as a raw `500` |
+| `schemas/admin.py::ErrorDetail(detail: str)` | A shared error-body shape, reused for this 409 and every future Shipment/Package delete-with-children 409 — one typed error contract, not three near-identical ones | A shared `{ error: string }` error-response type reused across a REST API's error responses |
+
+**Why it exists:** Chunk B — the template Chunks C/D copy for Shipment/Package CRUD. Establishes the layering (thin route → plain service function → hand-mapped DTO) once so the next two days are mostly repetition of an already-proven shape, not new design decisions.
+
+**Verified:** live through the real running stack and the real browser UI — created a customer, edited it, attempted to delete a seeded customer with real shipments (clean `409` surfaced in the UI, not a crash), deleted a customer with none (actually removed, confirmed gone).
+
+---
+
+### `backend/tests/test_admin_customers.py` (Week 4, Chunk B) + a real fixture bug it found
+
+Uses the same `TestClient(main.app)` pattern as `test_admin_auth.py`, but adds a second dependency override this file is the first to need: `app.dependency_overrides[get_db] = lambda: db_session`, routing the app's own `db.session.get_db` dependency onto the test's transactional `db_session` fixture. Without it, `TestClient` requests would open a second, real `SessionLocal()` connection and commit for real against the dev DB — silently defeating the whole transaction-per-test rollback convention every other test file relies on.
+
+**A real, latent bug in `conftest.py`'s `db_session` fixture surfaced here, not from review:** every test before this file only ever exercised code paths ending in `db.commit()`. `test_delete_customer_with_shipments_returns_409_not_500` is the first to exercise a `db.rollback()` call (the 409 handler's own `except IntegrityError: db.rollback()`), and on a plain `Session(bind=connection)`, `rollback()` rolls back to the very *start* of the connection's transaction — not just the failed operation. That wiped out the test's own `make_customer`/`make_shipment` fixture rows made earlier in the same test, producing a confusing `sqlalchemy.orm.exc.ObjectDeletedError` on the follow-up query rather than a clean assertion failure. Fixed by adding `join_transaction_mode="create_savepoint"` to the `Session(...)` constructor in `conftest.py` — SQLAlchemy's own documented recipe for joining a session into an externally-managed test transaction, which makes `commit()`/`rollback()` inside tested code only end/restart a SAVEPOINT instead of touching the outer transaction. A one-line fixture fix that now protects every current and future test, not just this one.
+
+| Test | What it proves |
+|---|---|
+| `test_list_customers_returns_seeded_rows` | `GET /admin/customers` includes rows created via `make_customer` |
+| `test_create_customer` | `POST /admin/customers` returns the new row with a real `id` |
+| `test_get_customer_404s_for_unknown_id` | An unknown UUID 404s cleanly |
+| `test_update_customer` | `PATCH` actually persists the change |
+| `test_delete_customer_with_no_shipments` | Delete succeeds (`204`), and the row is genuinely gone (follow-up `GET` 404s) |
+| `test_delete_customer_with_shipments_returns_409_not_500` | The FK-violation path returns `409`, and — critically — the customer is *still there* afterward (`GET` still `200`), proving the failed delete didn't partially apply |
+
+---
+
 ### `backend/tests/test_admin_auth.py` (Week 4, Chunk A)
 
 The first test file in the suite to use `fastapi.testclient.TestClient` against the real `main.app` instead of calling a route function directly — necessary here since what's under test (header presence, HTTP status codes) only exists at the HTTP layer, not in a plain Python function call.
@@ -403,12 +435,12 @@ The other three files follow the identical pattern: `Customer` (plain string col
 
 ---
 
-### `backend/tests/` (`pytest.ini`, `conftest.py`, 8 test files)
+### `backend/tests/` (`pytest.ini`, `conftest.py`, 9 test files)
 
 | Construct | What it does | JS/Node analogy |
 |---|---|---|
 | `pytest.ini`'s `pythonpath = .` | Adds `backend/` itself to `sys.path` when pytest runs, so `tests/*.py` can `from routes.chat import ...` etc. the same way `main.py` does, regardless of the directory pytest was invoked from | A `jest.config.js` `moduleDirectories`/`roots` entry, or a `tsconfig` path alias |
-| `conftest.py`'s `db_session` fixture — `connection = engine.connect(); transaction = connection.begin(); session = Session(bind=connection); yield session; ...; transaction.rollback(); connection.close()` | Runs every test against the **real dev Postgres** (reusing `db.session.engine`, so the exact same `DATABASE_URL`), not a second SQLite test database — this project's models use Postgres-only column types (`JSONB`, native `Enum`), and `DEV_PLAN.md`'s locked decision is Postgres-only, no second datastore. Each test gets its own transaction that's rolled back on teardown, so nothing a test writes ever persists — no truncate step, no dedicated test DB to provision | A test wrapping each Jest test in a DB transaction via `prisma.$transaction` and rolling it back afterward, instead of pointing tests at SQLite or a Docker-spun throwaway Postgres |
+| `conftest.py`'s `db_session` fixture — `connection = engine.connect(); transaction = connection.begin(); session = Session(bind=connection, join_transaction_mode="create_savepoint"); yield session; ...; transaction.rollback(); connection.close()` | Runs every test against the **real dev Postgres** (reusing `db.session.engine`, so the exact same `DATABASE_URL`), not a second SQLite test database — this project's models use Postgres-only column types (`JSONB`, native `Enum`), and `DEV_PLAN.md`'s locked decision is Postgres-only, no second datastore. Each test gets its own transaction that's rolled back on teardown, so nothing a test writes ever persists — no truncate step, no dedicated test DB to provision. **`join_transaction_mode="create_savepoint"` added Week 4, Chunk B** — without it, tested code calling `session.rollback()` (first exercised by the Customer delete-409 handler) rolls back the *entire* outer test transaction, not just its own failed operation; see `test_admin_customers.py`'s entry for the full story of the bug this fixed | A test wrapping each Jest test in a DB transaction via `prisma.$transaction` and rolling it back afterward, instead of pointing tests at SQLite or a Docker-spun throwaway Postgres |
 | `_clear_verification_store` (`autouse=True`) | Clears `services.verification_store._store` — the 2FA code dict — before and after every test. This is the one piece of state a DB-transaction rollback alone wouldn't reset: the store is a plain module-level dict (Chunk D's deliberate "no Redis" decision), which lives at Python-process scope, not inside any DB transaction | Resetting an in-memory singleton/cache between test cases, since a DB transaction rollback wouldn't touch it either |
 | `make_customer`/`make_session` fixtures | Small factory fixtures — `make_customer(**overrides)`/`make_session(**overrides)` build-and-commit a real `Customer`/`ChatSession` row (defaults filled in, e.g. a `uuid4`-suffixed phone/address so parallel tests never collide), returning the ORM object with its DB-assigned `id` populated. Every test file uses these instead of constructing rows by hand | A `factory-bot`/`fishery`-style test factory function |
 | `make_shipment`/`make_package` fixtures (**Week 3, Chunk D**) | Same factory pattern, added once two new test files (`test_shipment_lookup.py`, `test_gating.py`) both needed real `Shipment`/`Package` rows — a `uuid4`-derived `tracking_number` keeps rows from colliding across tests, same reasoning as `make_customer`'s phone/address suffix. Added as shared fixtures rather than duplicated per-file once a second real use case existed, per this project's own "no premature abstraction" guideline | The same factory-fixture pattern extended to two more entity types once enough call sites existed to justify it |
@@ -424,7 +456,7 @@ The other three files follow the identical pattern: `Customer` (plain string col
 
 **Why it exists:** Chunk I — every one of these behaviors was already verified by hand, live, in an earlier chunk (Chunks A/B3/D/F2/G4), but only ever documented in `CHANGE_LOG.md` prose; nothing would have caught a regression. Several of the assertions above double as a guardrail on a *decision*, not just a behavior: `ollama_client.chat()` returning a `ChatCompletionResult` dataclass (Chunk B) has to hold for `test_escalation_no_leak.py`'s mock to even type-check against real call sites; the 300s/3-attempts constants (Chunk D) are imported directly (`CODE_TTL_SECONDS`) rather than re-hardcoded in the test, so the test can't silently drift from the real value; the in-memory-dict-not-Redis call (Chunk D) is exactly why `_clear_verification_store` has to exist as its own fixture at all. Week 3's Chunk D extends the same "pin the decision down with a test" philosophy to Epic F3 specifically — the enforcement point was always *true by construction* (no argument exists to misuse), but nothing proved it stayed true under deliberate, adversarial pressure until now.
 
-**Verified:** `pytest` (from `backend/`, venv active) — 12/12 passing as of Chunk I. Row counts in the real dev DB (`customers`, `chat_sessions`) confirmed identical before and after two full test runs, by hand via `psql` — direct evidence the rollback fixture leaves zero trace, not just an assumption about how the fixture *should* behave. **Week 3, Chunk D:** 16/16 passing with the two new files added; real-DB row counts (`customers`: 29, `shipments`: 54, `packages`: 105) reconfirmed identical before and after, matching the known seed counts exactly — the new `make_shipment`/`make_package` fixtures leave no more trace than the original ones did. **Post-Week-3 fix (2026-08-04):** 17/17 passing with the added `test_gating.py` reply-leak test. **Week 4, Chunk A:** 20/20 passing with the new `test_admin_auth.py` (3 tests) added — the first file using `TestClient` against a real running `main.app` instead of calling a route function directly.
+**Verified:** `pytest` (from `backend/`, venv active) — 12/12 passing as of Chunk I. Row counts in the real dev DB (`customers`, `chat_sessions`) confirmed identical before and after two full test runs, by hand via `psql` — direct evidence the rollback fixture leaves zero trace, not just an assumption about how the fixture *should* behave. **Week 3, Chunk D:** 16/16 passing with the two new files added; real-DB row counts (`customers`: 29, `shipments`: 54, `packages`: 105) reconfirmed identical before and after, matching the known seed counts exactly — the new `make_shipment`/`make_package` fixtures leave no more trace than the original ones did. **Post-Week-3 fix (2026-08-04):** 17/17 passing with the added `test_gating.py` reply-leak test. **Week 4, Chunk A:** 20/20 passing with the new `test_admin_auth.py` (3 tests) added — the first file using `TestClient` against a real running `main.app` instead of calling a route function directly. **Week 4, Chunk B:** 26/26 passing with the new `test_admin_customers.py` (6 tests) added, including the fixture fix described above.
 
 ---
 
@@ -476,11 +508,11 @@ Per-component SCSS files (`Sidebar.scss`, `ChatWindow.scss`, `ChatMessage.scss`,
 |---|---|
 | `const [sessionKey, setSessionKey] = useState(0)` | Owned by a new `ChatLayout` sub-component (was directly in `App` before Chunk A) — `ChatWindow` keeps its own `messages` state fully internal (per the "keep business logic out of shared/parent state unless needed" instinct), so neither `App` nor `ChatLayout` needs to know anything about chat internals to reset it |
 | `<ChatWindow key={sessionKey} />` | Passing a changing `key` is React's built-in "throw this subtree away and remount fresh" mechanism — clicking Sidebar's "New Chat" bumps `sessionKey`, which unmounts the old `ChatWindow` (and its state) and mounts a brand new one seeded back to the hardcoded message. No custom reset prop/effect needed. |
-| `<Routes><Route path="/" element={<ChatLayout />} /><Route path="/admin/*" element={<ProtectedRoute><AdminApp /></ProtectedRoute>} /></Routes>` (Week 4, Chunk A) | `App` itself now only does routing — the original `Sidebar`+`ChatWindow` layout moved into `ChatLayout` (a second component in this same file, same precedent as elsewhere in this project of a small local sub-component living alongside the one that uses it) so `/` behaves exactly as before, while `/admin/*` renders the new admin shell behind `ProtectedRoute` |
+| `<Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}><Route index element={<Navigate to="customers" replace />} /><Route path="customers" element={<CustomerManager />} /></Route>` (**Week 4, Chunk B** — replaces Chunk A's single bare `path="/admin/*"` route) | Real nested routing: `AdminLayout` renders the sidebar/header chrome plus a react-router `<Outlet />`, and the child `<Route>`s render into that outlet. The `index` route redirects `/admin` itself to `/admin/customers` so the panel has a real default tab instead of a blank shell. Shipments/Packages/Dashboard child routes get added the same way in Chunks C/D — no restructuring needed, just one more `<Route>` line each |
 
 **Why it exists:** the composition root — lays out `Sidebar` + `ChatWindow` side by side and is the one place that knows both exist, without either component needing to know about the other. As of Chunk A, it's also the one place that knows both the chat UI and the admin panel exist, keeping that same "the router is the only thing that needs to know both branches exist" property.
 
-**Verified:** clicking "New Chat" after sending a message reliably drops the list back to just the seed message (confirmed via headless-browser screenshot, see `ChatWindow` section below). **Week 4, Chunk A:** `/` renders the chat UI unchanged; `/admin` (unauthenticated) redirects to a real Auth0 Universal Login and, on success, lands back on `/admin` rendering `AdminApp` — confirmed live in the browser end to end.
+**Verified:** clicking "New Chat" after sending a message reliably drops the list back to just the seed message (confirmed via headless-browser screenshot, see `ChatWindow` section below). **Week 4, Chunk A:** `/` renders the chat UI unchanged; `/admin` (unauthenticated) redirects to a real Auth0 Universal Login and, on success, lands back on `/admin` — confirmed live in the browser end to end. **Week 4, Chunk B:** `/admin` now lands on the real `/admin/customers` tab automatically (via the `index` redirect), confirmed live alongside the full Customer CRUD walkthrough.
 
 ---
 
@@ -602,17 +634,59 @@ Wraps `<App />` in `<QueryClientProvider client={queryClient}>` (a single `new Q
 
 ---
 
-### `frontend/src/admin/AdminApp.tsx` (+ `AdminApp.scss`) (Week 4, Chunk A)
+### `frontend/src/admin/AdminLayout.tsx` (+ `.scss`) (Week 4, Chunk B — replaces Chunk A's `AdminApp.tsx`)
 
 | Construct | What it does |
 |---|---|
-| `const { user, logout, getAccessTokenSilently } = useAuth0(); const [accessToken, setAccessToken] = useState<string \| null>(null); useEffect(() => { getAccessTokenSilently().then(setAccessToken) }, [...])` | Fetches a real access token once on mount and holds it in local state — deliberately inline/local rather than a shared hook, since this is the *only* admin endpoint call that exists yet. A shared token-attachment mechanism (a hook, or a custom Orval fetch mutator) is a natural extraction point once Chunks B-D add several more admin endpoints all needing the same header, not before — the project's own "no premature abstraction until a second real use case exists" rule |
-| `useAdminMe({ query: { enabled: !!accessToken }, fetch: { headers: { Authorization: \`Bearer ${accessToken}\` } } })` | Orval's generated hooks accept a `fetch: RequestInit` override per call — this is how the Bearer token actually reaches the backend, since Orval has no built-in Auth0 awareness of its own. `query.enabled` gates the call until the token is actually available, avoiding an unauthenticated first request |
-| `{data?.data.email ?? data?.data.sub}` | Falls back to `sub` when `email` is absent — observed live, not assumed: Auth0 **access tokens** don't carry profile claims like `email` by default (only **ID tokens** do), so this path is the normal case, not an edge case |
+| `NAV_ITEMS: AdminNavItem[]` — `{ label, path, enabled }` for Dashboard/Customers/Shipments/Packages, only `Customers` `enabled: true` | Data-driven nav so Chunks C/D each flip one `enabled: false → true` rather than restructuring the sidebar. Disabled items render as plain non-clickable `<span>`s with a "Soon" badge instead of dead `href="#"`-style links — same "no dead links" lesson already applied to `AdminAccessCard` back in Chunk A |
+| `<NavLink to={item.path} className={({ isActive }) => ...}>` | React Router's `NavLink` (not plain `Link`) specifically so the active-tab highlighting is automatic, driven by the real current URL, not manually tracked state |
+| `useAdminAccessToken()` + `useAdminMe({ fetch: authHeaders(accessToken) })` in the header | Moved here from Chunk A's `AdminApp.tsx` — the identity chip and Logout button are layout-level chrome, shared by every admin page, not per-page content |
+| `const [collapsed, setCollapsed] = useState(false)` | A real, working sidebar collapse (width + label visibility toggle via a `.admin-layout--collapsed` modifier class), matching the mockup's "Collapse" control — not just a static decorative button |
 
-**Why it exists:** the minimal proof-of-concept shell for Chunk A — just enough UI to demonstrate the full round trip (real login → real token → real protected API call → real claims rendered) before any CRUD screens exist. Chunks B-D will grow this into the real `CustomerManager`/`ShipmentManager`/`PackageManager`/`Dashboard` tabs.
+**Why it exists:** Chunk A's `AdminApp.tsx` was a deliberately bare proof-of-concept (just "signed in as X"); Chunk B replaces it with the real, reusable admin shell per `admin-pages.png` — sidebar nav, header, `<Outlet />` for page content — that every subsequent chunk's manager component renders into, rather than each page rebuilding its own layout.
 
-**Verified:** live in the browser after a real Universal Login — renders "Signed in as `auth0|...`" (the `sub`, since this access token had no `email` claim), confirming the whole chain works end to end, not just that the backend accepts a token in isolation.
+**Verified:** live in the browser — sidebar renders with only Customers active/clickable, the other three visibly present but marked "Soon"; the real signed-in identity and a working Logout render in the header; collapse toggle actually shrinks the sidebar.
+
+---
+
+### `frontend/src/admin/useAdminAccessToken.ts` (Week 4, Chunk B)
+
+Extracted once `AdminLayout` (for `useAdminMe`) and `CustomerManager` (for four different customer endpoints) both needed the identical "fetch a token via `getAccessTokenSilently()`, hold it in state, attach it as a Bearer header" dance — the project's own "no premature abstraction until a second real use case exists" rule, explicitly deferred in Chunk A's `AdminApp.tsx` comment and resolved here. Exports `useAdminAccessToken()` (the token, or `null` while it's still resolving) and `authHeaders(token): RequestInit` (the `{ headers: { Authorization: 'Bearer ...' } }` object every Orval hook call needs) — both now used at 5 call sites across `AdminLayout` and `CustomerManager` instead of being duplicated at each one.
+
+---
+
+### `frontend/src/admin/ConfirmDialog/` (Week 4, Chunk B)
+
+A generic `open`/`title`/`message`/`confirmLabel`/`busy`/`onConfirm`/`onCancel` modal — the same overlay/dialog structural pattern `CodeModal` already established (`role="alertdialog"`, backdrop click + `stopPropagation()` on the inner card), built as its own component from day one rather than inlined into `CustomerManager`, since Chunks C/D's Shipment/Package managers need the exact same delete-confirmation UI, not a hypothetical future reuse.
+
+---
+
+### `frontend/src/admin/CustomerManager/` (`CustomerManager.tsx`, `CustomerFormModal.tsx`, both + `.scss`) (Week 4, Chunk B)
+
+| Construct | What it does |
+|---|---|
+| `useListCustomers`/`useCreateCustomer`/`useUpdateCustomer`/`useDeleteCustomer` (Orval-generated) | Standard React Query hooks; `authHeaders(accessToken)` passed as `fetch` on each, same pattern as `AdminLayout`'s `useAdminMe` call |
+| Client-side `matchesSearch()` filter over the full `useListCustomers()` result | No backend search/pagination params exist yet (`list_customers(db)` takes none) — filtering the already-fetched list client-side is simplest and matches the literal backend signature, not a missing feature |
+| `<CustomerFormModal key={... 'create' \| customer.id \| 'closed'} open={...} customer={...} />` | The remount `key` is required, not decorative — without it, the modal component stays mounted across Add→Edit transitions and its `useState(customer ?? EMPTY_FORM)` initializer (which only runs on true first mount) never picks up the customer being edited. Same class of bug `CodeModal`'s `codeModalKey` already solved for a different reason (a repeat code after lockout); found here by `CustomerManager.test.tsx`, not by inspection |
+| `CustomerFormModal`'s `useState<CustomerCreate>(() => customer ? { first_name: customer.first_name, ... } : EMPTY_FORM)` | Explicitly picks only the four editable fields off the `CustomerOut` prop rather than spreading it directly — spreading would carry `id` along into the form state, and from there into every `PATCH` request body. Also found by the test, not by review |
+| `deleteMutation.mutate({ customerId }, { onSuccess: (response) => { if (response.status === 204) {...} else if (response.status === 409) { setDeleteError(response.data.detail) } else {...} } })` | Narrows on `response.status` before reading `.detail`, since the generated response type is a union (`204 | 409 | 422`) and only the `409` variant's `data` is typed as `ErrorDetail` — reading `.detail` unconditionally wouldn't type-check |
+
+**Why it exists:** Chunk B's actual deliverable — full Customer CRUD, and the template Chunks C/D copy for Shipment/Package. Table columns (Name/Phone Number/Address/Actions) and the Add/Edit modal's fields (First Name/Last Name/Phone Number/Address) both come directly from `admin-pages.png`/`admin-modals.png`, not guessed.
+
+**Verified:** both automated (`CustomerManager.test.tsx`, below — which is what actually caught the two real bugs described above) and live in the browser: create, edit, delete-with-no-shipments (succeeds), delete-with-seeded-shipments (clean `409` message, not a crash).
+
+---
+
+### `frontend/src/admin/CustomerManager/CustomerManager.test.tsx` (Week 4, Chunk B)
+
+Only the two true external boundaries are mocked — `useAuth0()` (for the access token, same as `ProtectedRoute.test.tsx`) and `global.fetch` (same as `CodeModal.test.tsx`) — React Query, `CustomerManager`'s own state, and the real `CustomerFormModal`/`ConfirmDialog` components all run for real. `mockFetch()` is a small local helper that branches on HTTP method (`GET`/`POST`/`PATCH`/`DELETE`) to return the right canned response, since this component (unlike `CodeModal`) calls four different endpoints, not one.
+
+| Test | What it proves |
+|---|---|
+| `renders the table from the real (mocked-at-fetch) list response` | Table rows render from `useListCustomers()`'s data |
+| `submits the expected payload when creating a customer` | The Add form's submitted JSON body matches exactly what was typed, nothing extra |
+| `submits the expected payload when editing a customer, targeting the right id` | Caught both real bugs above — the PATCH URL contains the right `customerId`, the prefilled form actually reflects the customer being edited, and the body contains only the four real fields, no leaked `id` |
+| `deletes a customer after confirming, and shows the backend message on a 409 conflict` | The confirm-dialog flow calls `DELETE`, and a `409` response's `detail` text renders in the UI rather than being swallowed or crashing |
 
 ---
 
@@ -625,11 +699,11 @@ Wraps `<App />` in `<QueryClientProvider client={queryClient}>` (a single `new Q
 
 **Why it exists:** the locked "no hand-written fetch calls or duplicated TS types" decision (`DEV_PLAN.md`/`REQUIREMENTS.md` §4.8) — `ChatRequest`/`ChatResponse` are generated straight from the backend's Pydantic models via its OpenAPI schema, so the two can't silently drift. The backend's `/chat` route was given an explicit `operation_id="chat"` (`routes/chat.py`) purely so the generated hook name comes out as `useChat()` instead of an auto-derived `useSendChatMessageChatPost()`.
 
-**Verified:** `npm run generate:api` produces this file cleanly against the running backend each time it's been rerun (Chunk A, Chunk D, Chunk E's Cutover); `tsc -b`/`oxlint`/`npm run build` pass after every regeneration; see `ChatWindow.tsx`'s entry above for the `useChat()` runtime check. The Cutover regeneration confirmed `EscalationPayload`'s three fields (`lines`, `agent_name`, `first_name`) present with correct types and no other diff beyond that one interface. **Week 4, Chunk A** regenerated again, adding `AdminMeResponse` and `useAdminMe()` — the first of what will be several admin-endpoint regens across this week's chunks (one per chunk that adds/changes admin routes, same discipline as every prior week).
+**Verified:** `npm run generate:api` produces this file cleanly against the running backend each time it's been rerun (Chunk A, Chunk D, Chunk E's Cutover); `tsc -b`/`oxlint`/`npm run build` pass after every regeneration; see `ChatWindow.tsx`'s entry above for the `useChat()` runtime check. The Cutover regeneration confirmed `EscalationPayload`'s three fields (`lines`, `agent_name`, `first_name`) present with correct types and no other diff beyond that one interface. **Week 4, Chunk A** regenerated again, adding `AdminMeResponse` and `useAdminMe()` — the first of what will be several admin-endpoint regens across this week's chunks (one per chunk that adds/changes admin routes, same discipline as every prior week). **Week 4, Chunk B** regenerated twice — once for the initial Customer CRUD routes, once more after adding the shared `ErrorDetail` response model to the `DELETE` route's `responses=` so the `409` conflict body is properly typed (`deleteCustomerResponse409: { data: ErrorDetail }`) instead of the frontend having to cast an undocumented error shape.
 
 ---
 
-### `frontend` test infrastructure (`vitest.config.ts`, `src/test/setup.ts`) + `useChatSession.test.ts` / `CodeModal.test.tsx` / `ProtectedRoute.test.tsx`
+### `frontend` test infrastructure (`vitest.config.ts`, `src/test/setup.ts`) + `useChatSession.test.ts` / `CodeModal.test.tsx` / `ProtectedRoute.test.tsx` / `CustomerManager.test.tsx`
 
 | Construct | What it does |
 |---|---|
@@ -647,7 +721,7 @@ Wraps `<App />` in `<QueryClientProvider client={queryClient}>` (a single `new Q
 
 **Why it exists:** a direct follow-up to Chunk I — once the backend had a real `pytest` suite, the natural next question was frontend parity. Deliberately scoped to the places with actual branching logic (a hook merging response fields, a modal with a real lockout/retry state machine, an auth guard's redirect logic) rather than every component — `ChatWindow`'s JSX layout or `Sidebar`'s static markup wouldn't fail in a way a unit test would catch that a type error or a glance wouldn't already catch first.
 
-**Verified:** `npm test` (`vitest run`) — 10/10 passing as of Chunk I; **17/17 as of Week 4, Chunk A** with `ProtectedRoute.test.tsx` added. `npm run build` (`tsc -b` + `vite build`) stays clean with the new `.test.ts(x)` files present, since `tsconfig.app.json`'s `include: ["src"]` type-checks them too, but Rollup's `vite build` never bundles them into the shipped app (nothing real imports a test file). `npm run lint` (oxlint) clean.
+**Verified:** `npm test` (`vitest run`) — 10/10 passing as of Chunk I; 17/17 as of Week 4, Chunk A with `ProtectedRoute.test.tsx` added; **21/21 as of Week 4, Chunk B** with `CustomerManager.test.tsx` added (4 tests, two of which caught real bugs described in the `CustomerManager/` entry above). `npm run build` (`tsc -b` + `vite build`) stays clean with the new `.test.ts(x)` files present, since `tsconfig.app.json`'s `include: ["src"]` type-checks them too, but Rollup's `vite build` never bundles them into the shipped app (nothing real imports a test file). `npm run lint` (oxlint) clean.
 
 ---
 

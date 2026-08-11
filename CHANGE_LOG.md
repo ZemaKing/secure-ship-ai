@@ -6,6 +6,22 @@ Full technical scope and week-by-week milestones live in `docs/DEV_PLAN.md` — 
 
 ---
 
+## 2026-08-11 — Week 4, Day 2: Customer CRUD — the template Chunks C/D copy 👥
+
+**Theme:** Chunk B — full create/edit/delete on `Customer`, end to end. Also the day the admin panel got a real UI shell instead of Chunk A's bare proof-of-concept page.
+
+- 🧩 Backend: `schemas/admin.py` grew `CustomerCreate`/`CustomerUpdate`/`CustomerOut` plus a shared `ErrorDetail` (reused for every future delete-with-children 409, not just this one). New `services/admin_customers.py` — plain `list_customers`/`get_customer`/`create_customer`/`update_customer`/`delete_customer` functions doing `db.query(...)` directly, same shape as `tools/lookup_shipments.py`. `routes/admin.py` gained the five REST routes, thin, delegating entirely to the service; `DELETE` catches `IntegrityError` (a customer with existing shipments) and returns a documented `409` with `ErrorDetail`, not a `500`.
+- 🐛 **Real bug found by the tests, not by review:** `conftest.py`'s `db_session` fixture had a latent gap — every test before today only ever exercised code paths that call `db.commit()`, never `db.rollback()`. The delete-409 handler is the first to call `db.rollback()`, and on a plain `Session(bind=connection)`, that rolls back to the very start of the connection's transaction — wiping out the *whole test's* fixture data, not just the failed delete. Fixed with SQLAlchemy's documented `join_transaction_mode="create_savepoint"` recipe, which makes `commit()`/`rollback()` inside tested code only end/restart a SAVEPOINT, leaving the outer test transaction untouched. A one-line, broadly-applicable fixture fix, not a one-off hack.
+- 🖼️ Frontend: `admin/AdminApp.tsx` (Chunk A's bare shell) replaced by `admin/AdminLayout.tsx` — a real dedicated admin sidebar per the `admin-pages.png` mockup (Dashboard/Customers/Shipments/Packages nav, only Customers wired this chunk, the rest visibly present but marked "Soon" rather than dead-linked), plus a header with the real signed-in identity and the existing styled Logout button. `App.tsx` now nests `/admin` routes properly (`index` → redirect to `/admin/customers`, `/admin/customers` → the real page) instead of one bare catch-all. New `admin/useAdminAccessToken.ts` — extracted once `AdminLayout` and `CustomerManager` both needed the same "fetch a token, attach it as a Bearer header" dance, per the project's "wait for a second real use case" rule.
+- 🧱 New `admin/ConfirmDialog/` — a shared delete-confirmation modal, built once now since Chunks C/D need the exact same thing for Shipment/Package delete, not a speculative abstraction. New `admin/CustomerManager/` — table (Name/Phone/Address/Actions) + client-side search per `admin-pages.png`, and `CustomerFormModal` (Add/Edit, same form doubling as both per `admin-modals.png`'s own note).
+- 🐛 **Two more real bugs, both found by `CustomerManager.test.tsx`:** (1) `CustomerFormModal` stayed mounted across Add→Edit transitions, so its `useState(customer ?? EMPTY_FORM)` initializer only ever ran once and never picked up the customer being edited — fixed with the same remount-`key` trick `CodeModal` already uses for its own stale-state problem. (2) The edit form's initial state was seeded directly from the `CustomerOut` prop (which carries `id`), so `id` rode along into every `PATCH` body — fixed by picking only the actual editable fields when initializing form state.
+- ✅ `pytest backend/tests` — 26/26 passing (20 → 26). `npm test` — 21/21 passing (17 → 21). `npm run build`/`npm run lint` clean.
+- 🎬 **Live-verified in the browser, all five steps:** land on `/admin/customers` automatically after login; add a customer; edit it; attempt to delete a customer with seeded shipments (clean error message, not a crash); delete a customer with none (actually removed).
+
+**Where things stand:** Customer CRUD is fully real and live-verified, and the admin panel finally has the shell (sidebar, layout, shared dialog) Chunks C/D build on top of instead of duplicating. Next: Chunk C, Shipment CRUD + status update.
+
+---
+
 ## 2026-08-07 — Week 4, Day 1: Auth0 skeleton — a real login, and a real debugging saga 🔐
 
 **Theme:** Chunk A — prove E1 (Auth0 login) + E3 (server-enforced `/admin/*`) end-to-end before any CRUD logic exists. The code side was the easy half; getting a real Auth0 tenant to actually complete a login took most of the day.

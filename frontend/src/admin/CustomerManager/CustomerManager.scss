@@ -1,0 +1,171 @@
+@use '../../styles/variables' as v;
+
+.customer-manager {
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: v.$space-4;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: v.$font-size-xl;
+    color: v.$color-text;
+  }
+
+  &__subtitle {
+    margin: v.$space-1 0 0;
+    font-size: v.$font-size-sm;
+    color: v.$color-text-muted;
+  }
+
+  &__add {
+    flex-shrink: 0;
+    padding: v.$space-2 v.$space-4;
+    border-radius: v.$radius-sm;
+    border: none;
+    background: v.$color-primary;
+    color: v.$color-bg;
+    font-size: v.$font-size-sm;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover {
+      opacity: 0.9;
+    }
+  }
+
+  &__search {
+    width: 100%;
+    max-width: 420px;
+    box-sizing: border-box;
+    padding: v.$space-2 v.$space-3;
+    margin-bottom: v.$space-4;
+    border: 1px solid v.$color-border;
+    border-radius: v.$radius-sm;
+    font: inherit;
+    font-size: v.$font-size-sm;
+
+    &:focus {
+      outline: none;
+      border-color: v.$color-primary;
+    }
+  }
+
+  &__status {
+    color: v.$color-text-muted;
+    font-size: v.$font-size-sm;
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+
+    th,
+    td {
+      text-align: left;
+      padding: calc(#{v.$space-3} - 2px) v.$space-4;
+      font-size: v.$font-size-sm;
+      line-height: v.$font-size-sm;
+      border-bottom: 1px solid v.$color-border;
+    }
+
+    th {
+      color: v.$color-text-muted;
+      font-weight: 600;
+    }
+
+    td {
+      color: v.$color-text;
+    }
+  }
+
+  &__sort {
+    display: inline-flex;
+    align-items: center;
+    gap: v.$space-1;
+    border: none;
+    background: none;
+    padding: 0;
+    color: inherit;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover {
+      color: v.$color-primary;
+    }
+  }
+
+  &__sort-icon {
+    font-size: 8px;
+    color: v.$color-primary;
+  }
+
+  &__actions {
+    display: flex;
+    gap: v.$space-3;
+  }
+
+  &__action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: none;
+    padding: v.$space-1;
+    border-radius: v.$radius-sm;
+    color: v.$color-primary;
+    cursor: pointer;
+
+    &:hover {
+      background: v.$color-primary-light;
+    }
+
+    &--danger {
+      color: v.$color-status-exception;
+
+      &:hover {
+        background: v.$color-status-exception-bg;
+      }
+    }
+  }
+
+  // table-edit.svg/table-delete.svg are solid-black SVGs (not currentColor), so a
+  // plain <img> can't be recolored via CSS `color`. mask-image renders the SVG as
+  // a shape mask instead, filled by `background-color: currentColor` — which does
+  // follow the button's `color`, giving Edit its blue and Delete its red.
+  &__action-icon {
+    display: block;
+    width: 16px;
+    height: 16px;
+    background-color: currentColor;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
+  }
+
+  // Default (Edit) rule first, then the more specific --danger selector overrides
+  // it for Delete buttons — both classes are present together on that button
+  // (`customer-manager__action customer-manager__action--danger`), so cascade
+  // order decides the winner here, not a `:not()` composition.
+  &__action &__action-icon {
+    mask-image: url('/icons/table-edit.svg');
+    -webkit-mask-image: url('/icons/table-edit.svg');
+  }
+
+  &__action--danger &__action-icon {
+    mask-image: url('/icons/table-delete.svg');
+    -webkit-mask-image: url('/icons/table-delete.svg');
+  }
+
+  &__count {
+    margin-top: v.$space-3;
+    font-size: v.$font-size-xs;
+    color: v.$color-text-muted;
+  }
+}

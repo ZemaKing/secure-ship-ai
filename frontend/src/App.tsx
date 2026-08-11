@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import Sidebar from './components/Sidebar/Sidebar'
 import ChatWindow from './components/ChatWindow/ChatWindow'
 import ProtectedRoute from './auth/ProtectedRoute'
-import AdminApp from './admin/AdminApp'
+import AdminLayout from './admin/AdminLayout'
+import CustomerManager from './admin/CustomerManager/CustomerManager'
 import './App.scss'
 
 function ChatLayout() {
@@ -22,13 +23,16 @@ function App() {
     <Routes>
       <Route path="/" element={<ChatLayout />} />
       <Route
-        path="/admin/*"
+        path="/admin"
         element={
           <ProtectedRoute>
-            <AdminApp />
+            <AdminLayout />
           </ProtectedRoute>
         }
-      />
+      >
+        <Route index element={<Navigate to="customers" replace />} />
+        <Route path="customers" element={<CustomerManager />} />
+      </Route>
     </Routes>
   )
 }
