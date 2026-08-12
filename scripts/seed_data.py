@@ -29,12 +29,12 @@ NAME_POOLS = {
     },
     "serbian": {
         "first": [
-            "Milos", "Ana", "Nikola", "Jovana", "Stefan", "Marija", "Aleksandar", "Milica",
-            "Petar", "Jelena", "Nemanja", "Ivana", "Dusan", "Tamara", "Vladimir", "Sofija",
+            "Miloš", "Ana", "Nikola", "Jovana", "Stefan", "Marija", "Aleksandar", "Milica",
+            "Petar", "Jelena", "Nemanja", "Ivana", "Dušan", "Tamara", "Vladimir", "Sofija",
         ],
         "last": [
-            "Jovanovic", "Petrovic", "Nikolic", "Markovic", "Djordjevic", "Stojanovic",
-            "Ilic", "Stankovic", "Pavlovic", "Milosevic", "Popovic", "Simic",
+            "Jovanović", "Petrović", "Nikolić", "Marković", "Đorđević", "Stojanović",
+            "Ilić", "Stanković", "Pavlović", "Milošević", "Popović", "Simić",
         ],
     },
     "russian": {

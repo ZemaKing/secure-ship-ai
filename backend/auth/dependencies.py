@@ -15,4 +15,10 @@ auth0 = Auth0FastAPI(
     audience=os.environ["AUTH0_AUDIENCE"],
 )
 
-get_current_admin = auth0.require_auth()
+# Epic E4 close-out: closes the "anyone who signs up is an admin" gap found live
+# in Chunk A — a valid, correctly-signed token is no longer sufficient on its own;
+# it must also carry the admin:access permission (RBAC'd on the Auth0 API side,
+# assigned to the real admin user in the Dashboard, never granted automatically by
+# signup). Every /admin/* route inherits this via the router-level dependency in
+# routes/admin.py — one place to update, not one per route.
+get_current_admin = auth0.require_auth(scopes="admin:access")
