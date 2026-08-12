@@ -11,7 +11,10 @@ import {
 import { useAdminAccessToken, authHeaders } from '../useAdminAccessToken'
 import ConfirmDialog from '../ConfirmDialog/ConfirmDialog'
 import CustomerFormModal from './CustomerFormModal'
+import Pagination from '../Pagination/Pagination'
 import './CustomerManager.scss'
+
+const PAGE_SIZE = 15
 
 type FormState = { mode: 'create' } | { mode: 'edit'; customer: CustomerOut } | null
 type SortDirection = 'asc' | 'desc'
@@ -42,7 +45,11 @@ function CustomerManager() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const search = searchParams.get('search') ?? ''
-  const setSearch = (value: string) => setSearchParams(value ? { search: value } : {}, { replace: true })
+  const setSearch = (value: string) => {
+    setSearchParams(value ? { search: value } : {}, { replace: true })
+    setPage(1)
+  }
+  const [page, setPage] = useState(1)
   const [nameSort, setNameSort] = useState<SortDirection>('asc')
   const [formState, setFormState] = useState<FormState>(null)
   const [formError, setFormError] = useState<string | null>(null)
@@ -65,6 +72,9 @@ function CustomerManager() {
     const comparison = fullName(a).localeCompare(fullName(b))
     return nameSort === 'asc' ? comparison : -comparison
   })
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages)
+  const pageItems = sorted.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
   function handleSave(payload: CustomerCreate) {
     setFormError(null)
@@ -167,7 +177,7 @@ function CustomerManager() {
             </tr>
           </thead>
           <tbody>
-            {sorted.map((customer) => (
+            {pageItems.map((customer) => (
               <tr key={customer.id}>
                 <td>
                   <button
@@ -218,9 +228,13 @@ function CustomerManager() {
         </table>
       )}
 
-      <p className="customer-manager__count">
-        Showing {filtered.length} of {customers.length} customer{customers.length === 1 ? '' : 's'}
-      </p>
+      <Pagination
+        page={currentPage}
+        totalItems={sorted.length}
+        pageSize={PAGE_SIZE}
+        itemLabel={`customer${sorted.length === 1 ? '' : 's'}`}
+        onPageChange={setPage}
+      />
 
       <CustomerFormModal
         key={formState === null ? 'closed' : formState.mode === 'edit' ? formState.customer.id : 'create'}

@@ -1,0 +1,60 @@
+@use '../../styles/variables' as v;
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: v.$space-2;
+  margin-top: v.$space-3;
+
+  &__summary {
+    margin: 0;
+    font-size: v.$font-size-xs;
+    color: v.$color-text-muted;
+  }
+
+  &__controls {
+    display: flex;
+    align-items: center;
+    gap: v.$space-1;
+  }
+
+  &__nav,
+  &__page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 v.$space-1;
+    border: 1px solid v.$color-border;
+    border-radius: v.$radius-sm;
+    background: v.$color-bg;
+    color: v.$color-text;
+    font-size: v.$font-size-xs;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: v.$color-bg-muted;
+    }
+
+    &:disabled {
+      color: v.$color-text-subtle;
+      cursor: not-allowed;
+    }
+  }
+
+  &__page--active {
+    border-color: v.$color-primary;
+    background: v.$color-primary-light;
+    color: v.$color-primary;
+    font-weight: 600;
+  }
+
+  &__ellipsis {
+    padding: 0 v.$space-1;
+    color: v.$color-text-subtle;
+    font-size: v.$font-size-xs;
+  }
+}

@@ -14,7 +14,10 @@ import { useAdminAccessToken, authHeaders } from '../useAdminAccessToken'
 import { formatDate, formatUpdated } from '../../utils/formatDate'
 import ConfirmDialog from '../ConfirmDialog/ConfirmDialog'
 import ShipmentFormModal from './ShipmentFormModal'
+import Pagination from '../Pagination/Pagination'
 import './ShipmentManager.scss'
+
+const PAGE_SIZE = 15
 
 type FormState = { mode: 'create' } | { mode: 'edit'; shipment: ShipmentOut } | null
 type SortDirection = 'asc' | 'desc'
@@ -59,25 +62,32 @@ function ShipmentManager() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const search = searchParams.get('search') ?? ''
-  const setSearch = (value: string) => setSearchParams(
-    (params) => {
-      const next = new URLSearchParams(params)
-      if (value) next.set('search', value)
-      else next.delete('search')
-      return next
-    },
-    { replace: true },
-  )
+  const setSearch = (value: string) => {
+    setSearchParams(
+      (params) => {
+        const next = new URLSearchParams(params)
+        if (value) next.set('search', value)
+        else next.delete('search')
+        return next
+      },
+      { replace: true },
+    )
+    setPage(1)
+  }
   const statusFilter = searchParams.get('status') ?? 'all'
-  const setStatusFilter = (value: string) => setSearchParams(
-    (params) => {
-      const next = new URLSearchParams(params)
-      if (value !== 'all') next.set('status', value)
-      else next.delete('status')
-      return next
-    },
-    { replace: true },
-  )
+  const setStatusFilter = (value: string) => {
+    setSearchParams(
+      (params) => {
+        const next = new URLSearchParams(params)
+        if (value !== 'all') next.set('status', value)
+        else next.delete('status')
+        return next
+      },
+      { replace: true },
+    )
+    setPage(1)
+  }
+  const [page, setPage] = useState(1)
   const [sortKey, setSortKey] = useState<SortKey>('last_update')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [formState, setFormState] = useState<FormState>(null)
@@ -107,6 +117,9 @@ function ShipmentManager() {
     .filter((shipment) => (search.trim() ? matchesSearch(shipment, search.trim()) : true))
     .filter((shipment) => (statusFilter === 'all' ? true : shipment.status === statusFilter))
   const sorted = [...filtered].sort((a, b) => compareShipments(a, b, sortKey, sortDirection))
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages)
+  const pageItems = sorted.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
   function handleSort(key: SortKey) {
     if (key === sortKey) {
@@ -257,7 +270,7 @@ function ShipmentManager() {
             </tr>
           </thead>
           <tbody>
-            {sorted.map((shipment) => (
+            {pageItems.map((shipment) => (
               <tr key={shipment.id}>
                 <td>
                   <button
@@ -326,9 +339,13 @@ function ShipmentManager() {
         </table>
       )}
 
-      <p className="shipment-manager__count">
-        Showing {filtered.length} of {shipments.length} shipment{shipments.length === 1 ? '' : 's'}
-      </p>
+      <Pagination
+        page={currentPage}
+        totalItems={sorted.length}
+        pageSize={PAGE_SIZE}
+        itemLabel={`shipment${sorted.length === 1 ? '' : 's'}`}
+        onPageChange={setPage}
+      />
 
       <ShipmentFormModal
         key={formState === null ? 'closed' : formState.mode === 'edit' ? formState.shipment.id : 'create'}

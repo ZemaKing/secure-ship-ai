@@ -12,7 +12,10 @@ import {
 import { useAdminAccessToken, authHeaders } from '../useAdminAccessToken'
 import ConfirmDialog from '../ConfirmDialog/ConfirmDialog'
 import PackageFormModal from './PackageFormModal'
+import Pagination from '../Pagination/Pagination'
 import './PackageManager.scss'
+
+const PAGE_SIZE = 15
 
 type FormState = { mode: 'create' } | { mode: 'edit'; pkg: PackageOut } | null
 
@@ -26,7 +29,11 @@ function PackageManager() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const search = searchParams.get('search') ?? ''
-  const setSearch = (value: string) => setSearchParams(value ? { search: value } : {}, { replace: true })
+  const setSearch = (value: string) => {
+    setSearchParams(value ? { search: value } : {}, { replace: true })
+    setPage(1)
+  }
+  const [page, setPage] = useState(1)
   const [formState, setFormState] = useState<FormState>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<PackageOut | null>(null)
@@ -50,6 +57,9 @@ function PackageManager() {
   const packages = data?.data ?? []
   const shipments = shipmentsData?.data ?? []
   const filtered = search.trim() ? packages.filter((pkg) => matchesSearch(pkg, search.trim())) : packages
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages)
+  const pageItems = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
   function handleTrackingClick(pkg: PackageOut) {
     navigate(`/admin/shipments?search=${encodeURIComponent(pkg.tracking_number)}`)
@@ -127,7 +137,7 @@ function PackageManager() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((pkg) => (
+            {pageItems.map((pkg) => (
               <tr key={pkg.id}>
                 <td>
                   <button
@@ -171,9 +181,13 @@ function PackageManager() {
         </table>
       )}
 
-      <p className="package-manager__count">
-        Showing {filtered.length} of {packages.length} package{packages.length === 1 ? '' : 's'}
-      </p>
+      <Pagination
+        page={currentPage}
+        totalItems={filtered.length}
+        pageSize={PAGE_SIZE}
+        itemLabel={`package${filtered.length === 1 ? '' : 's'}`}
+        onPageChange={setPage}
+      />
 
       <PackageFormModal
         key={formState === null ? 'closed' : formState.mode === 'edit' ? formState.pkg.id : 'create'}
