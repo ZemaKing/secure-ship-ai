@@ -72,6 +72,11 @@
       white-space: nowrap;
     }
 
+    th:last-child,
+    td:last-child {
+      text-align: right;
+    }
+
     th {
       color: v.$color-text-muted;
       font-weight: 600;
@@ -84,6 +89,7 @@
 
   &__actions {
     display: flex;
+    justify-content: flex-end;
     gap: v.$space-3;
   }
 
