@@ -6,6 +6,22 @@ Full technical scope and week-by-week milestones live in `docs/DEV_PLAN.md` — 
 
 ---
 
+## 2026-08-11 — Week 4, Day 4 (D2): Lightweight Dashboard 📊
+
+**Theme:** Chunk D2 — the last piece of Week 4's CRUD-and-shell work before Chunk E's hardening pass. No backend changes at all this chunk; purely a client-side derived view over data the app already fetches.
+
+**Frontend:** New `admin/Dashboard/Dashboard.tsx` — reuses `admin-dashboard.png`'s 4-stat-card + "Recent Shipments" mini-table layout, but computed entirely client-side via `useMemo` over the same `useListShipments()` data `ShipmentManager` already fetches (React Query dedupes the request — zero extra network calls, no bespoke `/admin/dashboard/stats` endpoint). Deliberately dropped from the mockup: the "+X% from last month" deltas (no historical/time-series data exists anywhere in this schema — fabricating them would misrepresent what's real) and the System Status/User Management/Quick Actions panels (already ruled out of scope back in the Week 4 plan — no backing epic or data model for any of them). `/admin/dashboard` is now a real route and the sidebar's Dashboard nav item — the last "Soon" item — is enabled; the `/admin` index redirect was switched from `customers` to `dashboard`, matching the mockup's own default-active tab.
+
+**A real bug found and fixed along the way, not just a test artifact:** the original implementation gated rendering on react-query's `isLoading`, which in this version of the library is `status === 'pending' && isFetching` — while the query sits `disabled` (waiting on `useAdminAccessToken()`'s async token), `isFetching` is `false`, so `isLoading` is also `false` even though no data has arrived yet. That let the component briefly render "0 shipments" / an empty table on the very first paint, before flipping to "Loading…" once the real fetch actually started, then back to the real content once it resolved — a double-flash, and specifically the empty-array case never made it past that second "Loading…" state within a test's timeout, which is what surfaced it. Fixed by gating on `data === undefined` instead (has a result ever arrived, not "is a fetch in flight right now") — simpler, and removes the flash for every case, not just the one the test happened to catch.
+
+**Live-verified in the browser:** all 4 stat cards cross-checked against real `psql` counts against the live seeded DB (Total 55, In Transit 16, Delivered 21, Exceptions 2 — all matched exactly), Recent Shipments table showing real most-recently-updated rows, "View all" navigating to `/admin/shipments`.
+
+- ✅ `npm test` — 32/32 passing (29 → 32). `npm run build`/`npm run lint` clean. No backend changes, `pytest backend/tests` unaffected at 39/39.
+
+**Where things stand:** Week 4's full CRUD-and-shell scope (Chunks A–D) is done. Only Chunk E — the Epic E4 structural-separation hardening pass, docs, and the final demo dry run — remains.
+
+---
+
 ## 2026-08-11 — Week 4, Day 4 (D1): Package CRUD — completes Epic E2 📦📦
 
 **Theme:** Chunk D split into D1 (Package CRUD, today) and D2 (Dashboard, later) — D1 finishes full CRUD coverage of the required data model; nothing here blocks the other.

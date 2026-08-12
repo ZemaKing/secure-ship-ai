@@ -24,6 +24,18 @@ function fullName(customer: CustomerOut): string {
   return `${customer.first_name} ${customer.last_name}`
 }
 
+// Plain, labeled block — meant to be pasted straight into the chat window as
+// answers to the identity-verification questions the bot asks for (name/phone/
+// address), not a JSON dump an end user would never actually type themselves.
+function toClipboardText(customer: CustomerOut): string {
+  return [
+    `First Name: ${customer.first_name}`,
+    `Last Name: ${customer.last_name}`,
+    `Phone Number: ${customer.phone_number}`,
+    `Address: ${customer.address}`,
+  ].join('\n')
+}
+
 function CustomerManager() {
   const accessToken = useAdminAccessToken()
   const [search, setSearch] = useState('')
@@ -32,6 +44,7 @@ function CustomerManager() {
   const [formError, setFormError] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<CustomerOut | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
 
   const { data, isLoading, refetch } = useListCustomers({
     query: { enabled: !!accessToken },
@@ -65,6 +78,13 @@ function CustomerManager() {
     } else {
       createMutation.mutate({ data: payload }, { onSuccess, onError })
     }
+  }
+
+  function handleCopy(customer: CustomerOut) {
+    navigator.clipboard.writeText(toClipboardText(customer)).then(() => {
+      setCopiedId(customer.id)
+      setTimeout(() => setCopiedId((current) => (current === customer.id ? null : current)), 1500)
+    })
   }
 
   function handleConfirmDelete() {
@@ -147,6 +167,14 @@ function CustomerManager() {
                 <td>{customer.phone_number}</td>
                 <td>{customer.address}</td>
                 <td className="customer-manager__actions">
+                  <button
+                    className={`customer-manager__action customer-manager__action--copy${copiedId === customer.id ? ' customer-manager__action--copied' : ''}`}
+                    aria-label="Copy to clipboard"
+                    title={copiedId === customer.id ? 'Copied!' : 'Copy to clipboard'}
+                    onClick={() => handleCopy(customer)}
+                  >
+                    <img className="customer-manager__action-icon" src="/icons/table-copy.svg" alt="" />
+                  </button>
                   <button
                     className="customer-manager__action"
                     aria-label="Edit"

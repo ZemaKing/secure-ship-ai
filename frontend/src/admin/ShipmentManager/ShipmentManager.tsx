@@ -10,7 +10,7 @@ import {
   type ShipmentOut,
 } from '../../api/generated/secure-ship'
 import { useAdminAccessToken, authHeaders } from '../useAdminAccessToken'
-import { formatDate, formatDateTime } from '../../utils/formatDate'
+import { formatDate, formatUpdated } from '../../utils/formatDate'
 import ConfirmDialog from '../ConfirmDialog/ConfirmDialog'
 import ShipmentFormModal from './ShipmentFormModal'
 import './ShipmentManager.scss'
@@ -181,7 +181,7 @@ function ShipmentManager() {
                   </select>
                 </td>
                 <td>{formatDate(shipment.estimated_delivery)}</td>
-                <td>{formatDateTime(shipment.last_update)}</td>
+                <td>{formatUpdated(shipment.last_update)}</td>
                 <td className="shipment-manager__actions">
                   <button
                     className="shipment-manager__action"

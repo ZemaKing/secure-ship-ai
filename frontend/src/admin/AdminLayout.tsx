@@ -9,11 +9,8 @@ interface AdminNavItem {
   enabled: boolean
 }
 
-// Dashboard lands in Chunk D2 — kept visible now (matching admin-pages.png's full
-// nav) but disabled, rather than omitted, so this list only needs a one-line flip
-// (`enabled: true`) once its real page exists.
 const NAV_ITEMS: AdminNavItem[] = [
-  { label: 'Dashboard', path: '/admin/dashboard', icon: '/icons/admin-dashboard.svg', enabled: false },
+  { label: 'Dashboard', path: '/admin/dashboard', icon: '/icons/admin-dashboard.svg', enabled: true },
   { label: 'Customers', path: '/admin/customers', icon: '/icons/admin-customers.svg', enabled: true },
   { label: 'Shipments', path: '/admin/shipments', icon: '/icons/admin-shipments.svg', enabled: true },
   { label: 'Packages', path: '/admin/packages', icon: '/icons/admin-packages.svg', enabled: true },

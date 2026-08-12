@@ -65,9 +65,9 @@
     th,
     td {
       text-align: left;
-      padding: calc(#{v.$space-3} - 2px) v.$space-4;
-      font-size: v.$font-size-sm;
-      line-height: v.$font-size-sm;
+      padding: calc(#{v.$space-3} - 5px) v.$space-3;
+      font-size: v.$font-size-xs;
+      line-height: v.$font-size-xs;
       border-bottom: 1px solid v.$color-border;
     }
 
@@ -130,6 +130,18 @@
         background: v.$color-status-exception-bg;
       }
     }
+
+    &--copy {
+      color: v.$color-text-muted;
+
+      &:hover {
+        background: v.$color-bg-muted;
+      }
+    }
+
+    &--copied {
+      color: v.$color-status-delivered;
+    }
   }
 
   // table-edit.svg/table-delete.svg are solid-black SVGs (not currentColor), so a
@@ -149,10 +161,11 @@
     -webkit-mask-size: contain;
   }
 
-  // Default (Edit) rule first, then the more specific --danger selector overrides
-  // it for Delete buttons — both classes are present together on that button
-  // (`customer-manager__action customer-manager__action--danger`), so cascade
-  // order decides the winner here, not a `:not()` composition.
+  // Default (Edit) rule first, then the more specific --danger/--copy selectors
+  // override it for Delete/Copy buttons — every button carries the base
+  // `customer-manager__action` class plus its variant (e.g.
+  // `customer-manager__action customer-manager__action--copy`), so cascade order
+  // decides the winner here, not a `:not()` composition.
   &__action &__action-icon {
     mask-image: url('/icons/table-edit.svg');
     -webkit-mask-image: url('/icons/table-edit.svg');
@@ -161,6 +174,11 @@
   &__action--danger &__action-icon {
     mask-image: url('/icons/table-delete.svg');
     -webkit-mask-image: url('/icons/table-delete.svg');
+  }
+
+  &__action--copy &__action-icon {
+    mask-image: url('/icons/table-copy.svg');
+    -webkit-mask-image: url('/icons/table-copy.svg');
   }
 
   &__count {

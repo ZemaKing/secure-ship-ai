@@ -10,3 +10,14 @@ export function formatDateTime(iso: string) {
 export function formatDate(isoDate: string) {
   return new Date(isoDate).toLocaleDateString([], { dateStyle: 'medium', timeZone: 'UTC' })
 }
+
+// Dashboard's "Updated" column: today's updates only need a time (the date is
+// implied), older ones only need a date (the exact time no longer matters) —
+// showing both, like formatDateTime, is redundant clutter in a table this dense.
+export function formatUpdated(iso: string) {
+  const date = new Date(iso)
+  const isToday = date.toDateString() === new Date().toDateString()
+  return isToday
+    ? date.toLocaleTimeString([], { timeStyle: 'short' })
+    : date.toLocaleDateString([], { dateStyle: 'medium' })
+}

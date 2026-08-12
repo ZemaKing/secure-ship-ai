@@ -65,9 +65,9 @@
     th,
     td {
       text-align: left;
-      padding: calc(#{v.$space-3} - 2px) v.$space-4;
-      font-size: v.$font-size-sm;
-      line-height: v.$font-size-sm;
+      padding: calc(#{v.$space-3} - 5px) v.$space-3;
+      font-size: v.$font-size-xs;
+      line-height: v.$font-size-xs;
       border-bottom: 1px solid v.$color-border;
       white-space: nowrap;
     }
@@ -88,7 +88,7 @@
     border: 1px solid transparent;
     border-radius: v.$radius-pill;
     padding: v.$space-1 v.$space-3;
-    font-size: v.$font-size-xs;
+    font-size: v.$font-size-xxs;
     font-weight: 600;
     cursor: pointer;
 

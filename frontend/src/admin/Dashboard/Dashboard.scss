@@ -1,0 +1,176 @@
+@use '../../styles/variables' as v;
+@use '../../styles/mixins' as m;
+
+.dashboard {
+  &__header {
+    margin-bottom: v.$space-4;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: v.$font-size-xl;
+    color: v.$color-text;
+  }
+
+  &__subtitle {
+    margin: v.$space-1 0 0;
+    font-size: v.$font-size-sm;
+    color: v.$color-text-muted;
+  }
+
+  &__status {
+    color: v.$color-text-muted;
+    font-size: v.$font-size-sm;
+  }
+
+  &__stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: v.$space-4;
+    margin-bottom: v.$space-5;
+  }
+
+  &__stat-card {
+    display: flex;
+    align-items: center;
+    gap: v.$space-3;
+    padding: v.$space-4;
+    border: 1px solid v.$color-border;
+    border-radius: v.$radius-md;
+    background: v.$color-bg;
+  }
+
+  &__stat-icon {
+    @include m.flex-center;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: v.$radius-sm;
+
+    img {
+      width: 20px;
+      height: 20px;
+    }
+
+    &--total {
+      background: v.$color-primary-light;
+    }
+
+    &--in_transit {
+      background: v.$color-status-in-transit-bg;
+    }
+
+    &--delivered {
+      background: v.$color-status-delivered-bg;
+    }
+
+    &--exception {
+      background: v.$color-status-exception-bg;
+    }
+  }
+
+  &__stat-label {
+    margin: 0;
+    font-size: v.$font-size-sm;
+    color: v.$color-text-muted;
+  }
+
+  &__stat-value {
+    margin: v.$space-1 0 0;
+    font-size: v.$font-size-xl;
+    font-weight: 700;
+    color: v.$color-text;
+  }
+
+  &__panel {
+    padding: v.$space-4;
+    border: 1px solid v.$color-border;
+    border-radius: v.$radius-md;
+    background: v.$color-bg;
+  }
+
+  &__panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: v.$space-3;
+  }
+
+  &__panel-title {
+    margin: 0;
+    font-size: v.$font-size-md;
+    color: v.$color-text;
+  }
+
+  &__view-all {
+    padding: v.$space-1 v.$space-3;
+    border-radius: v.$radius-sm;
+    border: 1px solid v.$color-primary-border;
+    background: v.$color-primary-light;
+    color: v.$color-primary;
+    font-size: v.$font-size-xs;
+    font-weight: 600;
+    text-decoration: none;
+
+    &:hover {
+      opacity: 0.9;
+    }
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+
+    th,
+    td {
+      text-align: left;
+      padding: calc(#{v.$space-3} - 5px) v.$space-3;
+      font-size: v.$font-size-xs;
+      line-height: v.$font-size-xs;
+      border-bottom: 1px solid v.$color-border;
+      white-space: nowrap;
+    }
+
+    th {
+      color: v.$color-text-muted;
+      font-weight: 600;
+    }
+
+    td {
+      color: v.$color-text;
+    }
+  }
+
+  &__status-badge {
+    display: inline-block;
+    padding: v.$space-1 v.$space-3;
+    border-radius: v.$radius-pill;
+    font-size: v.$font-size-xxs;
+    font-weight: 600;
+
+    &--label_created {
+      color: v.$color-status-label-created;
+      background: v.$color-status-label-created-bg;
+    }
+
+    &--in_transit {
+      color: v.$color-status-in-transit;
+      background: v.$color-status-in-transit-bg;
+    }
+
+    &--out_for_delivery {
+      color: v.$color-status-out-for-delivery;
+      background: v.$color-status-out-for-delivery-bg;
+    }
+
+    &--delivered {
+      color: v.$color-status-delivered;
+      background: v.$color-status-delivered-bg;
+    }
+
+    &--exception {
+      color: v.$color-status-exception;
+      background: v.$color-status-exception-bg;
+    }
+  }
+}

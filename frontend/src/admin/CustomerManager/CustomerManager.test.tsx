@@ -125,6 +125,26 @@ describe('CustomerManager', () => {
     })
   })
 
+  it('copies the customer data to the clipboard as a labeled text block', async () => {
+    mockFetch({})
+    // jsdom 30 ships a real Clipboard stub at navigator.clipboard (not present in
+    // older jsdom versions this project's other tests were written against), so
+    // spying on its writeText method works — replacing the whole object via
+    // defineProperty does not, since jsdom's own property isn't overridable that way.
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined)
+    const user = userEvent.setup()
+    renderManager()
+    await screen.findByText('Alice Nguyen')
+
+    const aliceRow = screen.getByText('Alice Nguyen').closest('tr')!
+    await user.click(within(aliceRow).getByRole('button', { name: /copy to clipboard/i }))
+
+    expect(writeText).toHaveBeenCalledWith(
+      'First Name: Alice\nLast Name: Nguyen\nPhone Number: +15550001\nAddress: 1 Elm St',
+    )
+    expect(await within(aliceRow).findByTitle('Copied!')).toBeInTheDocument()
+  })
+
   it('deletes a customer after confirming, and shows the backend message on a 409 conflict', async () => {
     const fetchMock = mockFetch({ delete: { status: 409, body: { detail: 'This customer has existing shipments and can’t be deleted.' } } })
     const user = userEvent.setup()

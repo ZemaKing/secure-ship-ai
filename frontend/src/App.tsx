@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar/Sidebar'
 import ChatWindow from './components/ChatWindow/ChatWindow'
 import ProtectedRoute from './auth/ProtectedRoute'
 import AdminLayout from './admin/AdminLayout'
+import Dashboard from './admin/Dashboard/Dashboard'
 import CustomerManager from './admin/CustomerManager/CustomerManager'
 import ShipmentManager from './admin/ShipmentManager/ShipmentManager'
 import PackageManager from './admin/PackageManager/PackageManager'
@@ -32,7 +33,8 @@ function App() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Navigate to="customers" replace />} />
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<Dashboard />} />
         <Route path="customers" element={<CustomerManager />} />
         <Route path="shipments" element={<ShipmentManager />} />
         <Route path="packages" element={<PackageManager />} />
