@@ -10,6 +10,20 @@ import './ChatWindow.scss'
 
 const ERROR_REPLY_TEXT = "Sorry, something went wrong reaching the assistant. Please try again."
 
+// Matched to what the backend actually does, not just plausible-sounding chat copy:
+// lookup_shipments() (backend/tools/lookup_shipments.py) returns every shipment for the
+// verified visitor with no tracking-number argument at all (Epic F3 — the tool schema has
+// no such parameter), so a starter prompt naming a specific tracking number would imply
+// a capability that doesn't exist. "Where is my shipment now?" also isn't just generic
+// small talk — routes/chat.py's _mentions_shipment() fallback specifically flips a
+// from-scratch session into identity collection on wording like this.
+const SUGGESTED_PROMPTS = [
+  'Where is my shipment now?',
+  'When will my package be delivered?',
+  'Do I have any shipments in transit?',
+  'I want to talk to a human',
+]
+
 function makeMessageId() {
   return `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
@@ -59,6 +73,7 @@ function ChatWindow() {
   const [humanJoined, setHumanJoined] = useState(false)
   const chatMutation = useChat()
   const messageListRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     messageListRef.current?.scrollTo({ top: messageListRef.current.scrollHeight })
@@ -120,6 +135,13 @@ function ChatWindow() {
         },
       },
     )
+  }
+
+  function handleSuggestedPrompt(text: string) {
+    // Prefills the input rather than sending immediately — the visitor still
+    // reviews/edits before it goes out, same as if they'd typed it themselves.
+    setDraft(text)
+    inputRef.current?.focus()
   }
 
   function handleReopenCodeModal() {
@@ -200,6 +222,19 @@ function ChatWindow() {
         )}
       </div>
 
+      <div className="chat-window__suggestions">
+        {SUGGESTED_PROMPTS.map((prompt) => (
+          <button
+            key={prompt}
+            type="button"
+            className="chat-window__suggestion-pill"
+            onClick={() => handleSuggestedPrompt(prompt)}
+          >
+            {prompt}
+          </button>
+        ))}
+      </div>
+
       {sessionState === 'awaiting_code' && !codeModalOpen && (
         <div className="chat-window__code-reminder">
           <img className="chat-window__code-reminder-icon" src="/icons/modal-security-lock.svg" alt="" />
@@ -218,12 +253,11 @@ function ChatWindow() {
 
       <form className="chat-window__input-bar" onSubmit={handleSubmit}>
         <input
+          ref={inputRef}
           type="text"
           className="chat-window__input"
           placeholder={
-            verifiedCustomerName
-              ? 'Ask about your verified shipments... (e.g., track TS123456789)'
-              : 'Ask about any shipment... (e.g., track TS123456789)'
+            verifiedCustomerName ? 'Ask about your verified shipments...' : 'Ask about any shipment...'
           }
           value={draft}
           onChange={(event) => setDraft(event.target.value)}

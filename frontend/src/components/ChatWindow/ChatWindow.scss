@@ -135,6 +135,30 @@
     }
   }
 
+  &__suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: v.$space-2;
+    margin-bottom: v.$space-3;
+  }
+
+  &__suggestion-pill {
+    @include m.button-reset;
+    padding: v.$space-2 v.$space-4;
+    border: 1px solid rgba(37, 99, 235, 0.2);
+    border-radius: v.$radius-sm;
+    background: v.$color-primary-light;
+    color: v.$color-primary;
+    font-size: v.$font-size-xs;
+    font-weight: 600;
+    cursor: pointer;
+    transition: text-shadow 150ms ease;
+
+    &:hover {
+      text-shadow: 0 1px 6px rgba(37, 99, 235, 0.45);
+    }
+  }
+
   &__input-bar {
     @include m.card-surface;
     display: flex;

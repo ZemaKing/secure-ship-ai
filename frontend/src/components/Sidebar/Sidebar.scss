@@ -36,7 +36,7 @@
 
   &__brand-subtitle {
     margin: 0;
-    font-size: v.$font-size-xs;
+    font-size: 11px;
     color: v.$color-text-muted;
   }
 
@@ -113,13 +113,13 @@
   &__chat-history-item-label {
     @include m.truncate-text;
     flex: 1;
-    font-size: v.$font-size-sm;
+    font-size: 12px;
     color: v.$color-text;
   }
 
   &__chat-history-item-time {
     flex-shrink: 0;
-    font-size: v.$font-size-xs;
+    font-size: 10px;
     color: v.$color-text-subtle;
   }
 
@@ -148,7 +148,7 @@
 
   &__admin-card-text {
     margin: 0 0 v.$space-2;
-    font-size: v.$font-size-xs;
+    font-size: 11px;
     color: v.$color-text-muted;
   }
 
