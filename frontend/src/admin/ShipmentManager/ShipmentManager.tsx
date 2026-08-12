@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   useListShipments,
   useCreateShipment,
@@ -16,6 +17,8 @@ import ShipmentFormModal from './ShipmentFormModal'
 import './ShipmentManager.scss'
 
 type FormState = { mode: 'create' } | { mode: 'edit'; shipment: ShipmentOut } | null
+type SortDirection = 'asc' | 'desc'
+type SortKey = 'tracking_number' | 'customer_name' | 'carrier' | 'status' | 'estimated_delivery' | 'last_update'
 
 const STATUS_LABELS: Record<ShipmentStatus, string> = {
   label_created: 'Created',
@@ -31,9 +34,52 @@ function matchesSearch(shipment: ShipmentOut, query: string): boolean {
   return haystack.includes(query.toLowerCase())
 }
 
+function sortValue(shipment: ShipmentOut, key: SortKey): string | number {
+  switch (key) {
+    case 'status':
+      return STATUS_LABELS[shipment.status]
+    case 'estimated_delivery':
+      return new Date(shipment.estimated_delivery).getTime()
+    case 'last_update':
+      return new Date(shipment.last_update).getTime()
+    default:
+      return shipment[key].toLowerCase()
+  }
+}
+
+function compareShipments(a: ShipmentOut, b: ShipmentOut, key: SortKey, direction: SortDirection): number {
+  const left = sortValue(a, key)
+  const right = sortValue(b, key)
+  const comparison = typeof left === 'number' && typeof right === 'number' ? left - right : String(left).localeCompare(String(right))
+  return direction === 'asc' ? comparison : -comparison
+}
+
 function ShipmentManager() {
   const accessToken = useAdminAccessToken()
-  const [search, setSearch] = useState('')
+  const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const search = searchParams.get('search') ?? ''
+  const setSearch = (value: string) => setSearchParams(
+    (params) => {
+      const next = new URLSearchParams(params)
+      if (value) next.set('search', value)
+      else next.delete('search')
+      return next
+    },
+    { replace: true },
+  )
+  const statusFilter = searchParams.get('status') ?? 'all'
+  const setStatusFilter = (value: string) => setSearchParams(
+    (params) => {
+      const next = new URLSearchParams(params)
+      if (value !== 'all') next.set('status', value)
+      else next.delete('status')
+      return next
+    },
+    { replace: true },
+  )
+  const [sortKey, setSortKey] = useState<SortKey>('last_update')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [formState, setFormState] = useState<FormState>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<ShipmentOut | null>(null)
@@ -57,7 +103,27 @@ function ShipmentManager() {
 
   const shipments = data?.data ?? []
   const customers = customersData?.data ?? []
-  const filtered = search.trim() ? shipments.filter((shipment) => matchesSearch(shipment, search.trim())) : shipments
+  const filtered = shipments
+    .filter((shipment) => (search.trim() ? matchesSearch(shipment, search.trim()) : true))
+    .filter((shipment) => (statusFilter === 'all' ? true : shipment.status === statusFilter))
+  const sorted = [...filtered].sort((a, b) => compareShipments(a, b, sortKey, sortDirection))
+
+  function handleSort(key: SortKey) {
+    if (key === sortKey) {
+      setSortDirection((current) => (current === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKey(key)
+      setSortDirection('asc')
+    }
+  }
+
+  function handleCustomerClick(shipment: ShipmentOut) {
+    navigate(`/admin/customers?search=${encodeURIComponent(shipment.customer_name)}`)
+  }
+
+  function handleTrackingClick(shipment: ShipmentOut) {
+    navigate(`/admin/packages?search=${encodeURIComponent(shipment.tracking_number)}`)
+  }
 
   function handleSave(payload: ShipmentCreate) {
     setFormError(null)
@@ -113,6 +179,23 @@ function ShipmentManager() {
     )
   }
 
+  function sortableHeader(key: SortKey, label: string) {
+    const isActive = sortKey === key
+    return (
+      <th key={key}>
+        <button
+          className={`shipment-manager__sort${isActive ? ' shipment-manager__sort--active' : ''}`}
+          onClick={() => handleSort(key)}
+        >
+          {label}
+          <span className="shipment-manager__sort-icon" aria-hidden="true">
+            {isActive ? (sortDirection === 'asc' ? '▲' : '▼') : '⇅'}
+          </span>
+        </button>
+      </th>
+    )
+  }
+
   return (
     <div className="shipment-manager">
       <div className="shipment-manager__header">
@@ -131,13 +214,28 @@ function ShipmentManager() {
         </button>
       </div>
 
-      <input
-        className="shipment-manager__search"
-        type="search"
-        placeholder="Search by tracking number, customer, or carrier…"
-        value={search}
-        onChange={(event) => setSearch(event.target.value)}
-      />
+      <div className="shipment-manager__filters">
+        <input
+          className="shipment-manager__search"
+          type="search"
+          placeholder="Search by tracking number, customer, or carrier…"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+        />
+        <select
+          className="shipment-manager__status-filter"
+          aria-label="Filter by status"
+          value={statusFilter}
+          onChange={(event) => setStatusFilter(event.target.value)}
+        >
+          <option value="all">All statuses</option>
+          {Object.entries(STATUS_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {isLoading ? (
         <p className="shipment-manager__status">Loading…</p>
@@ -147,22 +245,38 @@ function ShipmentManager() {
         <table className="shipment-manager__table">
           <thead>
             <tr>
-              <th>Tracking Number</th>
-              <th>Customer</th>
+              {sortableHeader('tracking_number', 'Tracking Number')}
+              {sortableHeader('customer_name', 'Customer')}
               <th>Origin</th>
               <th>Destination</th>
-              <th>Carrier</th>
-              <th>Status</th>
-              <th>Est. Delivery</th>
-              <th>Updated</th>
+              {sortableHeader('carrier', 'Carrier')}
+              {sortableHeader('status', 'Status')}
+              {sortableHeader('estimated_delivery', 'Est. Delivery')}
+              {sortableHeader('last_update', 'Updated')}
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map((shipment) => (
+            {sorted.map((shipment) => (
               <tr key={shipment.id}>
-                <td>{shipment.tracking_number}</td>
-                <td>{shipment.customer_name}</td>
+                <td>
+                  <button
+                    className="shipment-manager__cell-link"
+                    title={`View packages for ${shipment.tracking_number}`}
+                    onClick={() => handleTrackingClick(shipment)}
+                  >
+                    {shipment.tracking_number}
+                  </button>
+                </td>
+                <td>
+                  <button
+                    className="shipment-manager__cell-link"
+                    title={`View ${shipment.customer_name} in Customers`}
+                    onClick={() => handleCustomerClick(shipment)}
+                  >
+                    {shipment.customer_name}
+                  </button>
+                </td>
                 <td>{shipment.origin}</td>
                 <td>{shipment.destination}</td>
                 <td>{shipment.carrier}</td>

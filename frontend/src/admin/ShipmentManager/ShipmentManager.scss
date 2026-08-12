@@ -36,16 +36,40 @@
     }
   }
 
+  &__filters {
+    display: flex;
+    align-items: center;
+    gap: v.$space-3;
+    margin-bottom: v.$space-4;
+  }
+
   &__search {
     width: 100%;
     max-width: 420px;
     box-sizing: border-box;
     padding: v.$space-2 v.$space-3;
-    margin-bottom: v.$space-4;
     border: 1px solid v.$color-border;
     border-radius: v.$radius-sm;
     font: inherit;
     font-size: v.$font-size-sm;
+
+    &:focus {
+      outline: none;
+      border-color: v.$color-primary;
+    }
+  }
+
+  &__status-filter {
+    flex-shrink: 0;
+    box-sizing: border-box;
+    padding: v.$space-2 v.$space-3;
+    border: 1px solid v.$color-border;
+    border-radius: v.$radius-sm;
+    background: v.$color-bg;
+    font: inherit;
+    font-size: v.$font-size-sm;
+    color: v.$color-text;
+    cursor: pointer;
 
     &:focus {
       outline: none;
@@ -85,6 +109,55 @@
     td {
       color: v.$color-text;
     }
+  }
+
+  // A row value that navigates elsewhere (e.g. this shipment's customer or
+  // packages) — styled like a link so it reads as clickable, not plain text.
+  &__cell-link {
+    border: none;
+    background: none;
+    padding: 0;
+    font: inherit;
+    font-weight: 600;
+    font-style: italic;
+    color: v.$color-link;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  &__sort {
+    display: inline-flex;
+    align-items: center;
+    gap: v.$space-1;
+    border: none;
+    background: none;
+    padding: 0;
+    color: inherit;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover {
+      color: v.$color-primary;
+    }
+
+    &:hover &-icon {
+      color: v.$color-primary;
+    }
+  }
+
+  &__sort-icon {
+    font-size: 10px;
+    color: v.$color-text-subtle;
+  }
+
+  &__sort--active &__sort-icon {
+    font-size: 8px;
+    color: v.$color-primary;
   }
 
   // A real <select>, styled as a colored pill per status — the "first-class row

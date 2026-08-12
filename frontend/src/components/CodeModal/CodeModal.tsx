@@ -9,9 +9,10 @@ interface CodeModalProps {
   open: boolean
   sessionId: string
   onVerified: (message: string, customerName: string | null) => void
+  onClose?: () => void
 }
 
-function CodeModal({ open, sessionId, onVerified }: CodeModalProps) {
+function CodeModal({ open, sessionId, onVerified, onClose }: CodeModalProps) {
   const [digits, setDigits] = useState<string[]>(() => Array(CODE_LENGTH).fill(''))
   const [dismissed, setDismissed] = useState(false)
   const [verified, setVerified] = useState(false)
@@ -32,11 +33,14 @@ function CodeModal({ open, sessionId, onVerified }: CodeModalProps) {
   useEffect(() => {
     if (!visible) return
     function handleWindowKeyDown(event: globalThis.KeyboardEvent) {
-      if (event.key === 'Escape') setDismissed(true)
+      if (event.key === 'Escape') {
+        setDismissed(true)
+        onClose?.()
+      }
     }
     window.addEventListener('keydown', handleWindowKeyDown)
     return () => window.removeEventListener('keydown', handleWindowKeyDown)
-  }, [visible])
+  }, [visible, onClose])
 
   if (!visible) return null
 
@@ -98,6 +102,7 @@ function CodeModal({ open, sessionId, onVerified }: CodeModalProps) {
 
   function handleDismiss() {
     setDismissed(true)
+    onClose?.()
   }
 
   return (

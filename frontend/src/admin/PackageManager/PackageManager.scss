@@ -87,6 +87,23 @@
     }
   }
 
+  // A row value that navigates elsewhere (this package's shipment) — styled
+  // like a link so it reads as clickable, not plain table text.
+  &__cell-link {
+    border: none;
+    background: none;
+    padding: 0;
+    font: inherit;
+    font-weight: 600;
+    font-style: italic;
+    color: v.$color-link;
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
   &__actions {
     display: flex;
     justify-content: flex-end;

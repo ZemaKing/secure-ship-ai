@@ -96,6 +96,45 @@
     margin-bottom: v.$space-4;
   }
 
+  &__code-reminder {
+    @include m.card-surface;
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
+    flex-shrink: 0;
+    margin-bottom: v.$space-3;
+    padding: v.$space-3;
+    background: v.$color-primary-light;
+    border-color: v.$color-primary-border;
+    font-size: v.$font-size-xs;
+    color: v.$color-text;
+  }
+
+  &__code-reminder-icon {
+    @include m.icon(16px);
+    flex-shrink: 0;
+  }
+
+  &__code-reminder-text {
+    flex: 1;
+  }
+
+  &__code-reminder-action {
+    @include m.button-reset;
+    flex-shrink: 0;
+    padding: v.$space-1 v.$space-3;
+    border-radius: v.$radius-sm;
+    background: v.$color-primary;
+    color: v.$color-bg;
+    font-size: v.$font-size-xs;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover {
+      opacity: 0.9;
+    }
+  }
+
   &__input-bar {
     @include m.card-surface;
     display: flex;

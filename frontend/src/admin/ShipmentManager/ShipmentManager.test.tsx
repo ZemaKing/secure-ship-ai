@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import ShipmentManager from './ShipmentManager'
 
@@ -28,6 +29,18 @@ const SEEDED_SHIPMENTS = [
     estimated_delivery: '2030-05-16',
     last_update: '2030-05-01T10:00:00Z',
   },
+  {
+    id: 'ship-2',
+    customer_id: 'cust-2',
+    customer_name: 'Bob Diallo',
+    tracking_number: '1ZDELIVERED0002',
+    status: 'delivered',
+    carrier: 'FedEx',
+    origin: 'Berlin, Germany',
+    destination: 'Paris, France',
+    estimated_delivery: '2030-05-10',
+    last_update: '2030-04-28T10:00:00Z',
+  },
 ]
 
 function jsonResponse(body: unknown, status = 200) {
@@ -54,6 +67,13 @@ function mockFetch(handlers: { shipments?: unknown; create?: unknown; update?: u
   return fetchMock
 }
 
+// Renders whatever route was actually navigated to, so tests can assert on
+// where a click landed without mocking useNavigate() itself.
+function LocationDisplay() {
+  const location = useLocation()
+  return <div data-testid="location">{location.pathname + location.search}</div>
+}
+
 function renderManager() {
   mockedUseAuth0.mockReturnValue({
     getAccessTokenSilently: vi.fn().mockResolvedValue('fake-access-token'),
@@ -61,9 +81,14 @@ function renderManager() {
 
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
   return render(
-    <QueryClientProvider client={queryClient}>
-      <ShipmentManager />
-    </QueryClientProvider>,
+    <MemoryRouter initialEntries={['/admin/shipments']}>
+      <QueryClientProvider client={queryClient}>
+        <Routes>
+          <Route path="/admin/shipments" element={<ShipmentManager />} />
+          <Route path="*" element={<LocationDisplay />} />
+        </Routes>
+      </QueryClientProvider>
+    </MemoryRouter>,
   )
 }
 
@@ -146,5 +171,43 @@ describe('ShipmentManager', () => {
 
     expect(await screen.findByText(/existing packages/i)).toBeInTheDocument()
     expect(fetchMock.mock.calls.some(([, options]) => options?.method === 'DELETE')).toBe(true)
+  })
+
+  it('clicking the customer name navigates to Customers with the name pre-filled as a search', async () => {
+    mockFetch({})
+    const user = userEvent.setup()
+    renderManager()
+    await screen.findByText('1ZTRACK0000001')
+
+    await user.click(screen.getByRole('button', { name: 'Alice Nguyen' }))
+
+    expect(await screen.findByTestId('location')).toHaveTextContent('/admin/customers?search=Alice%20Nguyen')
+  })
+
+  it('clicking the tracking number navigates to Packages with it pre-filled as a search', async () => {
+    mockFetch({})
+    const user = userEvent.setup()
+    renderManager()
+    await screen.findByText('1ZTRACK0000001')
+
+    await user.click(screen.getByRole('button', { name: '1ZTRACK0000001' }))
+
+    expect(await screen.findByTestId('location')).toHaveTextContent('/admin/packages?search=1ZTRACK0000001')
+  })
+
+  it('filters the table down to only the selected status', async () => {
+    mockFetch({})
+    const user = userEvent.setup()
+    renderManager()
+    await screen.findByText('1ZTRACK0000001')
+    expect(screen.getByText('1ZDELIVERED0002')).toBeInTheDocument()
+
+    await user.selectOptions(screen.getByLabelText('Filter by status'), 'delivered')
+
+    expect(screen.queryByText('1ZTRACK0000001')).not.toBeInTheDocument()
+    expect(screen.getByText('1ZDELIVERED0002')).toBeInTheDocument()
+
+    await user.selectOptions(screen.getByLabelText('Filter by status'), 'all')
+    expect(screen.getByText('1ZTRACK0000001')).toBeInTheDocument()
   })
 })

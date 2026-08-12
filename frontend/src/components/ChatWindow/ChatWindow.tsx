@@ -44,12 +44,18 @@ function ChatWindow() {
   const [draft, setDraft] = useState('')
   const {
     sessionId,
-    event: sessionEvent,
+    state: sessionState,
     verifiedCustomerName,
     setVerifiedCustomerName,
     applyResponse,
   } = useChatSession()
   const [codeModalKey, setCodeModalKey] = useState(0)
+  // Decoupled from the response's one-shot `event` field — that only reads
+  // "code_sent" on the exact turn the code was sent, so relying on it directly
+  // would make the modal impossible to reopen after a dismiss or after sending
+  // an unrelated message. `sessionState` (persisted across turns) still gates
+  // whether reopening makes sense at all.
+  const [codeModalOpen, setCodeModalOpen] = useState(false)
   const [humanJoined, setHumanJoined] = useState(false)
   const chatMutation = useChat()
   const messageListRef = useRef<HTMLDivElement>(null)
@@ -82,6 +88,7 @@ function ChatWindow() {
               // after a lockout, where the event string value is identical to before and
               // wouldn't otherwise be seen as "changed."
               setCodeModalKey((key) => key + 1)
+              setCodeModalOpen(true)
             }
             const { escalation } = response.data
             if (response.data.event === 'escalated' && escalation) {
@@ -115,6 +122,14 @@ function ChatWindow() {
     )
   }
 
+  function handleReopenCodeModal() {
+    // A remount (fresh key) clears the modal's own dismissed/feedback/locked
+    // state — the server-side pending code/attempt count is untouched either
+    // way, so this is purely a UI reset, not a resend.
+    setCodeModalKey((key) => key + 1)
+    setCodeModalOpen(true)
+  }
+
   function handleCodeVerified(message: string, customerName: string | null) {
     setVerifiedCustomerName(customerName)
     // The green "Identity verified successfully" card already says everything
@@ -133,9 +148,10 @@ function ChatWindow() {
     <section className={`chat-window${humanJoined ? ' chat-window--human-joined' : ''}`}>
       <CodeModal
         key={codeModalKey}
-        open={sessionEvent === 'code_sent'}
+        open={codeModalOpen}
         sessionId={sessionId ?? ''}
         onVerified={handleCodeVerified}
+        onClose={() => setCodeModalOpen(false)}
       />
       <header className="chat-window__header">
         <div className="chat-window__greeting">
@@ -183,6 +199,22 @@ function ChatWindow() {
           />
         )}
       </div>
+
+      {sessionState === 'awaiting_code' && !codeModalOpen && (
+        <div className="chat-window__code-reminder">
+          <img className="chat-window__code-reminder-icon" src="/icons/modal-security-lock.svg" alt="" />
+          <span className="chat-window__code-reminder-text">
+            We sent a verification code to your phone. Missed it?
+          </span>
+          <button
+            type="button"
+            className="chat-window__code-reminder-action"
+            onClick={handleReopenCodeModal}
+          >
+            Enter code
+          </button>
+        </div>
+      )}
 
       <form className="chat-window__input-bar" onSubmit={handleSubmit}>
         <input

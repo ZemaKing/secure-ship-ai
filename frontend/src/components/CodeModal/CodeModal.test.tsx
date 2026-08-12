@@ -16,11 +16,11 @@ function mockVerifyResponse(body: unknown, status = 200) {
   return fetchMock
 }
 
-function renderModal(onVerified: (message: string) => void = vi.fn()) {
+function renderModal(onVerified: (message: string) => void = vi.fn(), onClose?: () => void) {
   const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
   return render(
     <QueryClientProvider client={queryClient}>
-      <CodeModal open sessionId="session-1" onVerified={onVerified} />
+      <CodeModal open sessionId="session-1" onVerified={onVerified} onClose={onClose} />
     </QueryClientProvider>,
   )
 }
@@ -138,5 +138,15 @@ describe('CodeModal', () => {
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('calls onClose when dismissed, so a parent can offer a way to reopen it', async () => {
+    const onClose = vi.fn()
+    const user = userEvent.setup()
+    renderModal(vi.fn(), onClose)
+
+    await user.keyboard('{Escape}')
+
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 })

@@ -35,12 +35,14 @@
     @include m.flex-center;
     gap: v.$space-2;
     padding: v.$space-3;
+    border: 1px solid v.$color-border;
     border-radius: v.$radius-md;
     background: v.$color-bg-muted;
   }
 
   &--user &__bubble {
-    background: v.$color-primary-border;
+    border-color: v.$color-primary-border;
+    background: v.$color-primary-background;
   }
 
   &__text {

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   useListPackages,
   useCreatePackage,
@@ -22,7 +23,10 @@ function matchesSearch(pkg: PackageOut, query: string): boolean {
 
 function PackageManager() {
   const accessToken = useAdminAccessToken()
-  const [search, setSearch] = useState('')
+  const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const search = searchParams.get('search') ?? ''
+  const setSearch = (value: string) => setSearchParams(value ? { search: value } : {}, { replace: true })
   const [formState, setFormState] = useState<FormState>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<PackageOut | null>(null)
@@ -46,6 +50,10 @@ function PackageManager() {
   const packages = data?.data ?? []
   const shipments = shipmentsData?.data ?? []
   const filtered = search.trim() ? packages.filter((pkg) => matchesSearch(pkg, search.trim())) : packages
+
+  function handleTrackingClick(pkg: PackageOut) {
+    navigate(`/admin/shipments?search=${encodeURIComponent(pkg.tracking_number)}`)
+  }
 
   function handleSave(payload: PackageCreate) {
     setFormError(null)
@@ -121,7 +129,15 @@ function PackageManager() {
           <tbody>
             {filtered.map((pkg) => (
               <tr key={pkg.id}>
-                <td>{pkg.tracking_number}</td>
+                <td>
+                  <button
+                    className="package-manager__cell-link"
+                    title={`View shipment ${pkg.tracking_number}`}
+                    onClick={() => handleTrackingClick(pkg)}
+                  >
+                    {pkg.tracking_number}
+                  </button>
+                </td>
                 <td>{pkg.description}</td>
                 <td>{pkg.weight_kg}</td>
                 <td>{pkg.declared_value}</td>

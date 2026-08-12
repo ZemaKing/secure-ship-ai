@@ -13,7 +13,7 @@ const STATUS_LABELS: Record<ShipmentStatus, string> = {
   exception: 'Exception',
 }
 
-const RECENT_SHIPMENTS_LIMIT = 10
+const RECENT_SHIPMENTS_LIMIT = 15
 
 function countByStatus(shipments: ShipmentOut[], status: ShipmentStatus): number {
   return shipments.filter((shipment) => shipment.status === status).length
@@ -44,24 +44,33 @@ function Dashboard() {
   const { stats, recentShipments } = useMemo(() => {
     const shipments = data?.data ?? []
     const stats = [
-      { key: 'total', label: 'Total Shipments', value: shipments.length, icon: '/icons/dashboard-total.svg' },
+      {
+        key: 'total',
+        label: 'Total Shipments',
+        value: shipments.length,
+        icon: '/icons/dashboard-total.svg',
+        to: '/admin/shipments',
+      },
       {
         key: 'in_transit',
         label: 'In Transit',
         value: countByStatus(shipments, ShipmentStatus.in_transit),
         icon: '/icons/dashboard-in-transit.svg',
+        to: '/admin/shipments?status=in_transit',
       },
       {
         key: 'delivered',
         label: 'Delivered',
         value: countByStatus(shipments, ShipmentStatus.delivered),
         icon: '/icons/dashboard-delivered.svg',
+        to: '/admin/shipments?status=delivered',
       },
       {
         key: 'exception',
         label: 'Exceptions',
         value: countByStatus(shipments, ShipmentStatus.exception),
         icon: '/icons/dashboard-warning.svg',
+        to: '/admin/shipments?status=exception',
       },
     ]
     // list_shipments (backend) already orders by last_update desc, so the first N
@@ -83,7 +92,12 @@ function Dashboard() {
         <>
           <div className="dashboard__stats">
             {stats.map((stat) => (
-              <div key={stat.key} className="dashboard__stat-card">
+              <Link
+                key={stat.key}
+                to={stat.to}
+                className={`dashboard__stat-card dashboard__stat-card--${stat.key}`}
+                title={`View ${stat.label.toLowerCase()} in Shipments`}
+              >
                 <div className={`dashboard__stat-icon dashboard__stat-icon--${stat.key}`}>
                   <img src={stat.icon} alt="" />
                 </div>
@@ -91,7 +105,7 @@ function Dashboard() {
                   <p className="dashboard__stat-label">{stat.label}</p>
                   <p className="dashboard__stat-value">{stat.value}</p>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
 
@@ -119,7 +133,14 @@ function Dashboard() {
                 <tbody>
                   {recentShipments.map((shipment) => (
                     <tr key={shipment.id}>
-                      <td>{shipment.tracking_number}</td>
+                      <td>
+                        <Link
+                          className="dashboard__cell-link"
+                          to={`/admin/shipments?search=${encodeURIComponent(shipment.tracking_number)}`}
+                        >
+                          {shipment.tracking_number}
+                        </Link>
+                      </td>
                       <td>
                         <span className={`dashboard__status-badge dashboard__status-badge--${shipment.status}`}>
                           {STATUS_LABELS[shipment.status]}

@@ -86,6 +86,23 @@
     }
   }
 
+  // A row value that navigates elsewhere (e.g. this customer's shipments) —
+  // styled like a link so it reads as clickable, not just plain table text.
+  &__cell-link {
+    border: none;
+    background: none;
+    padding: 0;
+    font: inherit;
+    font-weight: 600;
+    font-style: italic;
+    color: v.$color-link;
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
   &__sort {
     display: inline-flex;
     align-items: center;

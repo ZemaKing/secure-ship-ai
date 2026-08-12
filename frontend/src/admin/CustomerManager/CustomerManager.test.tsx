@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import CustomerManager from './CustomerManager'
 
@@ -43,6 +44,13 @@ function mockFetch(handlers: { list?: unknown; create?: unknown; update?: unknow
   return fetchMock
 }
 
+// Renders whatever route was actually navigated to, so tests can assert on
+// where a click landed without mocking useNavigate() itself.
+function LocationDisplay() {
+  const location = useLocation()
+  return <div data-testid="location">{location.pathname + location.search}</div>
+}
+
 function renderManager() {
   mockedUseAuth0.mockReturnValue({
     getAccessTokenSilently: vi.fn().mockResolvedValue('fake-access-token'),
@@ -50,9 +58,14 @@ function renderManager() {
 
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
   return render(
-    <QueryClientProvider client={queryClient}>
-      <CustomerManager />
-    </QueryClientProvider>,
+    <MemoryRouter initialEntries={['/admin/customers']}>
+      <QueryClientProvider client={queryClient}>
+        <Routes>
+          <Route path="/admin/customers" element={<CustomerManager />} />
+          <Route path="*" element={<LocationDisplay />} />
+        </Routes>
+      </QueryClientProvider>
+    </MemoryRouter>,
   )
 }
 
@@ -158,5 +171,16 @@ describe('CustomerManager', () => {
 
     expect(await screen.findByText(/existing shipments/i)).toBeInTheDocument()
     expect(fetchMock.mock.calls.some(([, options]) => options?.method === 'DELETE')).toBe(true)
+  })
+
+  it('clicking a customer name navigates to Shipments with the name pre-filled as a search', async () => {
+    mockFetch({})
+    const user = userEvent.setup()
+    renderManager()
+    await screen.findByText('Alice Nguyen')
+
+    await user.click(screen.getByRole('button', { name: 'Alice Nguyen' }))
+
+    expect(await screen.findByTestId('location')).toHaveTextContent('/admin/shipments?search=Alice%20Nguyen')
   })
 })

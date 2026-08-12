@@ -91,4 +91,32 @@ describe('Dashboard', () => {
 
     expect(await screen.findByText('No shipments yet.')).toBeInTheDocument()
   })
+
+  it('links each tracking number to Shipments with itself pre-filled as a search', async () => {
+    mockFetch()
+    renderDashboard()
+
+    const link = await screen.findByRole('link', { name: '1ZONE0000000001' })
+    expect(link).toHaveAttribute('href', '/admin/shipments?search=1ZONE0000000001')
+  })
+
+  it('links each stat card to Shipments pre-filtered to its own status', async () => {
+    mockFetch()
+    renderDashboard()
+
+    await screen.findByText('Total Shipments')
+    expect(screen.getByRole('link', { name: /total shipments/i })).toHaveAttribute('href', '/admin/shipments')
+    expect(screen.getByRole('link', { name: /in transit/i })).toHaveAttribute(
+      'href',
+      '/admin/shipments?status=in_transit',
+    )
+    expect(screen.getByRole('link', { name: /^delivered/i })).toHaveAttribute(
+      'href',
+      '/admin/shipments?status=delivered',
+    )
+    expect(screen.getByRole('link', { name: /exceptions/i })).toHaveAttribute(
+      'href',
+      '/admin/shipments?status=exception',
+    )
+  })
 })

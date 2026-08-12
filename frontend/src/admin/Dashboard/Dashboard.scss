@@ -30,6 +30,10 @@
     margin-bottom: v.$space-5;
   }
 
+  // Each card is a real link to Shipments, pre-filtered to its own status — the
+  // border/shadow tint on hover echoes that status's own color token (the same
+  // one its icon chip already uses), so the color itself signals where the
+  // click leads before the visitor ever reads the label.
   &__stat-card {
     display: flex;
     align-items: center;
@@ -38,6 +42,43 @@
     border: 1px solid v.$color-border;
     border-radius: v.$radius-md;
     background: v.$color-bg;
+    text-decoration: none;
+    cursor: pointer;
+    transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+
+    &:hover,
+    &:focus-visible {
+      transform: translateY(-2px);
+    }
+
+    &:focus-visible {
+      outline: 2px solid v.$color-primary;
+      outline-offset: 2px;
+    }
+
+    &--total:hover,
+    &--total:focus-visible {
+      border-color: v.$color-primary-border;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+    }
+
+    &--in_transit:hover,
+    &--in_transit:focus-visible {
+      border-color: v.$color-status-in-transit;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+    }
+
+    &--delivered:hover,
+    &--delivered:focus-visible {
+      border-color: v.$color-status-delivered;
+      box-shadow: 0 4px 12px rgba(22, 163, 74, 0.15);
+    }
+
+    &--exception:hover,
+    &--exception:focus-visible {
+      border-color: v.$color-status-exception;
+      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+    }
   }
 
   &__stat-icon {
@@ -83,7 +124,8 @@
   }
 
   &__panel {
-    padding: v.$space-4;
+    //padding: v.$space-4;
+    padding: 12px 12px 0;
     border: 1px solid v.$color-border;
     border-radius: v.$radius-md;
     background: v.$color-bg;
@@ -131,6 +173,10 @@
       white-space: nowrap;
     }
 
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
     th {
       color: v.$color-text-muted;
       font-weight: 600;
@@ -138,6 +184,19 @@
 
     td {
       color: v.$color-text;
+    }
+  }
+
+  // Navigates to Shipments with this tracking number pre-filled as a search —
+  // same &__cell-link treatment as CustomerManager/ShipmentManager/PackageManager.
+  &__cell-link {
+    font-weight: 600;
+    font-style: italic;
+    color: v.$color-link;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
     }
   }
 

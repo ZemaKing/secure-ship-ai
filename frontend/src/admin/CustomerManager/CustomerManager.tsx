@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   useListCustomers,
   useCreateCustomer,
@@ -38,7 +39,10 @@ function toClipboardText(customer: CustomerOut): string {
 
 function CustomerManager() {
   const accessToken = useAdminAccessToken()
-  const [search, setSearch] = useState('')
+  const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const search = searchParams.get('search') ?? ''
+  const setSearch = (value: string) => setSearchParams(value ? { search: value } : {}, { replace: true })
   const [nameSort, setNameSort] = useState<SortDirection>('asc')
   const [formState, setFormState] = useState<FormState>(null)
   const [formError, setFormError] = useState<string | null>(null)
@@ -78,6 +82,10 @@ function CustomerManager() {
     } else {
       createMutation.mutate({ data: payload }, { onSuccess, onError })
     }
+  }
+
+  function handleNameClick(customer: CustomerOut) {
+    navigate(`/admin/shipments?search=${encodeURIComponent(fullName(customer))}`)
   }
 
   function handleCopy(customer: CustomerOut) {
@@ -162,7 +170,13 @@ function CustomerManager() {
             {sorted.map((customer) => (
               <tr key={customer.id}>
                 <td>
-                  {customer.first_name} {customer.last_name}
+                  <button
+                    className="customer-manager__cell-link"
+                    title={`View ${fullName(customer)}'s shipments`}
+                    onClick={() => handleNameClick(customer)}
+                  >
+                    {customer.first_name} {customer.last_name}
+                  </button>
                 </td>
                 <td>{customer.phone_number}</td>
                 <td>{customer.address}</td>
