@@ -56,6 +56,24 @@
       outline-offset: 2px;
     }
 
+    // A slight status-tinted tint, lighter than the icon chip's own `-bg`
+    // token below, so the chip still reads as a distinct shape on top of it.
+    &--total {
+      background: rgba(37, 99, 235, 0.05);
+    }
+
+    &--in_transit {
+      background: rgba(37, 99, 235, 0.05);
+    }
+
+    &--delivered {
+      background: rgba(22, 163, 74, 0.05);
+    }
+
+    &--exception {
+      background: rgba(220, 38, 38, 0.05);
+    }
+
     &--total:hover,
     &--total:focus-visible {
       border-color: v.$color-primary-border;
@@ -78,6 +96,53 @@
     &--exception:focus-visible {
       border-color: v.$color-status-exception;
       box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+    }
+
+    // The label and value pick up the card's own status color plus a matching
+    // text-shadow glow on hover — the same treatment other pages' cell-links
+    // use, echoing the border/shadow tint above so text and card agree.
+    &--total:hover &__stat-label,
+    &--total:focus-visible &__stat-label {
+      color: v.$color-primary;
+    }
+
+    &--total:hover &__stat-value,
+    &--total:focus-visible &__stat-value {
+      color: v.$color-primary;
+      text-shadow: 0 1px 10px rgba(37, 99, 235, 0.5);
+    }
+
+    &--in_transit:hover &__stat-label,
+    &--in_transit:focus-visible &__stat-label {
+      color: v.$color-status-in-transit;
+    }
+
+    &--in_transit:hover &__stat-value,
+    &--in_transit:focus-visible &__stat-value {
+      color: v.$color-status-in-transit;
+      text-shadow: 0 1px 10px rgba(37, 99, 235, 0.5);
+    }
+
+    &--delivered:hover &__stat-label,
+    &--delivered:focus-visible &__stat-label {
+      color: v.$color-status-delivered;
+    }
+
+    &--delivered:hover &__stat-value,
+    &--delivered:focus-visible &__stat-value {
+      color: v.$color-status-delivered;
+      text-shadow: 0 1px 10px rgba(22, 163, 74, 0.5);
+    }
+
+    &--exception:hover &__stat-label,
+    &--exception:focus-visible &__stat-label {
+      color: v.$color-status-exception;
+    }
+
+    &--exception:hover &__stat-value,
+    &--exception:focus-visible &__stat-value {
+      color: v.$color-status-exception;
+      text-shadow: 0 1px 10px rgba(220, 38, 38, 0.5);
     }
   }
 
@@ -114,6 +179,7 @@
     margin: 0;
     font-size: v.$font-size-sm;
     color: v.$color-text-muted;
+    transition: color 150ms ease;
   }
 
   &__stat-value {
@@ -121,6 +187,7 @@
     font-size: v.$font-size-xl;
     font-weight: 700;
     color: v.$color-text;
+    transition: color 150ms ease, text-shadow 150ms ease;
   }
 
   &__panel {
@@ -194,9 +261,10 @@
     font-style: italic;
     color: v.$color-link;
     text-decoration: none;
+    transition: text-shadow 150ms ease;
 
     &:hover {
-      text-decoration: underline;
+      text-shadow: 0 1px 6px rgba(37, 99, 235, 0.45);
     }
   }
 

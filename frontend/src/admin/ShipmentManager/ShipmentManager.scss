@@ -123,9 +123,10 @@
     color: v.$color-link;
     cursor: pointer;
     white-space: nowrap;
+    transition: text-shadow 150ms ease;
 
     &:hover {
-      text-decoration: underline;
+      text-shadow: 0 1px 6px rgba(37, 99, 235, 0.45);
     }
   }
 
