@@ -217,8 +217,6 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-/admin-pages.png
-
 # Local demo/presentation prep — not part of the shipped project
 /demo/
 
