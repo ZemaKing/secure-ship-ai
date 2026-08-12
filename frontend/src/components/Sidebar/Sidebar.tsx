@@ -1,4 +1,3 @@
-import ChatHistoryList from './ChatHistoryList'
 import AdminAccessCard from './AdminAccessCard'
 import './Sidebar.scss'
 
@@ -21,8 +20,6 @@ function Sidebar({ onNewChat }: SidebarProps) {
         <img className="sidebar__new-chat-icon" src="/icons/new-chat.svg" alt="" />
         New Chat
       </button>
-
-      <ChatHistoryList />
 
       <div className="sidebar__spacer" />
 

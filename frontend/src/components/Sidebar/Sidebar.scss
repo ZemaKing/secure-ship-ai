@@ -67,62 +67,6 @@
     @include m.icon(18px);
   }
 
-  &__section {
-    margin-bottom: v.$space-4;
-  }
-
-  &__section-label {
-    display: flex;
-    align-items: center;
-    gap: v.$space-2;
-    padding-left: v.$space-3;
-    font-size: v.$font-size-md;
-    font-weight: 600;
-    color: v.$color-text;
-    margin-bottom: v.$space-2;
-  }
-
-  &__section-label-icon {
-    @include m.icon(18px);
-  }
-
-  &__chat-history {
-    display: flex;
-    flex-direction: column;
-    gap: v.$space-1;
-  }
-
-  &__chat-history-item {
-    display: flex;
-    align-items: center;
-    gap: v.$space-2;
-    padding: v.$space-2 v.$space-3;
-    border-radius: v.$radius-sm;
-
-    &:hover {
-      background: v.$color-primary-border;
-      cursor: default;
-    }
-  }
-
-  &__chat-history-item-icon {
-    @include m.icon(16px);
-    flex-shrink: 0;
-  }
-
-  &__chat-history-item-label {
-    @include m.truncate-text;
-    flex: 1;
-    font-size: 12px;
-    color: v.$color-text;
-  }
-
-  &__chat-history-item-time {
-    flex-shrink: 0;
-    font-size: 10px;
-    color: v.$color-text-subtle;
-  }
-
   &__spacer {
     flex: 1;
   }
