@@ -25,7 +25,7 @@ export type ShipmentCardData = {
   items: PackageItem[]
 }
 
-export type ChatRole = 'user' | 'bot' | 'escalation'
+export type ChatRole = 'user' | 'bot' | 'escalation' | 'verified'
 
 export type ChatMessageData = {
   id: string

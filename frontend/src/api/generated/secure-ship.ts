@@ -66,6 +66,7 @@ export interface ChatResponse {
   event?: string | null;
   escalation?: EscalationPayload | null;
   shipments?: ShipmentPayload[] | null;
+  verified_customer_name?: string | null;
 }
 
 export interface CustomerCreate {
@@ -193,6 +194,7 @@ export interface VerifyCodeResponse {
   reply: string;
   state: string;
   attempts_remaining?: number | null;
+  verified_customer_name?: string | null;
 }
 
 export type HealthHealthGet200 = {[key: string]: string};

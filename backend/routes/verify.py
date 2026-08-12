@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from db.session import get_db
 from models.chat_session import ChatSession
+from models.customer import Customer
 from schemas.verify import VerifyCodeRequest, VerifyCodeResponse
 from tools.check_verification_code import VerifyStatus, check_verification_code
 
@@ -33,8 +34,13 @@ def verify_code(request: VerifyCodeRequest, db: Session = Depends(get_db)) -> Ve
     session = _get_session_or_404(db, request.session_id)
     outcome = check_verification_code(db, session, request.code)
 
+    customer_name = None
     if outcome.status == VerifyStatus.MATCH:
         reply, success, attempts_remaining = CODE_MATCH_MESSAGE, True, None
+        # check_verification_code() already promoted pending_customer_id -> customer_id
+        # on a real MATCH, so this is a real, already-verified Customer row, not a claim.
+        customer = db.query(Customer).filter(Customer.id == session.customer_id).first()
+        customer_name = f"{customer.first_name} {customer.last_name}" if customer is not None else None
     elif outcome.status == VerifyStatus.MISMATCH:
         reply, success, attempts_remaining = CODE_MISMATCH_MESSAGE, False, outcome.attempts_remaining
     elif outcome.status == VerifyStatus.LOCKED_OUT:
@@ -48,4 +54,5 @@ def verify_code(request: VerifyCodeRequest, db: Session = Depends(get_db)) -> Ve
         reply=reply,
         state=session.state.value,
         attempts_remaining=attempts_remaining,
+        verified_customer_name=customer_name,
     )

@@ -8,7 +8,7 @@ const GENERIC_ERROR_MESSAGE = 'Something went wrong verifying that code. Please 
 interface CodeModalProps {
   open: boolean
   sessionId: string
-  onVerified: (message: string) => void
+  onVerified: (message: string, customerName: string | null) => void
 }
 
 function CodeModal({ open, sessionId, onVerified }: CodeModalProps) {
@@ -77,7 +77,7 @@ function CodeModal({ open, sessionId, onVerified }: CodeModalProps) {
           const data = response.data
           if (data.success) {
             setVerified(true)
-            onVerified(data.reply)
+            onVerified(data.reply, data.verified_customer_name ?? null)
             return
           }
           setFeedback(data.reply)

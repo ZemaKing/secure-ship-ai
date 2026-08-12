@@ -105,13 +105,14 @@ describe('CodeModal', () => {
     expect(screen.getByRole('button', { name: /verify code/i })).toBeDisabled()
   })
 
-  it('on a correct code, calls onVerified with the reply and hides the modal', async () => {
+  it('on a correct code, calls onVerified with the reply and customer name, and hides the modal', async () => {
     mockVerifyResponse({
       session_id: 'session-1',
       success: true,
       reply: "You're verified! How can I help with your shipment?",
       state: 'verified',
       attempts_remaining: null,
+      verified_customer_name: 'Nova Star',
     })
     const user = userEvent.setup()
     const onVerified = vi.fn()
@@ -121,7 +122,7 @@ describe('CodeModal', () => {
     await user.click(screen.getByRole('button', { name: /verify code/i }))
 
     await waitFor(() => {
-      expect(onVerified).toHaveBeenCalledWith("You're verified! How can I help with your shipment?")
+      expect(onVerified).toHaveBeenCalledWith("You're verified! How can I help with your shipment?", 'Nova Star')
     })
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })

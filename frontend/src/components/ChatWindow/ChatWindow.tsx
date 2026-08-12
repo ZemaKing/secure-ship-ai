@@ -42,7 +42,13 @@ function toShipmentCardData(payload: ShipmentPayload): ShipmentCardData {
 function ChatWindow() {
   const [messages, setMessages] = useState<ChatMessageData[]>([])
   const [draft, setDraft] = useState('')
-  const { sessionId, event: sessionEvent, applyResponse } = useChatSession()
+  const {
+    sessionId,
+    event: sessionEvent,
+    verifiedCustomerName,
+    setVerifiedCustomerName,
+    applyResponse,
+  } = useChatSession()
   const [codeModalKey, setCodeModalKey] = useState(0)
   const [humanJoined, setHumanJoined] = useState(false)
   const chatMutation = useChat()
@@ -109,10 +115,17 @@ function ChatWindow() {
     )
   }
 
-  function handleCodeVerified(message: string) {
+  function handleCodeVerified(message: string, customerName: string | null) {
+    setVerifiedCustomerName(customerName)
+    // The green "Identity verified successfully" card already says everything
+    // the backend's plain-text reply would — showing both read as a doubled
+    // message, so the card replaces it on a real success rather than sitting
+    // alongside it.
     setMessages((prev) => [
       ...prev,
-      { id: makeMessageId(), role: 'bot', text: message, timestamp: formatTimestamp() },
+      customerName
+        ? { id: makeMessageId(), role: 'verified' as const, text: '', timestamp: formatTimestamp() }
+        : { id: makeMessageId(), role: 'bot' as const, text: message, timestamp: formatTimestamp() },
     ])
   }
 
@@ -130,6 +143,14 @@ function ChatWindow() {
             Hello! <img className="chat-window__greeting-wave-icon" src="/icons/hand-wave.svg" alt="" />
           </h1>
           <p className="chat-window__greeting-subtitle">Ask me anything about your shipments.</p>
+          {verifiedCustomerName && (
+            <div className="chat-window__verified-pill">
+              <img className="chat-window__verified-pill-icon" src="/icons/verified-shield.svg" alt="" />
+              <span className="chat-window__verified-pill-label">Identity verified</span>
+              <span className="chat-window__verified-pill-separator">·</span>
+              <span className="chat-window__verified-pill-name">{verifiedCustomerName}</span>
+            </div>
+          )}
         </div>
         <div className="chat-window__disclaimer-banner">
           <img className="chat-window__disclaimer-icon" src="/icons/info.svg" alt="" />
@@ -143,7 +164,12 @@ function ChatWindow() {
 
       <div className="chat-window__message-list" ref={messageListRef}>
         {messages.map((message) => (
-          <ChatMessage key={message.id} message={message} onHumanJoined={() => setHumanJoined(true)} />
+          <ChatMessage
+            key={message.id}
+            message={message}
+            onHumanJoined={() => setHumanJoined(true)}
+            verified={!!verifiedCustomerName}
+          />
         ))}
         {chatMutation.isPending && (
           <ChatMessage
@@ -162,7 +188,11 @@ function ChatWindow() {
         <input
           type="text"
           className="chat-window__input"
-          placeholder="Ask about any shipment... (e.g., track TS123456789)"
+          placeholder={
+            verifiedCustomerName
+              ? 'Ask about your verified shipments... (e.g., track TS123456789)'
+              : 'Ask about any shipment... (e.g., track TS123456789)'
+          }
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           disabled={chatMutation.isPending}
@@ -178,6 +208,10 @@ function ChatWindow() {
       </form>
       <p className="chat-window__footer-disclaimer">
         AI responses may be inaccurate. Please verify important details.
+        <span className="chat-window__footer-secure">
+          <img className="chat-window__footer-secure-icon" src="/icons/verified-shield.svg" alt="" />
+          Your data is secure and encrypted.
+        </span>
       </p>
     </section>
   )

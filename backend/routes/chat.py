@@ -85,6 +85,17 @@ def _resolve_known_first_name(db: Session, session: ChatSession) -> str | None:
     return customer.first_name if customer is not None else None
 
 
+def _verified_customer_name(db: Session, session: ChatSession) -> str | None:
+    """Only ever reads a real, already-verified Customer row — never pending_identity,
+    since that's unconfirmed, visitor-claimed data (Epic G4's own "never trust the
+    unconfirmed" reasoning, applied to the frontend's verified-badge display).
+    """
+    if session.customer_id is None:
+        return None
+    customer = db.query(Customer).filter(Customer.id == session.customer_id).first()
+    return f"{customer.first_name} {customer.last_name}" if customer is not None else None
+
+
 def _handle_escalation(db: Session, session: ChatSession, transcript: list) -> ChatResponse:
     first_name = _resolve_known_first_name(db, session)
     greeting = (
@@ -108,6 +119,7 @@ def _handle_escalation(db: Session, session: ChatSession, transcript: list) -> C
         state=session.state.value,
         event="escalated",
         escalation=EscalationPayload(lines=lines, agent_name=AGENT_NAME, first_name=first_name),
+        verified_customer_name=_verified_customer_name(db, session),
     )
 
 
@@ -300,4 +312,5 @@ def send_chat_message(request: ChatRequest, db: Session = Depends(get_db)) -> Ch
         state=session.state.value,
         event=event,
         shipments=shipments_payload,
+        verified_customer_name=_verified_customer_name(db, session),
     )

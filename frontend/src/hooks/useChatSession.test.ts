@@ -21,14 +21,20 @@ describe('useChatSession', () => {
     expect(result.current.state).toBeUndefined()
     expect(result.current.event).toBeNull()
     expect(result.current.escalation).toBeNull()
+    expect(result.current.verifiedCustomerName).toBeNull()
   })
 
-  it('applyResponse copies all four fields from a real response', () => {
+  it('applyResponse copies all fields from a real response', () => {
     const { result } = renderHook(() => useChatSession())
 
     act(() => {
       result.current.applyResponse(
-        makeResponse({ session_id: 'abc-123', state: 'collecting_identity', event: 'code_sent' }),
+        makeResponse({
+          session_id: 'abc-123',
+          state: 'collecting_identity',
+          event: 'code_sent',
+          verified_customer_name: 'Nova Star',
+        }),
       )
     })
 
@@ -36,6 +42,17 @@ describe('useChatSession', () => {
     expect(result.current.state).toBe('collecting_identity')
     expect(result.current.event).toBe('code_sent')
     expect(result.current.escalation).toBeNull()
+    expect(result.current.verifiedCustomerName).toBe('Nova Star')
+  })
+
+  it('setVerifiedCustomerName lets the verify-code flow set it directly, outside applyResponse', () => {
+    const { result } = renderHook(() => useChatSession())
+
+    act(() => {
+      result.current.setVerifiedCustomerName('Nova Star')
+    })
+
+    expect(result.current.verifiedCustomerName).toBe('Nova Star')
   })
 
   it('a later response clears out a previous turn\'s escalation once it is no longer current', () => {
@@ -70,5 +87,6 @@ describe('useChatSession', () => {
 
     expect(result.current.event).toBeNull()
     expect(result.current.escalation).toBeNull()
+    expect(result.current.verifiedCustomerName).toBeNull()
   })
 })

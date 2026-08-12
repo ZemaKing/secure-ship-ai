@@ -41,6 +41,35 @@
     color: v.$color-text-muted;
   }
 
+  &__verified-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: v.$space-1;
+    margin-top: v.$space-3;
+    padding: v.$space-1 v.$space-3;
+    border: 1px solid v.$color-status-delivered-bg;
+    border-radius: v.$radius-pill;
+    background: v.$color-status-delivered-bg;
+    font-size: v.$font-size-xs;
+  }
+
+  &__verified-pill-icon {
+    @include m.icon(16px);
+  }
+
+  &__verified-pill-label {
+    font-weight: 700;
+    color: v.$color-status-delivered;
+  }
+
+  &__verified-pill-separator {
+    color: v.$color-text-muted;
+  }
+
+  &__verified-pill-name {
+    color: v.$color-text;
+  }
+
   &__disclaimer-banner {
     @include m.card-surface;
     display: flex;
@@ -107,9 +136,26 @@
   }
 
   &__footer-disclaimer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: v.$space-2;
     margin: v.$space-2 0 0;
     text-align: center;
     font-size: v.$font-size-xs;
     color: v.$color-text-subtle;
+  }
+
+  &__footer-secure {
+    display: inline-flex;
+    align-items: center;
+    gap: v.$space-1;
+    padding-left: v.$space-2;
+    border-left: 1px solid v.$color-border;
+    color: v.$color-status-delivered;
+  }
+
+  &__footer-secure-icon {
+    @include m.icon(12px);
   }
 }

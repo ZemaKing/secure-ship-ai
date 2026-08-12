@@ -40,3 +40,4 @@ class ChatResponse(BaseModel):
     event: str | None = None  # e.g. "code_sent", "escalated"
     escalation: EscalationPayload | None = None
     shipments: list[ShipmentPayload] | None = None  # populated on a real lookup_shipments() result (Week 3, Chunk C)
+    verified_customer_name: str | None = None  # only set once session.customer_id is real, i.e. Verified+

@@ -12,3 +12,4 @@ class VerifyCodeResponse(BaseModel):
     reply: str
     state: str
     attempts_remaining: int | None = None
+    verified_customer_name: str | None = None  # only set on a real MATCH

@@ -63,6 +63,58 @@
     color: v.$color-text-subtle;
   }
 
+  &__avatar-wrap {
+    position: relative;
+    flex-shrink: 0;
+    display: inline-flex;
+  }
+
+  &__verified-badge {
+    position: absolute;
+    right: 0;
+    bottom: -2px;
+    width: 14px;
+    height: 14px;
+    border-radius: v.$radius-pill;
+    background: v.$color-bg;
+    box-shadow: 0 0 0 2px v.$color-bg;
+  }
+
+  &--verified-card {
+    align-items: center;
+    gap: v.$space-3;
+    max-width: 640px;
+    padding: v.$space-3 v.$space-4;
+    margin-bottom: v.$space-4;
+    border: 1px solid #79D899;
+    border-left-color: v.$color-status-delivered;
+    border-left-width: 4px;
+    border-radius: v.$radius-md;
+    background: v.$color-status-delivered-bg;
+  }
+
+  &__verified-card-icon {
+    @include m.icon(28px);
+    flex-shrink: 0;
+  }
+
+  &__verified-card-body {
+    flex: 1;
+  }
+
+  &__verified-card-title {
+    margin: 0;
+    font-size: v.$font-size-sm;
+    font-weight: 700;
+    color: v.$color-text;
+  }
+
+  &__verified-card-text {
+    margin: v.$space-1 0 0;
+    font-size: v.$font-size-sm;
+    color: v.$color-text-muted;
+  }
+
   &__typing-indicator {
     --loader-size: 0.35px;
 
