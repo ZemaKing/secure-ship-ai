@@ -217,7 +217,6 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-/ai-chatbot-ui-mockup.png
 /admin-pages.png
 
 # Local demo/presentation prep — not part of the shipped project
