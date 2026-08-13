@@ -188,39 +188,51 @@ function CustomerManager() {
                     {customer.first_name} {customer.last_name}
                   </button>
                 </td>
-                <td>{customer.phone_number}</td>
-                <td>{customer.address}</td>
-                <td className="customer-manager__actions">
-                  <button
-                    className={`customer-manager__action customer-manager__action--copy${copiedId === customer.id ? ' customer-manager__action--copied' : ''}`}
-                    aria-label="Copy to clipboard"
-                    title={copiedId === customer.id ? 'Copied!' : 'Copy to clipboard'}
-                    onClick={() => handleCopy(customer)}
-                  >
-                    <img className="customer-manager__action-icon" src="/icons/table-copy.svg" alt="" />
-                  </button>
-                  <button
-                    className="customer-manager__action"
-                    aria-label="Edit"
-                    title="Edit"
-                    onClick={() => {
-                      setFormError(null)
-                      setFormState({ mode: 'edit', customer })
-                    }}
-                  >
-                    <img className="customer-manager__action-icon" src="/icons/table-edit.svg" alt="" />
-                  </button>
-                  <button
-                    className="customer-manager__action customer-manager__action--danger"
-                    aria-label="Delete"
-                    title="Delete"
-                    onClick={() => {
-                      setDeleteError(null)
-                      setPendingDelete(customer)
-                    }}
-                  >
-                    <img className="customer-manager__action-icon" src="/icons/table-delete.svg" alt="" />
-                  </button>
+                <td>
+                  <span className="customer-manager__icon-cell">
+                    <img className="customer-manager__icon-cell-icon" src="/icons/telephone.svg" alt="" />
+                    {customer.phone_number}
+                  </span>
+                </td>
+                <td>
+                  <span className="customer-manager__icon-cell">
+                    <img className="customer-manager__icon-cell-icon" src="/icons/location.svg" alt="" />
+                    {customer.address}
+                  </span>
+                </td>
+                <td>
+                  <div className="customer-manager__actions">
+                    <button
+                      className={`customer-manager__action customer-manager__action--copy${copiedId === customer.id ? ' customer-manager__action--copied' : ''}`}
+                      aria-label="Copy to clipboard"
+                      title={copiedId === customer.id ? 'Copied!' : 'Copy to clipboard'}
+                      onClick={() => handleCopy(customer)}
+                    >
+                      <img className="customer-manager__action-icon" src="/icons/table-copy.svg" alt="" />
+                    </button>
+                    <button
+                      className="customer-manager__action"
+                      aria-label="Edit"
+                      title="Edit"
+                      onClick={() => {
+                        setFormError(null)
+                        setFormState({ mode: 'edit', customer })
+                      }}
+                    >
+                      <img className="customer-manager__action-icon" src="/icons/table-edit.svg" alt="" />
+                    </button>
+                    <button
+                      className="customer-manager__action customer-manager__action--danger"
+                      aria-label="Delete"
+                      title="Delete"
+                      onClick={() => {
+                        setDeleteError(null)
+                        setPendingDelete(customer)
+                      }}
+                    >
+                      <img className="customer-manager__action-icon" src="/icons/table-delete.svg" alt="" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

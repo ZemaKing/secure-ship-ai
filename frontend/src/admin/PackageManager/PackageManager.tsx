@@ -18,6 +18,7 @@ import './PackageManager.scss'
 const PAGE_SIZE = 15
 
 type FormState = { mode: 'create' } | { mode: 'edit'; pkg: PackageOut } | null
+type SortDirection = 'asc' | 'desc'
 
 function matchesSearch(pkg: PackageOut, query: string): boolean {
   const haystack = `${pkg.tracking_number} ${pkg.description}`.toLowerCase()
@@ -34,6 +35,7 @@ function PackageManager() {
     setPage(1)
   }
   const [page, setPage] = useState(1)
+  const [trackingSort, setTrackingSort] = useState<SortDirection>('asc')
   const [formState, setFormState] = useState<FormState>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<PackageOut | null>(null)
@@ -57,9 +59,13 @@ function PackageManager() {
   const packages = data?.data ?? []
   const shipments = shipmentsData?.data ?? []
   const filtered = search.trim() ? packages.filter((pkg) => matchesSearch(pkg, search.trim())) : packages
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const sorted = [...filtered].sort((a, b) => {
+    const comparison = a.tracking_number.localeCompare(b.tracking_number)
+    return trackingSort === 'asc' ? comparison : -comparison
+  })
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE))
   const currentPage = Math.min(page, totalPages)
-  const pageItems = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+  const pageItems = sorted.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
   function handleTrackingClick(pkg: PackageOut) {
     navigate(`/admin/shipments?search=${encodeURIComponent(pkg.tracking_number)}`)
@@ -129,7 +135,19 @@ function PackageManager() {
         <table className="package-manager__table">
           <thead>
             <tr>
-              <th>Tracking Number</th>
+              <th>
+                <button
+                  type="button"
+                  className="package-manager__sort"
+                  onClick={() => setTrackingSort((current) => (current === 'asc' ? 'desc' : 'asc'))}
+                >
+                  Tracking Number
+                  <span
+                    className="package-manager__sort-icon"
+                    style={{ maskImage: `url(/icons/sort-${trackingSort}.svg)`, WebkitMaskImage: `url(/icons/sort-${trackingSort}.svg)` }}
+                  />
+                </button>
+              </th>
               <th>Description</th>
               <th>Weight (kg)</th>
               <th>Declared Value</th>
@@ -149,31 +167,43 @@ function PackageManager() {
                   </button>
                 </td>
                 <td>{pkg.description}</td>
-                <td>{pkg.weight_kg}</td>
-                <td>{pkg.declared_value}</td>
-                <td className="package-manager__actions">
-                  <button
-                    className="package-manager__action"
-                    aria-label="Edit"
-                    title="Edit"
-                    onClick={() => {
-                      setFormError(null)
-                      setFormState({ mode: 'edit', pkg })
-                    }}
-                  >
-                    <img className="package-manager__action-icon" src="/icons/table-edit.svg" alt="" />
-                  </button>
-                  <button
-                    className="package-manager__action package-manager__action--danger"
-                    aria-label="Delete"
-                    title="Delete"
-                    onClick={() => {
-                      setDeleteError(null)
-                      setPendingDelete(pkg)
-                    }}
-                  >
-                    <img className="package-manager__action-icon" src="/icons/table-delete.svg" alt="" />
-                  </button>
+                <td>
+                  <span className="package-manager__icon-cell">
+                    <img className="package-manager__icon-cell-icon" src="/icons/weight.svg" alt="" />
+                    {pkg.weight_kg}
+                  </span>
+                </td>
+                <td>
+                  <span className="package-manager__icon-cell">
+                    <img className="package-manager__icon-cell-icon" src="/icons/value.svg" alt="" />
+                    {pkg.declared_value}
+                  </span>
+                </td>
+                <td>
+                  <div className="package-manager__actions">
+                    <button
+                      className="package-manager__action"
+                      aria-label="Edit"
+                      title="Edit"
+                      onClick={() => {
+                        setFormError(null)
+                        setFormState({ mode: 'edit', pkg })
+                      }}
+                    >
+                      <img className="package-manager__action-icon" src="/icons/table-edit.svg" alt="" />
+                    </button>
+                    <button
+                      className="package-manager__action package-manager__action--danger"
+                      aria-label="Delete"
+                      title="Delete"
+                      onClick={() => {
+                        setDeleteError(null)
+                        setPendingDelete(pkg)
+                      }}
+                    >
+                      <img className="package-manager__action-icon" src="/icons/table-delete.svg" alt="" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -183,9 +213,9 @@ function PackageManager() {
 
       <Pagination
         page={currentPage}
-        totalItems={filtered.length}
+        totalItems={sorted.length}
         pageSize={PAGE_SIZE}
-        itemLabel={`package${filtered.length === 1 ? '' : 's'}`}
+        itemLabel={`package${sorted.length === 1 ? '' : 's'}`}
         onPageChange={setPage}
       />
 

@@ -87,6 +87,56 @@
     }
   }
 
+  &__sort {
+    display: inline-flex;
+    align-items: center;
+    gap: v.$space-1;
+    border: none;
+    background: none;
+    padding: 0;
+    color: inherit;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover {
+      color: v.$color-primary;
+    }
+  }
+
+  // Unlike the pre-colored icon-cell SVGs below, the sort icons are recolored via
+  // mask-image (same technique as &__action-icon elsewhere) so they follow the
+  // button's own `color` — and therefore its hover color — instead of staying a
+  // fixed gray. The icon URL varies at runtime (asc/desc), so it's set inline via
+  // style rather than a fixed CSS background-image.
+  &__sort-icon {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    flex-shrink: 0;
+    background-color: currentColor;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
+  }
+
+  // Weight/Declared Value cells — a small leading icon (weight/value, both
+  // pre-colored SVGs, no mask-image needed) paired with the value.
+  &__icon-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: v.$space-1;
+  }
+
+  &__icon-cell-icon {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+  }
+
   // A row value that navigates elsewhere (this package's shipment) — styled
   // like a link so it reads as clickable, not plain table text.
   &__cell-link {

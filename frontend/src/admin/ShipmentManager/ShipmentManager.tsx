@@ -11,7 +11,7 @@ import {
   type ShipmentOut,
 } from '../../api/generated/secure-ship'
 import { useAdminAccessToken, authHeaders } from '../useAdminAccessToken'
-import { formatDate, formatUpdated } from '../../utils/formatDate'
+import { formatDate, formatUpdated, formatUpdatedIcon } from '../../utils/formatDate'
 import ConfirmDialog from '../ConfirmDialog/ConfirmDialog'
 import ShipmentFormModal from './ShipmentFormModal'
 import Pagination from '../Pagination/Pagination'
@@ -290,8 +290,18 @@ function ShipmentManager() {
                     {shipment.customer_name}
                   </button>
                 </td>
-                <td>{shipment.origin}</td>
-                <td>{shipment.destination}</td>
+                <td>
+                  <span className="shipment-manager__icon-cell">
+                    <img className="shipment-manager__icon-cell-icon" src="/icons/location.svg" alt="" />
+                    {shipment.origin}
+                  </span>
+                </td>
+                <td>
+                  <span className="shipment-manager__icon-cell">
+                    <img className="shipment-manager__icon-cell-icon" src="/icons/location.svg" alt="" />
+                    {shipment.destination}
+                  </span>
+                </td>
                 <td>{shipment.carrier}</td>
                 <td>
                   <select
@@ -307,31 +317,47 @@ function ShipmentManager() {
                     ))}
                   </select>
                 </td>
-                <td>{formatDate(shipment.estimated_delivery)}</td>
-                <td>{formatUpdated(shipment.last_update)}</td>
-                <td className="shipment-manager__actions">
-                  <button
-                    className="shipment-manager__action"
-                    aria-label="Edit"
-                    title="Edit"
-                    onClick={() => {
-                      setFormError(null)
-                      setFormState({ mode: 'edit', shipment })
-                    }}
-                  >
-                    <img className="shipment-manager__action-icon" src="/icons/table-edit.svg" alt="" />
-                  </button>
-                  <button
-                    className="shipment-manager__action shipment-manager__action--danger"
-                    aria-label="Delete"
-                    title="Delete"
-                    onClick={() => {
-                      setDeleteError(null)
-                      setPendingDelete(shipment)
-                    }}
-                  >
-                    <img className="shipment-manager__action-icon" src="/icons/table-delete.svg" alt="" />
-                  </button>
+                <td>
+                  <span className="shipment-manager__icon-cell">
+                    <img className="shipment-manager__icon-cell-icon" src="/icons/calendar.svg" alt="" />
+                    {formatDate(shipment.estimated_delivery)}
+                  </span>
+                </td>
+                <td>
+                  <span className="shipment-manager__icon-cell">
+                    <img
+                      className="shipment-manager__icon-cell-icon"
+                      src={formatUpdatedIcon(shipment.last_update)}
+                      alt=""
+                    />
+                    {formatUpdated(shipment.last_update)}
+                  </span>
+                </td>
+                <td>
+                  <div className="shipment-manager__actions">
+                    <button
+                      className="shipment-manager__action"
+                      aria-label="Edit"
+                      title="Edit"
+                      onClick={() => {
+                        setFormError(null)
+                        setFormState({ mode: 'edit', shipment })
+                      }}
+                    >
+                      <img className="shipment-manager__action-icon" src="/icons/table-edit.svg" alt="" />
+                    </button>
+                    <button
+                      className="shipment-manager__action shipment-manager__action--danger"
+                      aria-label="Delete"
+                      title="Delete"
+                      onClick={() => {
+                        setDeleteError(null)
+                        setPendingDelete(shipment)
+                      }}
+                    >
+                      <img className="shipment-manager__action-icon" src="/icons/table-delete.svg" alt="" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

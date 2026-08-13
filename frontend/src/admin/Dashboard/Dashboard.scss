@@ -254,6 +254,20 @@
     }
   }
 
+  // Origin/Destination/Updated cells — a small leading icon (location/clock, both
+  // pre-colored SVGs, no mask-image needed) paired with the value.
+  &__icon-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: v.$space-1;
+  }
+
+  &__icon-cell-icon {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+  }
+
   // Navigates to Shipments with this tracking number pre-filled as a search —
   // same &__cell-link treatment as CustomerManager/ShipmentManager/PackageManager.
   &__cell-link {

@@ -196,6 +196,29 @@ describe('PackageManager', () => {
     expect(screen.queryByText('Desk Lamp')).not.toBeInTheDocument()
   })
 
+  it('sorts by tracking number, toggling direction on repeated clicks', async () => {
+    mockFetch({
+      packages: [
+        SEEDED_PACKAGES[0],
+        { id: 'pkg-2', shipment_id: 'ship-1', tracking_number: '0ZFIRST0000002', description: 'Coffee Mug', weight_kg: '0.75', declared_value: '15.00' },
+      ],
+    })
+    const user = userEvent.setup()
+    renderManager()
+    await screen.findByText('Desk Lamp')
+
+    const trackingNumberOf = (rowIndex: number) =>
+      screen.getAllByRole('button', { name: /^\dZ/ })[rowIndex].textContent
+
+    // Ascending by default: "0ZFIRST..." before "1ZTRACK...", no click needed yet.
+    expect(trackingNumberOf(0)).toBe('0ZFIRST0000002')
+    expect(trackingNumberOf(1)).toBe('1ZTRACK0000001')
+
+    await user.click(screen.getByRole('button', { name: /tracking number/i }))
+    expect(trackingNumberOf(0)).toBe('1ZTRACK0000001')
+    expect(trackingNumberOf(1)).toBe('0ZFIRST0000002')
+  })
+
   it('clicking the tracking number navigates to Shipments with it pre-filled as a search', async () => {
     mockFetch({})
     const user = userEvent.setup()

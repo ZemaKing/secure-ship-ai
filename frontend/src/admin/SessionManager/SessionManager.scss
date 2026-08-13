@@ -89,6 +89,41 @@
     }
   }
 
+  &__sort {
+    display: inline-flex;
+    align-items: center;
+    gap: v.$space-1;
+    border: none;
+    background: none;
+    padding: 0;
+    color: inherit;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover {
+      color: v.$color-primary;
+    }
+  }
+
+  // Recolored via mask-image (same technique as &__action-icon elsewhere) so the
+  // icon follows the button's own `color` — and its hover color — instead of
+  // staying the SVG's fixed gray. The icon URL varies at runtime (asc/desc/
+  // unsorted), so it's set inline via style rather than a fixed CSS background-image.
+  &__sort-icon {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    flex-shrink: 0;
+    background-color: currentColor;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
+  }
+
   &__visitor {
     display: flex;
     align-items: center;

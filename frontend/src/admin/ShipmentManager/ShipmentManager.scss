@@ -111,6 +111,21 @@
     }
   }
 
+  // Origin/Destination/Est. Delivery/Updated cells — a small leading icon (location/
+  // calendar/clock, all pre-colored SVGs, no mask-image needed) paired with the value.
+  &__icon-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: v.$space-1;
+    white-space: nowrap;
+  }
+
+  &__icon-cell-icon {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+  }
+
   // A row value that navigates elsewhere (e.g. this shipment's customer or
   // packages) — styled like a link so it reads as clickable, not plain text.
   &__cell-link {

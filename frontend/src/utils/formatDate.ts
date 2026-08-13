@@ -15,11 +15,20 @@ export function formatDate(isoDate: string) {
 // implied), older ones only need a date (the exact time no longer matters) —
 // showing both, like formatDateTime, is redundant clutter in a table this dense.
 export function formatUpdated(iso: string) {
-  const date = new Date(iso)
-  const isToday = date.toDateString() === new Date().toDateString()
-  return isToday
-    ? date.toLocaleTimeString([], { timeStyle: 'short' })
-    : date.toLocaleDateString([], { dateStyle: 'medium' })
+  return isUpdatedToday(iso)
+    ? new Date(iso).toLocaleTimeString([], { timeStyle: 'short' })
+    : new Date(iso).toLocaleDateString([], { dateStyle: 'medium' })
+}
+
+function isUpdatedToday(iso: string): boolean {
+  return new Date(iso).toDateString() === new Date().toDateString()
+}
+
+// Dashboard's and ShipmentManager's "Updated" columns pair formatUpdated()'s value
+// with a matching icon — clock for the time-only (today) case, calendar for the
+// date-only (older) one, so the icon never contradicts what's actually shown.
+export function formatUpdatedIcon(iso: string): string {
+  return isUpdatedToday(iso) ? '/icons/clock.svg' : '/icons/calendar.svg'
 }
 
 // SessionManager's "Started At" column pairs the exact date/time (via

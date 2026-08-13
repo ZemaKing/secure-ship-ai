@@ -9,6 +9,9 @@ import './SessionManager.scss'
 
 const PAGE_SIZE = 15
 
+type SortDirection = 'asc' | 'desc'
+type SortKey = 'visitor' | 'state' | 'started_at'
+
 // Real ChatSessionState values (models/chat_session.py) — deliberately not remapped to
 // a ticket-support vocabulary ("Resolved"/"Closed"/"Abandoned") the admin-pages mockup
 // used, since none of that exists in this app's schema (no ended_at is ever set, no
@@ -44,6 +47,34 @@ function matchesSearch(session: ChatSessionOut, query: string): boolean {
   return haystack.includes(query.toLowerCase())
 }
 
+function sortValue(session: ChatSessionOut, key: Exclude<SortKey, 'visitor'>): string | number {
+  switch (key) {
+    case 'state':
+      return STATE_LABELS[session.state] ?? session.state
+    case 'started_at':
+      return new Date(session.started_at).getTime()
+  }
+}
+
+function compareSessions(a: ChatSessionOut, b: ChatSessionOut, key: SortKey, direction: SortDirection): number {
+  if (key === 'visitor') {
+    // Unverified (no name) always sorts after every named visitor, regardless of
+    // direction — flipping the comparison for a name-vs-no-name pair would otherwise
+    // put unverified visitors first under a "desc" sort, which reads as backwards.
+    if (!a.visitor_name && !b.visitor_name) return 0
+    if (!a.visitor_name) return 1
+    if (!b.visitor_name) return -1
+    const comparison = a.visitor_name.toLowerCase().localeCompare(b.visitor_name.toLowerCase())
+    return direction === 'asc' ? comparison : -comparison
+  }
+
+  const left = sortValue(a, key)
+  const right = sortValue(b, key)
+  const comparison =
+    typeof left === 'number' && typeof right === 'number' ? left - right : String(left).localeCompare(String(right))
+  return direction === 'asc' ? comparison : -comparison
+}
+
 function SessionManager() {
   const accessToken = useAdminAccessToken()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -74,6 +105,10 @@ function SessionManager() {
     setPage(1)
   }
   const [page, setPage] = useState(1)
+  // Matches the backend's own default ordering (list_sessions() sorts by
+  // started_at desc) so the unsorted view isn't a surprise once sorting exists.
+  const [sortKey, setSortKey] = useState<SortKey>('started_at')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [viewingSession, setViewingSession] = useState<ChatSessionOut | null>(null)
 
   const { data, isLoading } = useListChatSessions({
@@ -85,9 +120,35 @@ function SessionManager() {
   const filtered = sessions
     .filter((session) => (search.trim() ? matchesSearch(session, search.trim()) : true))
     .filter((session) => (stateFilter === 'all' ? true : session.state === stateFilter))
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const sorted = [...filtered].sort((a, b) => compareSessions(a, b, sortKey, sortDirection))
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE))
   const currentPage = Math.min(page, totalPages)
-  const pageItems = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+  const pageItems = sorted.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+
+  function handleSort(key: SortKey) {
+    if (key === sortKey) {
+      setSortDirection((current) => (current === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKey(key)
+      setSortDirection('asc')
+    }
+  }
+
+  function sortableHeader(key: SortKey, label: string) {
+    const isActive = sortKey === key
+    const iconSrc = `/icons/sort-${isActive ? sortDirection : 'unsorted'}.svg`
+    return (
+      <th key={key}>
+        <button type="button" className="session-manager__sort" onClick={() => handleSort(key)}>
+          {label}
+          <span
+            className="session-manager__sort-icon"
+            style={{ maskImage: `url(${iconSrc})`, WebkitMaskImage: `url(${iconSrc})` }}
+          />
+        </button>
+      </th>
+    )
+  }
 
   return (
     <div className="session-manager">
@@ -129,9 +190,9 @@ function SessionManager() {
         <table className="session-manager__table">
           <thead>
             <tr>
-              <th>Visitor / Customer</th>
-              <th>State</th>
-              <th>Started At</th>
+              {sortableHeader('visitor', 'Visitor / Customer')}
+              {sortableHeader('state', 'State')}
+              {sortableHeader('started_at', 'Started At')}
               <th>Transcript</th>
             </tr>
           </thead>
@@ -204,9 +265,9 @@ function SessionManager() {
 
       <Pagination
         page={currentPage}
-        totalItems={filtered.length}
+        totalItems={sorted.length}
         pageSize={PAGE_SIZE}
-        itemLabel={`session${filtered.length === 1 ? '' : 's'}`}
+        itemLabel={`session${sorted.length === 1 ? '' : 's'}`}
         onPageChange={setPage}
       />
 

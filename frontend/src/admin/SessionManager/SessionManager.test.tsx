@@ -134,6 +134,41 @@ describe('SessionManager', () => {
     expect(screen.queryByText('Marko Stanković')).not.toBeInTheDocument()
   })
 
+  it('sorts by Visitor/Customer, ascending, with unverified visitors always last', async () => {
+    mockFetch()
+    const user = userEvent.setup()
+    renderManager()
+    await screen.findByText('Nova Star')
+
+    const namesInOrder = () =>
+      Array.from(screen.getByRole('table').querySelectorAll('.session-manager__visitor-name')).map(
+        (el) => el.textContent,
+      )
+
+    await user.click(screen.getByRole('button', { name: /visitor \/ customer/i }))
+
+    expect(namesInOrder()).toEqual(['Marko Stanković', 'Nova Star', 'Unverified Visitor'])
+  })
+
+  it('sorts by Started At, defaulting to newest first, and toggles on repeated clicks', async () => {
+    mockFetch()
+    const user = userEvent.setup()
+    renderManager()
+    await screen.findByText('Nova Star')
+
+    const namesInOrder = () =>
+      Array.from(screen.getByRole('table').querySelectorAll('.session-manager__visitor-name')).map(
+        (el) => el.textContent,
+      )
+
+    // session-1 (10:00) is the newest, session-3 (Apr 30) the oldest — matches the
+    // default sortKey='started_at'/direction='desc' state, no click needed yet.
+    expect(namesInOrder()).toEqual(['Nova Star', 'Unverified Visitor', 'Marko Stanković'])
+
+    await user.click(screen.getByRole('button', { name: /started at/i }))
+    expect(namesInOrder()).toEqual(['Marko Stanković', 'Unverified Visitor', 'Nova Star'])
+  })
+
   it('opens the transcript modal with the real messages on View', async () => {
     mockFetch()
     const user = userEvent.setup()

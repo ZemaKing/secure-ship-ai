@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useListShipments, ShipmentStatus, type ShipmentOut } from '../../api/generated/secure-ship'
 import { useAdminAccessToken, authHeaders } from '../useAdminAccessToken'
-import { formatUpdated } from '../../utils/formatDate'
+import { formatUpdated, formatUpdatedIcon } from '../../utils/formatDate'
 import './Dashboard.scss'
 
 const STATUS_LABELS: Record<ShipmentStatus, string> = {
@@ -146,9 +146,28 @@ function Dashboard() {
                           {STATUS_LABELS[shipment.status]}
                         </span>
                       </td>
-                      <td>{shipment.origin}</td>
-                      <td>{shipment.destination}</td>
-                      <td>{formatUpdated(shipment.last_update)}</td>
+                      <td>
+                        <span className="dashboard__icon-cell">
+                          <img className="dashboard__icon-cell-icon" src="/icons/location.svg" alt="" />
+                          {shipment.origin}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="dashboard__icon-cell">
+                          <img className="dashboard__icon-cell-icon" src="/icons/location.svg" alt="" />
+                          {shipment.destination}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="dashboard__icon-cell">
+                          <img
+                            className="dashboard__icon-cell-icon"
+                            src={formatUpdatedIcon(shipment.last_update)}
+                            alt=""
+                          />
+                          {formatUpdated(shipment.last_update)}
+                        </span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
