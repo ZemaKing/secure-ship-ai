@@ -16,7 +16,7 @@
     position: relative;
     width: 100%;
     max-width: 420px;
-    padding: v.$space-6;
+    padding: 20px;
     text-align: center;
     box-shadow: 0 20px 40px rgba(17, 24, 39, 0.2);
   }
@@ -55,7 +55,7 @@
 
   &__subtitle {
     margin: 0 0 v.$space-5;
-    font-size: v.$font-size-sm;
+    font-size: v.$font-size-xs;
     color: v.$color-text-muted;
   }
 
@@ -72,7 +72,7 @@
     border: 1px solid v.$color-border;
     border-radius: v.$radius-sm;
     text-align: center;
-    font-size: v.$font-size-lg;
+    font-size: v.$font-size-xs;
     color: v.$color-text;
     font-family: inherit;
 
@@ -106,7 +106,7 @@
     flex: 1;
     padding: v.$space-3;
     border-radius: v.$radius-sm;
-    font-size: v.$font-size-sm;
+    font-size: v.$font-size-xs;
     font-weight: 600;
   }
 

@@ -17,7 +17,7 @@
 
   &__subtitle {
     margin: v.$space-1 0 0;
-    font-size: v.$font-size-sm;
+    font-size: v.$font-size-xs;
     color: v.$color-text-muted;
   }
 
@@ -26,7 +26,7 @@
     flex-shrink: 0;
     padding: v.$space-2 v.$space-4;
     border-radius: v.$radius-sm;
-    font-size: v.$font-size-sm;
+    font-size: v.$font-size-xs;
     font-weight: 600;
   }
 

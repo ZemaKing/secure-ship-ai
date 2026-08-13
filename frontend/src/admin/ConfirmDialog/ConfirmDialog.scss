@@ -15,7 +15,7 @@
     @include m.card-surface;
     width: 100%;
     max-width: 380px;
-    padding: v.$space-5;
+    padding: 20px;
     box-shadow: 0 20px 40px rgba(17, 24, 39, 0.2);
   }
 
@@ -43,7 +43,7 @@
     border: 1px solid v.$color-border;
     background: v.$color-bg;
     color: v.$color-text;
-    font-size: v.$font-size-sm;
+    font-size: v.$font-size-xs;
     font-weight: 600;
     cursor: pointer;
 
@@ -63,7 +63,7 @@
     border: none;
     background: v.$color-status-exception;
     color: v.$color-bg;
-    font-size: v.$font-size-sm;
+    font-size: v.$font-size-xs;
     font-weight: 600;
     cursor: pointer;
 

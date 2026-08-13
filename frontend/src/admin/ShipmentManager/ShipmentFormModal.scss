@@ -19,7 +19,7 @@
     max-width: 420px;
     max-height: 90vh;
     overflow-y: auto;
-    padding: v.$space-6;
+    padding: 20px;
     box-shadow: 0 20px 40px rgba(17, 24, 39, 0.2);
   }
 
@@ -47,14 +47,14 @@
 
   &__subtitle {
     margin: v.$space-1 0 v.$space-5;
-    font-size: v.$font-size-sm;
+    font-size: v.$font-size-xs;
     color: v.$color-text-muted;
   }
 
   &__label {
     display: block;
     margin-bottom: v.$space-1;
-    font-size: v.$font-size-sm;
+    font-size: v.$font-size-xs;
     font-weight: 600;
     color: v.$color-text;
   }
@@ -67,7 +67,7 @@
     border: 1px solid v.$color-border;
     border-radius: v.$radius-sm;
     font: inherit;
-    font-size: v.$font-size-sm;
+    font-size: v.$font-size-xs;
     color: v.$color-text;
     background: v.$color-bg;
 
@@ -96,7 +96,7 @@
     border: 1px solid v.$color-border;
     background: v.$color-bg;
     color: v.$color-text;
-    font-size: v.$font-size-sm;
+    font-size: v.$font-size-xs;
     font-weight: 600;
     cursor: pointer;
 
@@ -114,7 +114,7 @@
     @include m.light-primary-button;
     padding: v.$space-2 v.$space-4;
     border-radius: v.$radius-sm;
-    font-size: v.$font-size-sm;
+    font-size: v.$font-size-xs;
     font-weight: 600;
 
     &:disabled {
