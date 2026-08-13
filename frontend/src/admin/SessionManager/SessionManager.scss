@@ -1,0 +1,260 @@
+@use '../../styles/variables' as v;
+
+.session-manager {
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: v.$space-4;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: v.$font-size-xl;
+    color: v.$color-text;
+  }
+
+  &__subtitle {
+    margin: v.$space-1 0 0;
+    font-size: v.$font-size-sm;
+    color: v.$color-text-muted;
+  }
+
+  &__filters {
+    display: flex;
+    align-items: center;
+    gap: v.$space-3;
+    margin-bottom: v.$space-4;
+  }
+
+  &__search {
+    width: 100%;
+    max-width: 420px;
+    box-sizing: border-box;
+    padding: v.$space-2 v.$space-3;
+    border: 1px solid v.$color-border;
+    border-radius: v.$radius-sm;
+    font: inherit;
+    font-size: v.$font-size-sm;
+
+    &:focus {
+      outline: none;
+      border-color: v.$color-primary;
+    }
+  }
+
+  &__state-filter {
+    flex-shrink: 0;
+    box-sizing: border-box;
+    padding: v.$space-2 v.$space-3;
+    border: 1px solid v.$color-border;
+    border-radius: v.$radius-sm;
+    background: v.$color-bg;
+    font: inherit;
+    font-size: v.$font-size-sm;
+    color: v.$color-text;
+    cursor: pointer;
+
+    &:focus {
+      outline: none;
+      border-color: v.$color-primary;
+    }
+  }
+
+  &__status {
+    color: v.$color-text-muted;
+    font-size: v.$font-size-sm;
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+
+    th,
+    td {
+      text-align: left;
+      padding: calc(#{v.$space-3} - 5px) v.$space-3;
+      font-size: v.$font-size-xs;
+      line-height: v.$font-size-xs;
+      border-bottom: 1px solid v.$color-border;
+    }
+
+    th {
+      color: v.$color-text-muted;
+      font-weight: 600;
+    }
+
+    td {
+      color: v.$color-text;
+    }
+  }
+
+  &__visitor {
+    display: flex;
+    align-items: center;
+    gap: v.$space-3;
+  }
+
+  &__visitor-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__visitor-name {
+    font-weight: 600;
+  }
+
+  &__visitor-phone {
+    font-size: v.$font-size-xxs;
+    color: v.$color-text-muted;
+  }
+
+  // Rounded-square avatar — initials for a known visitor (color cycles per row via
+  // --0..--4), the visitor.svg icon in neutral gray for a fully anonymous one.
+  &__avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: v.$radius-md;
+    font-size: v.$font-size-xs;
+    font-weight: 700;
+
+    &--0 {
+      color: v.$color-primary;
+      background: v.$color-primary-light;
+    }
+
+    &--1 {
+      color: v.$color-status-delivered;
+      background: v.$color-status-delivered-bg;
+    }
+
+    &--2 {
+      color: #7c3aed;
+      background: #ede9fe;
+    }
+
+    &--3 {
+      color: #db2777;
+      background: #fce7f3;
+    }
+
+    &--4 {
+      color: v.$color-status-out-for-delivery;
+      background: v.$color-status-out-for-delivery-bg;
+    }
+
+    &--unverified {
+      background: v.$color-bg-muted;
+    }
+  }
+
+  &__avatar-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  &__started-at {
+    display: flex;
+    flex-direction: column;
+    gap: v.$space-1;
+    padding: v.$space-1 0;
+  }
+
+  &__started-at-row {
+    display: flex;
+    align-items: center;
+    gap: v.$space-4;
+  }
+
+  &__started-at-item {
+    display: inline-flex;
+    align-items: center;
+    gap: v.$space-1;
+    white-space: nowrap;
+  }
+
+  &__started-at-icon {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+  }
+
+  &__started-at-ago {
+    font-size: v.$font-size-xxs;
+    color: v.$color-text-muted;
+  }
+
+  // Real ChatSessionState values, styled as pills — see the STATE_LABELS comment in
+  // SessionManager.tsx for why these are honest labels, not the mockup's fictional
+  // ticket-status vocabulary.
+  &__state-pill {
+    display: inline-block;
+    padding: v.$space-1 v.$space-3;
+    border-radius: v.$radius-pill;
+    font-size: v.$font-size-xxs;
+    font-weight: 600;
+
+    &--anonymous {
+      color: v.$color-status-label-created;
+      background: v.$color-status-label-created-bg;
+    }
+
+    &--collecting_identity,
+    &--code_sent,
+    &--awaiting_code {
+      color: v.$color-status-out-for-delivery;
+      background: v.$color-status-out-for-delivery-bg;
+    }
+
+    &--verified {
+      color: v.$color-status-delivered;
+      background: v.$color-status-delivered-bg;
+    }
+
+    &--escalated_to_human {
+      color: v.$color-status-in-transit;
+      background: v.$color-status-in-transit-bg;
+    }
+  }
+
+  &__transcript-cell {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: v.$space-3;
+  }
+
+  &__message-count {
+    color: v.$color-text-muted;
+    white-space: nowrap;
+  }
+
+  &__view-button {
+    display: inline-flex;
+    align-items: center;
+    gap: v.$space-1;
+    flex-shrink: 0;
+    padding: v.$space-1 v.$space-3;
+    border-radius: v.$radius-sm;
+    border: 1px solid v.$color-primary-border;
+    background: v.$color-primary-light;
+    color: v.$color-primary;
+    font-size: v.$font-size-xxs;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover {
+      background: v.$color-primary-border;
+    }
+  }
+
+  &__view-icon {
+    width: 14px;
+    height: 14px;
+  }
+}

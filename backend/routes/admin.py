@@ -8,6 +8,9 @@ from auth.dependencies import get_current_admin
 from db.session import get_db
 from schemas.admin import (
     AdminMeResponse,
+    ChatSessionDetailOut,
+    ChatSessionOut,
+    ChatTranscriptEntry,
     CustomerCreate,
     CustomerOut,
     CustomerUpdate,
@@ -19,7 +22,7 @@ from schemas.admin import (
     ShipmentOut,
     ShipmentUpdate,
 )
-from services import admin_customers, admin_packages, admin_shipments
+from services import admin_customers, admin_packages, admin_sessions, admin_shipments
 
 # Epic E3 — a single router-level dependency is the one auditable enforcement point
 # for every /admin/* route, mirroring the Epic F3 philosophy already used for
@@ -196,3 +199,43 @@ def update_package(package_id: uuid.UUID, data: PackageUpdate, db: Session = Dep
 def delete_package(package_id: uuid.UUID, db: Session = Depends(get_db)) -> None:
     package = _get_package_or_404(db, package_id)
     admin_packages.delete_package(db, package)
+
+
+# Week 5 stretch — the admin chat session viewer. Deliberately read-only: no create/
+# update/delete routes exist here at all, unlike every entity above. This is the one
+# place in the whole admin surface that legitimately reads ChatSession — for audit/
+# support visibility only, never to write it, so it can't become a path for an admin
+# identity to affect a chat session's own gating state (Epic E4's real invariant,
+# not "admin code may never read a ChatSession row" — see
+# test_admin_chat_separation.py's updated scoping for why the earlier blanket
+# source-inspection assertion needed to change here).
+def _to_session_out(db: Session, session) -> ChatSessionOut:
+    return ChatSessionOut(
+        id=session.id,
+        visitor_name=admin_sessions.resolve_visitor_name(db, session),
+        phone_number=admin_sessions.resolve_phone_number(db, session),
+        state=session.state.value,
+        started_at=session.started_at,
+        message_count=len(session.transcript or []),
+    )
+
+
+def _get_session_or_404(db: Session, session_id: uuid.UUID):
+    session = admin_sessions.get_session(db, session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Chat session not found")
+    return session
+
+
+@router.get("/sessions", operation_id="listChatSessions")
+def list_chat_sessions(db: Session = Depends(get_db)) -> list[ChatSessionOut]:
+    return [_to_session_out(db, session) for session in admin_sessions.list_sessions(db)]
+
+
+@router.get("/sessions/{session_id}", operation_id="getChatSession")
+def get_chat_session(session_id: uuid.UUID, db: Session = Depends(get_db)) -> ChatSessionDetailOut:
+    session = _get_session_or_404(db, session_id)
+    return ChatSessionDetailOut(
+        **_to_session_out(db, session).model_dump(),
+        transcript=[ChatTranscriptEntry(**entry) for entry in (session.transcript or [])],
+    )

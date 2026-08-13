@@ -7,11 +7,18 @@ each targeting a concrete way the two could actually leak into each other:
 2. A present-but-invalid token is rejected too, same routes, no dependency override
    (a real, if locally-forgeable, negative case — see that test's own docstring for
    why a real wrong-audience/expired *signed* token isn't reproduced here).
-3. Source inspection: no admin route/service file ever references ChatSession at
-   all — the code-level analog of lookup_shipments having no identifier parameter.
+3. Source inspection: no *write-capable* admin route/service file (Customer/Shipment/
+   Package CRUD) ever references ChatSession at all — the code-level analog of
+   lookup_shipments having no identifier parameter. `admin_sessions.py` (Week 5's
+   read-only chat session viewer) is deliberately excluded from this check — see its
+   own docstring below for why that's still consistent with Epic E4, not a violation
+   of it: the real invariant was always "no identity crossover," never "admin code
+   may never read a ChatSession row" for audit/support purposes.
 4. The chat/verify routes have no auth dependency whatsoever, so a stray admin
    bearer token attached to either call is provably inert, not just untested.
 5. An admin-driven Customer edit never mutates an unrelated ChatSession row.
+6. The one admin module that does read ChatSession (admin_sessions.py) has no
+   write surface at all — no POST/PATCH/DELETE route exists for /admin/sessions.
 """
 import glob
 import os
@@ -27,7 +34,7 @@ from services import admin_customers
 
 client = TestClient(app)
 
-ADMIN_ROUTES = ["/admin/me", "/admin/customers", "/admin/shipments", "/admin/packages"]
+ADMIN_ROUTES = ["/admin/me", "/admin/customers", "/admin/shipments", "/admin/packages", "/admin/sessions"]
 
 
 def test_admin_routes_require_auth():
@@ -50,21 +57,49 @@ def test_admin_routes_reject_invalid_token():
         assert response.status_code == 401, f"{path} should reject a malformed token"
 
 
-def test_admin_module_never_touches_chat_session():
+def test_write_capable_admin_modules_never_touch_chat_session():
     # The code-level analog of lookup_shipments' "no identifier parameter exists to
     # misuse" proof (Week 3, Chunk D) — here, "no reference to ChatSession exists to
-    # misuse". Reads the actual source files on disk rather than importing and
-    # inspecting objects, so it catches a reference in a comment or an unused import
-    # too, not just live code paths.
+    # misuse", scoped to the admin modules that can actually mutate data (Customer/
+    # Shipment/Package). Reads the actual source files on disk rather than importing
+    # and inspecting objects, so it catches a reference in a comment or an unused
+    # import too, not just live code paths. admin_sessions.py is deliberately excluded
+    # — see test_admin_sessions_is_read_only below for its own, narrower proof.
     backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    admin_files = [os.path.join(backend_dir, "routes", "admin.py")]
-    admin_files += glob.glob(os.path.join(backend_dir, "services", "admin_*.py"))
-    assert len(admin_files) >= 4, "expected routes/admin.py plus admin_customers/shipments/packages.py at least"
+    write_capable_service_files = [
+        path
+        for path in glob.glob(os.path.join(backend_dir, "services", "admin_*.py"))
+        if os.path.basename(path) != "admin_sessions.py"
+    ]
+    assert len(write_capable_service_files) >= 3, "expected admin_customers/shipments/packages.py at least"
 
-    for path in admin_files:
+    for path in write_capable_service_files:
         with open(path, encoding="utf-8") as f:
             contents = f.read()
         assert "ChatSession" not in contents, f"{path} must never reference ChatSession"
+
+
+def test_admin_sessions_is_read_only():
+    # admin_sessions.py (Week 5's chat session viewer) is the one deliberate exception
+    # to the rule above — it exists specifically to read ChatSession rows for admin
+    # audit/support visibility. What actually preserves Epic E4's real invariant (no
+    # identity crossover, not "admin code may never read a ChatSession row") is that
+    # this module has no write surface at all: no create/update/delete function here,
+    # and no POST/PATCH/DELETE route for /admin/sessions in routes/admin.py.
+    backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    with open(os.path.join(backend_dir, "services", "admin_sessions.py"), encoding="utf-8") as f:
+        service_contents = f.read()
+    assert "ChatSession" in service_contents, "admin_sessions.py should be the one module reading ChatSession"
+    for verb in ("db.add(", "db.delete(", "db.commit()"):
+        assert verb not in service_contents, f"admin_sessions.py must never mutate the database ({verb} found)"
+
+    session_response = client.get("/admin/sessions")
+    assert session_response.status_code == 400  # missing auth header — route exists, same as every other /admin/* route
+    with open(os.path.join(backend_dir, "routes", "admin.py"), encoding="utf-8") as f:
+        routes_contents = f.read()
+    sessions_section = routes_contents[routes_contents.index("# Week 5 stretch"):]
+    for method in ("@router.post(\"/sessions", "@router.patch(\"/sessions", "@router.delete(\"/sessions"):
+        assert method not in sessions_section, f"/admin/sessions must stay read-only ({method} found)"
 
 
 def test_chat_routes_ignore_admin_bearer_token(client, monkeypatch):

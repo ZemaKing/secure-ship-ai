@@ -29,6 +29,7 @@ export interface AdminMeResponse {
 }
 
 export interface ChatRequest {
+  /** @minLength 1 */
   message: string;
   session_id?: string | null;
 }
@@ -67,6 +68,38 @@ export interface ChatResponse {
   escalation?: EscalationPayload | null;
   shipments?: ShipmentPayload[] | null;
   verified_customer_name?: string | null;
+}
+
+export interface ChatTranscriptEntry {
+  role: string;
+  content: string;
+  timestamp: string;
+}
+
+export interface ChatSessionDetailOut {
+  id: string;
+  visitor_name?: string | null;
+  phone_number?: string | null;
+  state: string;
+  started_at: string;
+  message_count: number;
+  transcript: ChatTranscriptEntry[];
+}
+
+/**
+ * Week 5 stretch — the admin chat session viewer (read-only). visitor_name/
+ * phone_number are resolved server-side (services/admin_sessions.py) from either a
+ * real Customer row (once Verified) or pending_identity (before that) — never a raw
+ * customer_id exposed for the admin to correlate against Customer records directly,
+ * same denormalization pattern ShipmentOut/PackageOut already use for their parents.
+ */
+export interface ChatSessionOut {
+  id: string;
+  visitor_name?: string | null;
+  phone_number?: string | null;
+  state: string;
+  started_at: string;
+  message_count: number;
 }
 
 export interface CustomerCreate {
@@ -2154,6 +2187,253 @@ export const useDeletePackage = <TError = HTTPValidationError,
       > => {
       return useMutation(getDeletePackageMutationOptions(options), queryClient);
     }
+
+export type listChatSessionsResponse200 = {
+  data: ChatSessionOut[]
+  status: 200
+}
+
+export type listChatSessionsResponseSuccess = (listChatSessionsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type listChatSessionsResponse = (listChatSessionsResponseSuccess)
+
+export const getListChatSessionsUrl = () => {
+
+
+
+
+  return `http://localhost:8000/admin/sessions`
+}
+
+/**
+ * @summary List Chat Sessions
+ */
+export const listChatSessions = async ( options?: RequestInit): Promise<listChatSessionsResponse> => {
+
+  const res = await fetch(getListChatSessionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listChatSessionsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as listChatSessionsResponse
+}
+
+
+
+
+
+export const getListChatSessionsQueryKey = () => {
+    return [
+    `http://localhost:8000/admin/sessions`
+    ] as const;
+    }
+
+
+export const getListChatSessionsQueryOptions = <TData = Awaited<ReturnType<typeof listChatSessions>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listChatSessions>>, TError, TData>>, fetch?: RequestInit}
+) => {
+
+const {query: queryOptions, fetch: fetchOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListChatSessionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listChatSessions>>> = ({ signal }) => listChatSessions({ signal, ...fetchOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listChatSessions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListChatSessionsQueryResult = NonNullable<Awaited<ReturnType<typeof listChatSessions>>>
+export type ListChatSessionsQueryError = unknown
+
+
+export function useListChatSessions<TData = Awaited<ReturnType<typeof listChatSessions>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listChatSessions>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listChatSessions>>,
+          TError,
+          Awaited<ReturnType<typeof listChatSessions>>
+        > , 'initialData'
+      >, fetch?: RequestInit}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListChatSessions<TData = Awaited<ReturnType<typeof listChatSessions>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listChatSessions>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listChatSessions>>,
+          TError,
+          Awaited<ReturnType<typeof listChatSessions>>
+        > , 'initialData'
+      >, fetch?: RequestInit}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListChatSessions<TData = Awaited<ReturnType<typeof listChatSessions>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listChatSessions>>, TError, TData>>, fetch?: RequestInit}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List Chat Sessions
+ */
+
+export function useListChatSessions<TData = Awaited<ReturnType<typeof listChatSessions>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listChatSessions>>, TError, TData>>, fetch?: RequestInit}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListChatSessionsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type getChatSessionResponse200 = {
+  data: ChatSessionDetailOut
+  status: 200
+}
+
+export type getChatSessionResponse422 = {
+  data: HTTPValidationError
+  status: 422
+}
+
+export type getChatSessionResponseSuccess = (getChatSessionResponse200) & {
+  headers: Headers;
+};
+export type getChatSessionResponseError = (getChatSessionResponse422) & {
+  headers: Headers;
+};
+
+export type getChatSessionResponse = (getChatSessionResponseSuccess | getChatSessionResponseError)
+
+export const getGetChatSessionUrl = (sessionId: string,) => {
+
+
+
+
+  return `http://localhost:8000/admin/sessions/${sessionId}`
+}
+
+/**
+ * @summary Get Chat Session
+ */
+export const getChatSession = async (sessionId: string, options?: RequestInit): Promise<getChatSessionResponse> => {
+
+  const res = await fetch(getGetChatSessionUrl(sessionId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getChatSessionResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getChatSessionResponse
+}
+
+
+
+
+
+export const getGetChatSessionQueryKey = (sessionId: string,) => {
+    return [
+    `http://localhost:8000/admin/sessions/${sessionId}`
+    ] as const;
+    }
+
+
+export const getGetChatSessionQueryOptions = <TData = Awaited<ReturnType<typeof getChatSession>>, TError = HTTPValidationError>(sessionId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChatSession>>, TError, TData>>, fetch?: RequestInit}
+) => {
+
+const {query: queryOptions, fetch: fetchOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetChatSessionQueryKey(sessionId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getChatSession>>> = ({ signal }) => getChatSession(sessionId, { signal, ...fetchOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: sessionId !== null && sessionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getChatSession>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetChatSessionQueryResult = NonNullable<Awaited<ReturnType<typeof getChatSession>>>
+export type GetChatSessionQueryError = HTTPValidationError
+
+
+export function useGetChatSession<TData = Awaited<ReturnType<typeof getChatSession>>, TError = HTTPValidationError>(
+ sessionId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChatSession>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getChatSession>>,
+          TError,
+          Awaited<ReturnType<typeof getChatSession>>
+        > , 'initialData'
+      >, fetch?: RequestInit}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetChatSession<TData = Awaited<ReturnType<typeof getChatSession>>, TError = HTTPValidationError>(
+ sessionId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChatSession>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getChatSession>>,
+          TError,
+          Awaited<ReturnType<typeof getChatSession>>
+        > , 'initialData'
+      >, fetch?: RequestInit}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetChatSession<TData = Awaited<ReturnType<typeof getChatSession>>, TError = HTTPValidationError>(
+ sessionId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChatSession>>, TError, TData>>, fetch?: RequestInit}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get Chat Session
+ */
+
+export function useGetChatSession<TData = Awaited<ReturnType<typeof getChatSession>>, TError = HTTPValidationError>(
+ sessionId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChatSession>>, TError, TData>>, fetch?: RequestInit}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetChatSessionQueryOptions(sessionId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export type healthHealthGetResponse200 = {
   data: HealthHealthGet200

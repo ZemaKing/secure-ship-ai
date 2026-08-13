@@ -8,6 +8,7 @@ import Dashboard from './admin/Dashboard/Dashboard'
 import CustomerManager from './admin/CustomerManager/CustomerManager'
 import ShipmentManager from './admin/ShipmentManager/ShipmentManager'
 import PackageManager from './admin/PackageManager/PackageManager'
+import SessionManager from './admin/SessionManager/SessionManager'
 import './App.scss'
 
 function ChatLayout() {
@@ -38,6 +39,7 @@ function App() {
         <Route path="customers" element={<CustomerManager />} />
         <Route path="shipments" element={<ShipmentManager />} />
         <Route path="packages" element={<PackageManager />} />
+        <Route path="sessions" element={<SessionManager />} />
       </Route>
     </Routes>
   )

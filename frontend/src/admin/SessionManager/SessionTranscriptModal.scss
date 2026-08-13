@@ -1,0 +1,119 @@
+@use '../../styles/variables' as v;
+@use '../../styles/mixins' as m;
+
+.session-transcript-modal {
+  &__overlay {
+    position: fixed;
+    inset: 0;
+    @include m.flex-center;
+    z-index: v.$z-modal;
+    padding: v.$space-4;
+    background: rgba(17, 24, 39, 0.5);
+  }
+
+  &__dialog {
+    @include m.card-surface;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 560px;
+    max-height: 80vh;
+    padding: v.$space-5;
+    box-shadow: 0 20px 40px rgba(17, 24, 39, 0.2);
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: v.$space-4;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: v.$font-size-lg;
+    color: v.$color-text;
+  }
+
+  &__close {
+    @include m.button-reset;
+    font-size: v.$font-size-lg;
+    line-height: 1;
+    color: v.$color-text-muted;
+    cursor: pointer;
+
+    &:hover {
+      color: v.$color-text;
+    }
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: v.$space-3;
+    overflow-y: auto;
+  }
+
+  &__status {
+    margin: 0;
+    color: v.$color-text-muted;
+    font-size: v.$font-size-sm;
+  }
+
+  &__entry {
+    padding: v.$space-3;
+    border-radius: v.$radius-md;
+    border: 1px solid v.$color-border;
+    background: v.$color-bg-muted;
+
+    &--user {
+      border-color: v.$color-primary-border;
+      background: v.$color-primary-background;
+    }
+
+    &--rejected {
+      border-color: v.$color-status-exception;
+      background: v.$color-status-exception-bg;
+    }
+  }
+
+  &__entry-header {
+    display: flex;
+    align-items: center;
+    gap: v.$space-2;
+    margin-bottom: v.$space-1;
+
+    // Time stamp stays right-aligned even with the badge inserted between it and
+    // the role label.
+    .session-transcript-modal__entry-time {
+      margin-left: auto;
+    }
+  }
+
+  &__entry-role {
+    font-size: v.$font-size-xs;
+    font-weight: 700;
+    color: v.$color-text;
+  }
+
+  &__entry-badge {
+    padding: 2px v.$space-2;
+    border-radius: v.$radius-pill;
+    background: v.$color-status-exception;
+    color: v.$color-bg;
+    font-size: v.$font-size-xxs;
+    font-weight: 600;
+  }
+
+  &__entry-time {
+    font-size: v.$font-size-xxs;
+    color: v.$color-text-subtle;
+  }
+
+  &__entry-content {
+    margin: 0;
+    font-size: v.$font-size-sm;
+    color: v.$color-text;
+    white-space: pre-wrap;
+  }
+}

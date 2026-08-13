@@ -14,6 +14,7 @@ const NAV_ITEMS: AdminNavItem[] = [
   { label: 'Customers', path: '/admin/customers', icon: '/icons/admin-customers.svg', enabled: true },
   { label: 'Shipments', path: '/admin/shipments', icon: '/icons/admin-shipments.svg', enabled: true },
   { label: 'Packages', path: '/admin/packages', icon: '/icons/admin-packages.svg', enabled: true },
+  { label: 'Chat Sessions', path: '/admin/sessions', icon: '/icons/admin-chat-sessions.svg', enabled: true },
 ]
 
 function AdminLayout() {

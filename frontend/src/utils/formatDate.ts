@@ -21,3 +21,29 @@ export function formatUpdated(iso: string) {
     ? date.toLocaleTimeString([], { timeStyle: 'short' })
     : date.toLocaleDateString([], { dateStyle: 'medium' })
 }
+
+// SessionManager's "Started At" column pairs the exact date/time (via
+// formatDate/formatTime below) with this relative caption, matching
+// admin-pages.png's "2 hours ago" / "Yesterday" treatment. Only covers the ranges
+// the mockup actually shows — same-day minutes/hours, yesterday, or a plain day
+// count beyond that — not a full calendar-aware library.
+export function formatTimeAgo(iso: string) {
+  const date = new Date(iso)
+  const diffMs = Date.now() - date.getTime()
+  const diffMinutes = Math.floor(diffMs / 60_000)
+  const diffHours = Math.floor(diffMinutes / 60)
+  const diffDays = Math.floor(diffHours / 24)
+
+  if (diffMinutes < 1) return 'Just now'
+  if (diffMinutes < 60) return `${diffMinutes} minute${diffMinutes === 1 ? '' : 's'} ago`
+  if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`
+  if (diffDays === 1) return 'Yesterday'
+  if (diffDays < 7) return `${diffDays} days ago`
+  return formatDate(iso)
+}
+
+// The time-only half of the Started At column's split date/time display —
+// formatDate already covers the date half.
+export function formatTime(iso: string) {
+  return new Date(iso).toLocaleTimeString([], { timeStyle: 'short' })
+}
