@@ -117,6 +117,91 @@
     flex: 1;
   }
 
+  // Same position in the sidebar as the chat page's own AdminAccessCard
+  // (Sidebar.scss's &__admin-card) — directly after the spacer, pinned to the
+  // bottom. Mirrors admin-pages.png's "Admin Access" card design: shield-check
+  // icon, a green "logged in" status pill, a description line, then Logout as a
+  // plain bordered button — deliberately not styled as a destructive/red action,
+  // since logging out isn't a data-loss risk the way delete actions are.
+  &__access-card {
+    @include m.card-surface;
+    padding: v.$space-4;
+  }
+
+  // Reused verbatim from Sidebar.scss's &__admin-card (same padding/sizes) —
+  // deliberately not a bigger, redesigned card, just this component's own content.
+  &__admin-card {
+    @include m.card-surface;
+    padding: v.$space-3;
+  }
+
+  &__admin-card-title {
+    display: flex;
+    align-items: center;
+    gap: v.$space-1;
+    margin: 0 0 v.$space-2;
+    font-size: v.$font-size-sm;
+    font-weight: 600;
+    color: v.$color-text;
+  }
+
+  &__admin-card-icon {
+    @include m.icon(16px);
+  }
+
+  &__admin-card-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: v.$space-1;
+    margin-bottom: v.$space-2;
+    padding: 2px v.$space-2;
+    border-radius: v.$radius-pill;
+    background: v.$color-status-delivered-bg;
+    color: v.$color-status-delivered;
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  &__admin-card-pill-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: v.$radius-pill;
+    background: v.$color-status-delivered;
+    flex-shrink: 0;
+  }
+
+  &__admin-card-text {
+    margin: 0 0 v.$space-2;
+    font-size: 11px;
+    color: v.$color-text-muted;
+  }
+
+  // Same visual treatment as Sidebar.scss's &__admin-card-button (primary-light/
+  // primary, never a red/destructive style — logging out isn't a data-loss risk).
+  &__admin-card-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: v.$space-2;
+    width: 100%;
+    padding: v.$space-2 v.$space-3;
+    border: none;
+    border-radius: v.$radius-sm;
+    background: v.$color-primary-light;
+    color: v.$color-primary;
+    font-size: v.$font-size-xs;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover {
+      background: v.$color-primary-border;
+    }
+  }
+
+  &__admin-card-button-icon {
+    @include m.icon(16px);
+  }
+
   &__main {
     flex: 1;
     display: flex;
@@ -126,42 +211,11 @@
     background: v.$color-bg-muted;
   }
 
-  &__header {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: v.$space-3;
-    padding: v.$space-4 v.$space-6;
-  }
-
-  &__logout {
-    display: flex;
-    align-items: center;
-    gap: v.$space-2;
-    padding: v.$space-2 v.$space-4;
-    border-radius: v.$radius-pill;
-    border: 1px solid v.$color-border;
-    background: v.$color-bg;
-    color: v.$color-text;
-    font-size: v.$font-size-sm;
-    font-weight: 600;
-    cursor: pointer;
-    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
-
-    &:hover {
-      border-color: v.$color-status-exception;
-      color: v.$color-status-exception;
-      background: v.$color-status-exception-bg;
-    }
-  }
-
-  &__logout-icon {
-    @include m.icon(16px);
-  }
-
   &__content {
     flex: 1;
-    margin: 0 15px 15px 0;
+    // Top margin now does what &__header's own padding used to (the header was
+    // removed — Logout moved into the sidebar's &__access-card instead).
+    margin: 15px 15px 15px 0;
     padding: v.$space-5;
     background: v.$color-bg;
     border: 1px solid v.$color-border;

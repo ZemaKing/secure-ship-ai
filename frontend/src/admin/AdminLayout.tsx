@@ -55,18 +55,35 @@ function AdminLayout() {
         </nav>
 
         <div className="admin-layout__spacer" />
+
+        {/* Same compact card shape as the chat page's own AdminAccessCard
+            (Sidebar.scss's &__admin-card) — reused here rather than redesigned,
+            just with Admin Access's own content: a "logged in" status pill and
+            a Logout action instead of a link into the panel. */}
+        <div className="admin-layout__admin-card">
+          <p className="admin-layout__admin-card-title">
+            <img className="admin-layout__admin-card-icon" src="/icons/verified-shield.svg" alt="" />
+            Admin Access
+          </p>
+          <span className="admin-layout__admin-card-pill">
+            <span className="admin-layout__admin-card-pill-dot" />
+            Logged in as Administrator
+          </span>
+          <p className="admin-layout__admin-card-text">
+            You have full access to view and manage all shipment data.
+          </p>
+          <button
+            type="button"
+            className="admin-layout__admin-card-button"
+            onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
+          >
+            <img className="admin-layout__admin-card-button-icon" src="/icons/logout.svg" alt="" />
+            Logout
+          </button>
+        </div>
       </aside>
 
       <div className="admin-layout__main">
-        <header className="admin-layout__header">
-          <button
-            className="admin-layout__logout"
-            onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
-          >
-            <img className="admin-layout__logout-icon" src="/icons/logout.svg" alt="" />
-            Logout
-          </button>
-        </header>
         <div className="admin-layout__content">
           <Outlet />
         </div>
