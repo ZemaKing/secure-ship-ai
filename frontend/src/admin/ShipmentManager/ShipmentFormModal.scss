@@ -111,18 +111,11 @@
   }
 
   &__save {
+    @include m.light-primary-button;
     padding: v.$space-2 v.$space-4;
     border-radius: v.$radius-sm;
-    border: none;
-    background: v.$color-primary;
-    color: v.$color-bg;
     font-size: v.$font-size-sm;
     font-weight: 600;
-    cursor: pointer;
-
-    &:hover {
-      opacity: 0.9;
-    }
 
     &:disabled {
       opacity: 0.6;

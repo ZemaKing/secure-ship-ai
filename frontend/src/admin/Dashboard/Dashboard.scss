@@ -211,18 +211,12 @@
   }
 
   &__view-all {
+    @include m.light-primary-button;
     padding: v.$space-1 v.$space-3;
     border-radius: v.$radius-sm;
-    border: 1px solid v.$color-primary-border;
-    background: v.$color-primary-light;
-    color: v.$color-primary;
     font-size: v.$font-size-xs;
     font-weight: 600;
     text-decoration: none;
-
-    &:hover {
-      opacity: 0.9;
-    }
   }
 
   // Same border/radius treatment as every other admin table's &__table-wrapper —

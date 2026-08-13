@@ -34,3 +34,27 @@
   height: $size;
   object-fit: contain;
 }
+
+// The app's shared "light primary" button design — neutral/hover/pressed states
+// per the design spec (View, +Add, Save, Administrator Panel, Logout, View all).
+// Only sets color/border/background/cursor/transition — callers still set their
+// own padding/font-size/display, since those vary per button.
+@mixin light-primary-button {
+  border: 1px solid v.$color-btn-light-border;
+  background: v.$color-btn-light-bg;
+  color: v.$color-btn-light-text;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+
+  &:hover {
+    background: v.$color-btn-light-bg-hover;
+    border-color: v.$color-btn-light-border-hover;
+    color: v.$color-btn-light-text-hover;
+  }
+
+  &:active {
+    background: v.$color-btn-light-bg-pressed;
+    border-color: v.$color-btn-light-border-pressed;
+    color: v.$color-btn-light-text-pressed;
+  }
+}

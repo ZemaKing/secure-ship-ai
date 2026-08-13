@@ -1,4 +1,5 @@
 @use '../../styles/variables' as v;
+@use '../../styles/mixins' as m;
 
 .shipment-manager {
   &__header {
@@ -21,19 +22,12 @@
   }
 
   &__add {
+    @include m.light-primary-button;
     flex-shrink: 0;
     padding: v.$space-2 v.$space-4;
     border-radius: v.$radius-sm;
-    border: none;
-    background: v.$color-primary;
-    color: v.$color-bg;
     font-size: v.$font-size-sm;
     font-weight: 600;
-    cursor: pointer;
-
-    &:hover {
-      opacity: 0.9;
-    }
   }
 
   &__filters {
@@ -180,18 +174,29 @@
     }
 
     &:hover &-icon {
-      color: v.$color-primary;
+      background-color: v.$color-primary;
     }
   }
 
+  // Same mask-image technique as Packages/Chat Sessions' sort headers — recolors
+  // via currentColor so it follows &__sort's own (hover/active) color, instead of
+  // the fixed-gray sort-asc.svg/sort-desc.svg/sort-unsorted.svg source images.
   &__sort-icon {
-    font-size: 10px;
-    color: v.$color-text-subtle;
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    flex-shrink: 0;
+    background-color: v.$color-text-subtle;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
   }
 
   &__sort--active &__sort-icon {
-    font-size: 8px;
-    color: v.$color-primary;
+    background-color: v.$color-primary;
   }
 
   // A real <select>, styled as a colored pill per status — the "first-class row

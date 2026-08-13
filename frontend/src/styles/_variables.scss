@@ -13,6 +13,21 @@ $color-border: #e5e7eb;
 // intentional per the admin-pages.png mockup, not a typo/duplicate of $color-border.
 $color-table-border: #e2e8f0;
 
+// "Light primary" button — the app's shared primary-action button design (View,
+// +Add, Save, Administrator Panel, Logout, View all, etc.): a pale blue fill with
+// a matching border and blue text/icon, darkening one step per state. Exact hex
+// values from the design spec, not derived from $color-primary-* (some of those
+// happen to coincide, most don't).
+$color-btn-light-bg: #eff6ff;
+$color-btn-light-bg-hover: #dbeafe;
+$color-btn-light-bg-pressed: #bfdbfe;
+$color-btn-light-border: #bfdbfe;
+$color-btn-light-border-hover: #93c5fd;
+$color-btn-light-border-pressed: #60a5fa;
+$color-btn-light-text: #2563eb;
+$color-btn-light-text-hover: #1d4ed8;
+$color-btn-light-text-pressed: #1e40af;
+
 $color-text: #111827;
 $color-text-muted: #6b7280;
 $color-text-subtle: #9ca3af;

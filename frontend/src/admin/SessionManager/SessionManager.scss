@@ -1,4 +1,5 @@
 @use '../../styles/variables' as v;
+@use '../../styles/mixins' as m;
 
 .session-manager {
   &__header {
@@ -334,22 +335,15 @@
   }
 
   &__view-button {
+    @include m.light-primary-button;
     display: inline-flex;
     align-items: center;
     gap: v.$space-1;
     flex-shrink: 0;
     padding: v.$space-1 v.$space-3;
     border-radius: v.$radius-sm;
-    border: 1px solid v.$color-primary-border;
-    background: v.$color-primary-light;
-    color: v.$color-primary;
     font-size: v.$font-size-xxs;
     font-weight: 600;
-    cursor: pointer;
-
-    &:hover {
-      background: v.$color-primary-border;
-    }
   }
 
   &__view-icon {

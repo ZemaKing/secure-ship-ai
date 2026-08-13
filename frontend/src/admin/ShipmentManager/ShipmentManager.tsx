@@ -194,6 +194,7 @@ function ShipmentManager() {
 
   function sortableHeader(key: SortKey, label: string) {
     const isActive = sortKey === key
+    const iconSrc = `/icons/sort-${isActive ? sortDirection : 'unsorted'}.svg`
     return (
       <th key={key}>
         <button
@@ -201,9 +202,10 @@ function ShipmentManager() {
           onClick={() => handleSort(key)}
         >
           {label}
-          <span className="shipment-manager__sort-icon" aria-hidden="true">
-            {isActive ? (sortDirection === 'asc' ? '▲' : '▼') : '⇅'}
-          </span>
+          <span
+            className="shipment-manager__sort-icon"
+            style={{ maskImage: `url(${iconSrc})`, WebkitMaskImage: `url(${iconSrc})` }}
+          />
         </button>
       </th>
     )

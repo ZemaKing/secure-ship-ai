@@ -167,9 +167,13 @@ function CustomerManager() {
                   onClick={() => setNameSort((current) => (current === 'asc' ? 'desc' : 'asc'))}
                 >
                   Name
-                  <span className="customer-manager__sort-icon" aria-hidden="true">
-                    {nameSort === 'asc' ? '▲' : '▼'}
-                  </span>
+                  <span
+                    className="customer-manager__sort-icon"
+                    style={{
+                      maskImage: `url(/icons/sort-${nameSort}.svg)`,
+                      WebkitMaskImage: `url(/icons/sort-${nameSort}.svg)`,
+                    }}
+                  />
                 </button>
               </th>
               <th>Phone Number</th>

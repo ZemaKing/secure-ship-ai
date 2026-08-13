@@ -1,4 +1,5 @@
 @use '../../styles/variables' as v;
+@use '../../styles/mixins' as m;
 
 .customer-manager {
   &__header {
@@ -21,19 +22,12 @@
   }
 
   &__add {
+    @include m.light-primary-button;
     flex-shrink: 0;
     padding: v.$space-2 v.$space-4;
     border-radius: v.$radius-sm;
-    border: none;
-    background: v.$color-primary;
-    color: v.$color-bg;
     font-size: v.$font-size-sm;
     font-weight: 600;
-    cursor: pointer;
-
-    &:hover {
-      opacity: 0.9;
-    }
   }
 
   &__search {
@@ -152,9 +146,21 @@
     }
   }
 
+  // Same mask-image technique as Packages/Chat Sessions' sort headers — this
+  // column is always sorted (no "unsorted" state to distinguish), so the icon
+  // stays a fixed primary blue, same as it always was before this icon swap.
   &__sort-icon {
-    font-size: 8px;
-    color: v.$color-primary;
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    flex-shrink: 0;
+    background-color: v.$color-primary;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
   }
 
   &__actions {
