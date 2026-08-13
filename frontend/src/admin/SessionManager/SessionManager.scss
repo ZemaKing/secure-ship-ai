@@ -20,6 +20,53 @@
     color: v.$color-text-muted;
   }
 
+  &__header-actions {
+    display: flex;
+    align-items: center;
+    gap: v.$space-3;
+    flex-shrink: 0;
+  }
+
+  &__refresh {
+    display: flex;
+    align-items: center;
+    gap: v.$space-1;
+    padding: v.$space-2 v.$space-3;
+    border: 1px solid v.$color-border;
+    border-radius: v.$radius-sm;
+    background: v.$color-bg;
+    color: v.$color-text;
+    font-size: v.$font-size-xs;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: v.$color-bg-muted;
+    }
+
+    &:disabled {
+      opacity: 0.7;
+      cursor: default;
+    }
+  }
+
+  &__refresh-icon {
+    width: 14px;
+    height: 14px;
+
+    // Spins for the duration of an in-flight refetch — the same "something is
+    // happening" affordance CodeModal's Verify button gives via its own busy text.
+    &--spinning {
+      animation: session-manager-spin 800ms linear infinite;
+    }
+  }
+
+  &__last-updated {
+    font-size: v.$font-size-xs;
+    color: v.$color-text-muted;
+    white-space: nowrap;
+  }
+
   &__filters {
     display: flex;
     align-items: center;
@@ -291,5 +338,14 @@
   &__view-icon {
     width: 14px;
     height: 14px;
+  }
+}
+
+@keyframes session-manager-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }

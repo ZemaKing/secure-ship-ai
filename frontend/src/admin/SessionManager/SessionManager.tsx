@@ -111,7 +111,7 @@ function SessionManager() {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [viewingSession, setViewingSession] = useState<ChatSessionOut | null>(null)
 
-  const { data, isLoading } = useListChatSessions({
+  const { data, isLoading, isFetching, dataUpdatedAt, refetch } = useListChatSessions({
     query: { enabled: !!accessToken },
     fetch: authHeaders(accessToken),
   })
@@ -156,6 +156,26 @@ function SessionManager() {
         <div>
           <h1 className="session-manager__title">Chat Sessions</h1>
           <p className="session-manager__subtitle">View and review visitor chat sessions with the AI assistant.</p>
+        </div>
+        <div className="session-manager__header-actions">
+          <button
+            type="button"
+            className="session-manager__refresh"
+            onClick={() => refetch()}
+            disabled={isFetching}
+          >
+            <img
+              className={`session-manager__refresh-icon${isFetching ? ' session-manager__refresh-icon--spinning' : ''}`}
+              src="/icons/refresh.svg"
+              alt=""
+            />
+            Refresh
+          </button>
+          {dataUpdatedAt > 0 && (
+            <span className="session-manager__last-updated">
+              Last updated: {formatTimeAgo(new Date(dataUpdatedAt).toISOString())}
+            </span>
+          )}
         </div>
       </div>
 

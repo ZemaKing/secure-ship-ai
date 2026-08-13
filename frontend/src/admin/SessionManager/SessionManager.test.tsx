@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
@@ -97,6 +97,19 @@ describe('SessionManager', () => {
     expect(await screen.findByText('Nova Star')).toBeInTheDocument()
     expect(screen.getByText('Unverified Visitor')).toBeInTheDocument()
     expect(screen.getByText('Marko Stanković')).toBeInTheDocument()
+  })
+
+  it('the Refresh button re-fetches the session list without a page reload', async () => {
+    const fetchMock = mockFetch()
+    const user = userEvent.setup()
+    renderManager()
+    await screen.findByText('Nova Star')
+
+    const callsBefore = fetchMock.mock.calls.length
+    await user.click(screen.getByRole('button', { name: /refresh/i }))
+
+    await waitFor(() => expect(fetchMock.mock.calls.length).toBeGreaterThan(callsBefore))
+    expect(await screen.findByText(/last updated:/i)).toBeInTheDocument()
   })
 
   it('shows the real ChatSessionState labels as pills, not a fabricated ticket-status vocabulary', async () => {
