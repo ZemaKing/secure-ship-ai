@@ -6,6 +6,18 @@ Full technical scope and week-by-week milestones live in `docs/DEV_PLAN.md` — 
 
 ---
 
+## 2026-08-13 — Week 5: Root README.md 📄
+
+**Theme:** Second task of Week 5's hardening/docs pass. No root `README.md` existed anywhere in the repo before this — only the default Vite template stub at `frontend/README.md` — so this was a from-scratch write, not a "finalize a draft."
+
+**What it covers:** a one-paragraph "why this exists" framing the identity-gate/tool-enforcement problem as the actual engineering point (not the chat UI); an ASCII architecture-at-a-glance diagram; the tech-stack table; Docker Compose quick start *and* a host-native dev path (matching how this project has always run both ways); an environment-variables section listing every var name `backend/.env`/`frontend/.env` actually need (values redacted/placeholder'd — neither `.env` file is committed, confirmed against `.gitignore`) rather than a generic "see .env.example" pointer, since no `.env.example` exists in this repo; a project-structure tree; test-running instructions; a key-commands table pulled from what's already scattered across `CLAUDE.md`; and a closing pointer to `docs/REQUIREMENTS.md`/`docs/DEV_PLAN.md`/`CHANGE_LOG.md`/`TECH_NOTES.md`/`docs/ADVERSARIAL_TESTING.md`/`docs/diagrams/` (the last freshly regenerated in the previous Week 5 task) for anyone who needs more than the surface-level read.
+
+No code changed — docs-only. `docs/DEV_PLAN.md`'s Week 5 checklist item 2 checked off.
+
+**Where things stand:** Week 5 task 2 of 8 done. The edge-case pass, PII/logging audit, and the three scheduled stretch goals remain.
+
+---
+
 ## 2026-08-13 — Week 5: Diagram regeneration 📐
 
 **Theme:** First task of Week 5's hardening/docs pass — the six `docs/diagrams/*.md` files had sat untouched since Week 1, when they were copied verbatim from `REQUIREMENTS.md` §6 as a "starting reference, to be corrected in Week 5." Diffed each one against the real backend/frontend code (not just skimmed) and rewrote the parts that had drifted from what actually got built over Weeks 2–4.

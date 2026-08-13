@@ -147,7 +147,7 @@ Scope note: the admin UI mockup's "Users"/"System Settings"/"Audit Logs" tabs ar
 
 **Hardening & docs:**
 - [x] Regenerate Section 6 diagrams against the actual implementation (Claude-drafted, manually corrected — a diagram that doesn't match the code is a documentation bug)
-- [ ] Finalize README (Claude-drafted from the real code, human-corrected for accuracy)
+- [x] Finalize README (Claude-drafted from the real code, human-corrected for accuracy)
 - [ ] Edge-case pass: expired codes, malformed input, empty states, "give up mid-verification and ask about something else"
 - [ ] Confirm no PII has leaked into any persistent log file (console output during dev is fine; check anything written to disk)
 
