@@ -218,7 +218,8 @@ function SessionManager() {
       ) : filtered.length === 0 ? (
         <p className="session-manager__status">No chat sessions found.</p>
       ) : (
-        <table className="session-manager__table">
+        <div className="session-manager__table-wrapper">
+          <table className="session-manager__table">
           <thead>
             <tr>
               {sortableHeader('visitor', 'Visitor / Customer')}
@@ -291,7 +292,8 @@ function SessionManager() {
               </tr>
             ))}
           </tbody>
-        </table>
+          </table>
+        </div>
       )}
 
       <Pagination

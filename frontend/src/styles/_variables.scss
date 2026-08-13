@@ -8,6 +8,10 @@ $color-link: #2952ab;
 $color-bg: #ffffff;
 $color-bg-muted: #f8fafc;
 $color-border: #e5e7eb;
+// The outer frame around an admin table (&__table-wrapper) is a slightly
+// different, slightly cooler gray than $color-border's row-separator lines —
+// intentional per the admin-pages.png mockup, not a typo/duplicate of $color-border.
+$color-table-border: #e2e8f0;
 
 $color-text: #111827;
 $color-text-muted: #6b7280;

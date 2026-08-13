@@ -191,9 +191,8 @@
   }
 
   &__panel {
-    //padding: v.$space-4;
-    padding: 12px 12px 0;
-    border: 1px solid v.$color-border;
+    padding: v.$space-3;
+    border: 1px solid v.$color-table-border;
     border-radius: v.$radius-md;
     background: v.$color-bg;
   }
@@ -226,6 +225,14 @@
     }
   }
 
+  // Same border/radius treatment as every other admin table's &__table-wrapper —
+  // this one just happens to sit inside the Recent Shipments panel too.
+  &__table-wrapper {
+    border: 1px solid v.$color-table-border;
+    border-radius: v.$radius-md;
+    overflow: hidden;
+  }
+
   &__table {
     width: 100%;
     border-collapse: collapse;
@@ -245,6 +252,9 @@
     }
 
     th {
+      padding-top: v.$space-3;
+      padding-bottom: v.$space-3;
+      background: v.$color-bg-muted;
       color: v.$color-text-muted;
       font-weight: 600;
     }

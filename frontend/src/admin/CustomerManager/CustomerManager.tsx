@@ -157,7 +157,8 @@ function CustomerManager() {
       ) : filtered.length === 0 ? (
         <p className="customer-manager__status">No customers found.</p>
       ) : (
-        <table className="customer-manager__table">
+        <div className="customer-manager__table-wrapper">
+          <table className="customer-manager__table">
           <thead>
             <tr>
               <th>
@@ -237,7 +238,8 @@ function CustomerManager() {
               </tr>
             ))}
           </tbody>
-        </table>
+          </table>
+        </div>
       )}
 
       <Pagination

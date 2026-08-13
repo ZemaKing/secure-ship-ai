@@ -120,6 +120,7 @@ function Dashboard() {
             {recentShipments.length === 0 ? (
               <p className="dashboard__status">No shipments yet.</p>
             ) : (
+              <div className="dashboard__table-wrapper">
               <table className="dashboard__table">
                 <thead>
                   <tr>
@@ -172,6 +173,7 @@ function Dashboard() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
         </>

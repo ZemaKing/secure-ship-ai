@@ -255,7 +255,8 @@ function ShipmentManager() {
       ) : filtered.length === 0 ? (
         <p className="shipment-manager__status">No shipments found.</p>
       ) : (
-        <table className="shipment-manager__table">
+        <div className="shipment-manager__table-wrapper">
+          <table className="shipment-manager__table">
           <thead>
             <tr>
               {sortableHeader('tracking_number', 'Tracking Number')}
@@ -362,7 +363,8 @@ function ShipmentManager() {
               </tr>
             ))}
           </tbody>
-        </table>
+          </table>
+        </div>
       )}
 
       <Pagination

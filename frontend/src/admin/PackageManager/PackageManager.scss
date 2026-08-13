@@ -58,6 +58,16 @@
     font-size: v.$font-size-sm;
   }
 
+  // Full border + rounded corners around the table itself, matching
+  // admin-pages.png — the table's own border-collapse means a border-radius on
+  // <table> won't reliably clip cell borders in every browser, so the wrapper
+  // carries the border/radius/clip instead.
+  &__table-wrapper {
+    border: 1px solid v.$color-table-border;
+    border-radius: v.$radius-md;
+    overflow: hidden;
+  }
+
   &__table {
     width: 100%;
     border-collapse: collapse;
@@ -78,12 +88,19 @@
     }
 
     th {
+      padding-top: v.$space-3;
+      padding-bottom: v.$space-3;
+      background: v.$color-bg-muted;
       color: v.$color-text-muted;
       font-weight: 600;
     }
 
     td {
       color: v.$color-text;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
     }
   }
 

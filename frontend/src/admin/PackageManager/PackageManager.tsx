@@ -132,7 +132,8 @@ function PackageManager() {
       ) : filtered.length === 0 ? (
         <p className="package-manager__status">No packages found.</p>
       ) : (
-        <table className="package-manager__table">
+        <div className="package-manager__table-wrapper">
+          <table className="package-manager__table">
           <thead>
             <tr>
               <th>
@@ -208,7 +209,8 @@ function PackageManager() {
               </tr>
             ))}
           </tbody>
-        </table>
+          </table>
+        </div>
       )}
 
       <Pagination
