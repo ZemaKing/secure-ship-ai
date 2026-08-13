@@ -6,6 +6,24 @@ Full technical scope and week-by-week milestones live in `docs/DEV_PLAN.md` — 
 
 ---
 
+## 2026-08-13 — Week 5: PII / logging audit 🔍
+
+**Theme:** Fourth task of Week 5's hardening pass — a systematic check of every place output could reach disk, not a re-assertion of what was already believed true. New `docs/PII_AUDIT.md` has the full write-up, mirroring `docs/ADVERSARIAL_TESTING.md`'s "what was actually checked" format from Week 3.
+
+**What was checked:** all three `print()` statements in the entire backend (the mock-SMS print, the `[TOOL CALL] lookup_shipments` print, and `ollama_client.py`'s dev-only smoke-test print — nothing else exists); `alembic/env.py`'s logging config (a plain `StreamHandler(sys.stderr)`, confirmed against `alembic.ini`, not a `FileHandler`); Uvicorn's default access-log format (method/path/status only — `/chat`'s message and `/verify-code`'s code live in the request body, never the URL, so neither ever appears in an access-log line); `docker-compose.yml`/`Dockerfile` for any `> file.log` redirection (none); `ChatSession.transcript` specifically for whether the 2FA code itself ever leaks into it (it doesn't — `CODE_SENT_MESSAGE` is a fixed string with no interpolation); the frontend for any `console.log` at all (zero, anywhere in `src/`) and any analytics/error-tracking SDK (none installed).
+
+**One genuine finding, documented rather than "fixed":** Docker's *default* `json-file` log driver persists a container's stdout to disk outside this repo — meaning the mock-SMS print (phone + code) technically does reach a file when running via `docker compose up`, just not one this app writes itself. This has been true since the print was added in Week 2 and was never flagged before. Considered and rejected disabling container logging (`logging: driver: "none"`) as the fix, since that would also silence the `[TOOL CALL] lookup_shipments ...` line `docs/REQUIREMENTS.md` §8 explicitly wants visible during a live demo — trading a real, wanted demo capability for closing an edge case of a rule that was always scoped to *this app's own* logging, not Docker's. Written up as a known, accepted trade-off rather than silently ignored.
+
+**New `backend/tests/test_pii_logging.py`** — the automated backstop for the transcript claim above: sends a message that triggers a real code send, then asserts neither the generated code nor the customer's phone number appears anywhere in the persisted `session.transcript`.
+
+No other code changes — every real print/log path was already console-only by design.
+
+- ✅ `pytest backend/tests` — 63/63 passing (62 → 63).
+
+**Where things stand:** Week 5 task 4 of 8 done. The three scheduled stretch goals and the final demo dry run remain.
+
+---
+
 ## 2026-08-13 — Week 5: Edge-case pass 🧪
 
 **Theme:** Third task of Week 5's hardening pass — deliberately exercising expired codes, malformed input, empty states, and giving up mid-verification, rather than assuming existing coverage was enough. Found one real, if minor, gap and fixed it; everything else was already handled gracefully and is now pinned down by a test, not just an assumption.

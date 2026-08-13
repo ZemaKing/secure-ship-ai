@@ -149,7 +149,7 @@ Scope note: the admin UI mockup's "Users"/"System Settings"/"Audit Logs" tabs ar
 - [x] Regenerate Section 6 diagrams against the actual implementation (Claude-drafted, manually corrected — a diagram that doesn't match the code is a documentation bug)
 - [x] Finalize README (Claude-drafted from the real code, human-corrected for accuracy)
 - [x] Edge-case pass: expired codes, malformed input, empty states, "give up mid-verification and ask about something else"
-- [ ] Confirm no PII has leaked into any persistent log file (console output during dev is fine; check anything written to disk)
+- [x] Confirm no PII has leaked into any persistent log file (console output during dev is fine; check anything written to disk)
 
 **Scheduled stretch goals (all three committed, not "if time allows"):**
 - [ ] **Admin chat session viewer** — read-only admin page listing `ChatSession` rows and transcripts; surfaces `escalated_to_human` sessions and rejected-verification cases side by side. Reuses Week 4's admin CRUD/auth patterns.
