@@ -6,6 +6,24 @@ Full technical scope and week-by-week milestones live in `docs/DEV_PLAN.md` — 
 
 ---
 
+## 2026-08-13 — Week 5: Diagram regeneration 📐
+
+**Theme:** First task of Week 5's hardening/docs pass — the six `docs/diagrams/*.md` files had sat untouched since Week 1, when they were copied verbatim from `REQUIREMENTS.md` §6 as a "starting reference, to be corrected in Week 5." Diffed each one against the real backend/frontend code (not just skimmed) and rewrote the parts that had drifted from what actually got built over Weeks 2–4.
+
+**What was actually wrong, file by file:**
+- **6.1 (architecture):** the original showed a separate "Session Store (in-memory/Redis)" — doesn't exist; `ChatSession` (Postgres) *is* the live session state, read/committed directly on every `/chat` call. The only genuinely in-memory store is the 2FA code (`services/verification_store.py`), a smaller and different thing than "session state." Also dropped the "Llama 3.2 3B" fallback model (never built — `qwen3:8b` only) and the WebSocket-labeled transport arrow (this build is HTTP-only, per `DEV_PLAN.md`'s locked decision).
+- **6.2 (state machine):** `IdentityRejected` and `CodeExpired` aren't real states — both a rejection and a lockout/expiry land back on `CollectingIdentity` (fields retained), distinguished only by that turn's `event`/reply text. `CodeSent` is a dead enum value — `send_verification_code()` sets `AwaitingCode` directly and never assigns it. Escalation is reachable from any non-escalated state, not just `Anonymous`/`Verified`.
+- **6.2b (escalation):** the whole scripted sequence is one backend response, not a multi-turn exchange — the "staggered reveal" is a pure client-side pacing effect (`EscalationBanner.tsx`, ~700ms/line) over data that already arrived in full. The "color shift" isn't its own scripted line; it's a frontend callback fired at the "Melany has entered the chat" reveal. Biggest correction: `EscalatedToHuman` never returns to a prior gating state — it's sticky for the rest of that session, with gating enforced *within* it (no tool ever offered there), not by exiting it.
+- **6.3 (tool-calling sequence):** no `request_identity_info()` tool exists — the model calls `verify_identity` directly, even with zero fields known. A `REJECTED` outcome short-circuits with a fixed message and no second model call — the original implied every branch round-trips through the model. Added the two-call pattern (`PARTIAL`'s follow-up question, `lookup_shipments`'s phrased answer) explicitly, since it's the same mechanism reused, not two different ones.
+- **6.4 (ERD):** added the two real `pending_customer_id`/`pending_identity` columns on `CHAT_SESSION` (a second Week 2 migration the original reference predates). Removed `ADMIN_USER` entirely — it was speculative ("if mirrored") and nothing in this codebase ever writes an admin row to Postgres; admin identity lives exclusively in Auth0, a fact `test_admin_chat_separation.py` already proves structurally.
+- **6.5 (deployment topology):** corrected the OS label (Windows/WSL2, not "MacBook") and the frontend port (`:5173`, not `:3000`) to match the real `docker-compose.yml`. Noted Twilio was never actually built (stayed a documented-but-unpicked stretch option) rather than implying it's a live optional path.
+
+No code changed — this was a docs-only pass. `docs/DEV_PLAN.md`'s Week 5 checklist item 1 checked off.
+
+**Where things stand:** Week 5 task 1 of 8 done. Root `README.md` (doesn't exist yet), the edge-case pass, the PII/logging audit, and the three scheduled stretch goals remain.
+
+---
+
 ## 2026-08-12 — Week 4, Day 5 (Chunk E): Closing the admin-signup gap, the E4 separation proof, and a real live-debugging saga 🔒
 
 **Theme:** Chunk E — the hardening pass that closes out Week 4. Three things happened today: a round of post-D2 UI polish that had been shipping without doc updates, closing the real "anyone who signs up is an admin" gap found live back in Chunk A, and the Epic E4 proof that admin auth and the chat's identity gate are genuinely separate systems — plus the actual live debugging trail getting RBAC enforcement working end to end, which turned out to be the day's real story.
