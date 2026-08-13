@@ -181,18 +181,20 @@ function SessionManager() {
                     <span className="session-manager__started-at-ago">{formatTimeAgo(session.started_at)}</span>
                   </div>
                 </td>
-                <td className="session-manager__transcript-cell">
-                  <span className="session-manager__message-count">
-                    {session.message_count} message{session.message_count === 1 ? '' : 's'}
-                  </span>
-                  <button
-                    type="button"
-                    className="session-manager__view-button"
-                    onClick={() => setViewingSession(session)}
-                  >
-                    <img className="session-manager__view-icon" src="/icons/eye.svg" alt="" />
-                    View
-                  </button>
+                <td>
+                  <div className="session-manager__transcript-cell">
+                    <span className="session-manager__message-count">
+                      {session.message_count} message{session.message_count === 1 ? '' : 's'}
+                    </span>
+                    <button
+                      type="button"
+                      className="session-manager__view-button"
+                      onClick={() => setViewingSession(session)}
+                    >
+                      <img className="session-manager__view-icon" src="/icons/eye.svg" alt="" />
+                      View
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
