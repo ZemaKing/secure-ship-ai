@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useListChatSessions, type ChatSessionOut } from '../../api/generated/secure-ship'
 import { useAdminAccessToken, authHeaders } from '../useAdminAccessToken'
@@ -115,6 +115,17 @@ function SessionManager() {
     query: { enabled: !!accessToken },
     fetch: authHeaders(accessToken),
   })
+
+  // "Last updated: X ago" is computed at render time from dataUpdatedAt — with
+  // nothing else to trigger a re-render, it would otherwise stay frozen on
+  // whatever it said the moment data last arrived (e.g. stuck on "Just now"
+  // indefinitely). This tick forces a re-render every 30s purely so that text
+  // stays live; it reads nothing from and writes nothing to actual query state.
+  const [, forceTick] = useState(0)
+  useEffect(() => {
+    const interval = setInterval(() => forceTick((tick) => tick + 1), 30_000)
+    return () => clearInterval(interval)
+  }, [])
 
   const sessions = data?.data ?? []
   const filtered = sessions
