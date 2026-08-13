@@ -41,12 +41,18 @@ function AdminLayout() {
                   `admin-layout__nav-item${isActive ? ' admin-layout__nav-item--active' : ''}`
                 }
               >
-                <img className="admin-layout__nav-item-icon" src={item.icon} alt="" />
+                <span
+                  className="admin-layout__nav-item-icon"
+                  style={{ maskImage: `url(${item.icon})`, WebkitMaskImage: `url(${item.icon})` }}
+                />
                 {item.label}
               </NavLink>
             ) : (
               <span key={item.path} className="admin-layout__nav-item admin-layout__nav-item--disabled">
-                <img className="admin-layout__nav-item-icon" src={item.icon} alt="" />
+                <span
+                  className="admin-layout__nav-item-icon"
+                  style={{ maskImage: `url(${item.icon})`, WebkitMaskImage: `url(${item.icon})` }}
+                />
                 {item.label}
                 <span className="admin-layout__nav-item-soon">Soon</span>
               </span>

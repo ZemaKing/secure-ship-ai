@@ -57,7 +57,7 @@
     gap: v.$space-2;
     padding: v.$space-3;
     border-radius: v.$radius-sm;
-    font-size: v.$font-size-sm;
+    font-size: v.$font-size-xs;
     font-weight: 600;
     color: v.$color-text;
     text-decoration: none;
@@ -85,21 +85,33 @@
       &:hover {
         background: none;
       }
-
-      // Icons are hardcoded-blue SVGs rendered via <img> (same pattern as every
-      // other icon in this app), so CSS `color` can't restyle them — `filter`
-      // operates on the rendered image itself instead, regardless of the SVG's
-      // internal fill.
-      .admin-layout__nav-item-icon {
-        filter: grayscale(100%);
-        opacity: 0.6;
-      }
     }
   }
 
+  // Recolored via mask-image (same technique as every other icon-button in the
+  // admin panel) so only the active nav item's icon is blue — inactive items get
+  // a neutral gray, disabled ones the same subtle gray as their dimmed label —
+  // instead of the source SVGs' own hardcoded blue fill showing through always.
   &__nav-item-icon {
-    @include m.icon(18px);
+    display: block;
+    width: 18px;
+    height: 18px;
     flex-shrink: 0;
+    background-color: v.$color-text-muted;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
+  }
+
+  &__nav-item--active &__nav-item-icon {
+    background-color: v.$color-primary;
+  }
+
+  &__nav-item--disabled &__nav-item-icon {
+    background-color: v.$color-text-subtle;
   }
 
   &__nav-item-soon {
