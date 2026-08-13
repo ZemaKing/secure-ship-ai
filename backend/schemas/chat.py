@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class EscalationPayload(BaseModel):
@@ -29,7 +29,11 @@ class ShipmentPayload(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    message: str
+    # min_length=1 rejects an empty message at the HTTP boundary (422) rather than
+    # forwarding it to Ollama — the frontend already guards against this (ChatWindow's
+    # handleSubmit trims and no-ops on empty input), but the backend shouldn't rely on
+    # that alone, same reasoning as every other gate in this app.
+    message: str = Field(min_length=1)
     session_id: str | None = None
 
 

@@ -173,6 +173,18 @@ describe('CustomerManager', () => {
     expect(fetchMock.mock.calls.some(([, options]) => options?.method === 'DELETE')).toBe(true)
   })
 
+  it('shows an empty state when a search matches no customers', async () => {
+    mockFetch({})
+    const user = userEvent.setup()
+    renderManager()
+    await screen.findByText('Alice Nguyen')
+
+    await user.type(screen.getByPlaceholderText(/search by name/i), 'nobody-matches-this')
+
+    expect(await screen.findByText('No customers found.')).toBeInTheDocument()
+    expect(screen.queryByText('Alice Nguyen')).not.toBeInTheDocument()
+  })
+
   it('clicking a customer name navigates to Shipments with the name pre-filled as a search', async () => {
     mockFetch({})
     const user = userEvent.setup()

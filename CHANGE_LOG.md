@@ -6,6 +6,26 @@ Full technical scope and week-by-week milestones live in `docs/DEV_PLAN.md` — 
 
 ---
 
+## 2026-08-13 — Week 5: Edge-case pass 🧪
+
+**Theme:** Third task of Week 5's hardening pass — deliberately exercising expired codes, malformed input, empty states, and giving up mid-verification, rather than assuming existing coverage was enough. Found one real, if minor, gap and fixed it; everything else was already handled gracefully and is now pinned down by a test, not just an assumption.
+
+**The one real fix:** `schemas/chat.py`'s `ChatRequest.message` had no length constraint — an empty-string message would sail past validation and get forwarded straight to Ollama. The frontend already guards against this (`ChatWindow`'s `handleSubmit` trims and no-ops on empty input), but per this project's own standing rule ("never trust the frontend 'looking' gated"), the backend shouldn't rely on that alone. Added `Field(min_length=1)` — now a 422 at the HTTP boundary, not a wasted round-trip to the model.
+
+**New `backend/tests/test_edge_cases.py` (9 tests), covering what wasn't already pinned down:**
+- Malformed input: empty/missing `message` on `/chat` → 422; a malformed (non-UUID) `session_id` on `/chat` gracefully starts a fresh anonymous session rather than erroring; a malformed (non-UUID) or well-formed-but-unknown `session_id` on `/verify-code` → 404; a malformed code string (`"not-six-digits!"`) against a real pending code is treated as a plain wrong-code attempt, not a crash.
+- Expired code, through the real HTTP endpoint this time — `test_verification_flow.py` already proved this at the tool layer (`check_verification_code()` directly), but nothing had exercised `POST /verify-code` itself with an expired code before.
+- Empty state: `lookup_shipments()` for a verified customer with zero shipments returns `[]`, not `None` or an exception — `ChatResponse.shipments` stays a real (empty) list the frontend can safely map over.
+- Give up mid-verification: a visitor who's given only a first name so far asks something unrelated instead of continuing — confirmed the session doesn't crash, reset, or silently drop the already-collected field; it just answers the unrelated question and stays in `CollectingIdentity` with `pending_identity` untouched, ready to pick back up.
+
+**Frontend — parity gap closed:** `Dashboard.test.tsx` already had an empty-state test ("No shipments yet."); `CustomerManager`/`ShipmentManager`/`PackageManager` didn't have the equivalent for a search that matches nothing, despite all three components having the same `"No X found."` empty-state branch in their JSX. Added one test each. `CodeModal.test.tsx` was already found to fully cover the locked-out/expired UI state (its "disables every digit input once the backend reports a non-awaiting_code state" test) — no gap there.
+
+- ✅ `pytest backend/tests` — 62/62 passing (53 → 62). `npm test` — 46/46 passing (43 → 46). `npm run build`/`npm run lint` clean.
+
+**Where things stand:** Week 5 task 3 of 8 done. The PII/logging audit and the three scheduled stretch goals remain.
+
+---
+
 ## 2026-08-13 — Week 5: Root README.md 📄
 
 **Theme:** Second task of Week 5's hardening/docs pass. No root `README.md` existed anywhere in the repo before this — only the default Vite template stub at `frontend/README.md` — so this was a from-scratch write, not a "finalize a draft."

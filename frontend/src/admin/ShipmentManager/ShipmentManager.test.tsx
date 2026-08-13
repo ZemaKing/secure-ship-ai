@@ -195,6 +195,18 @@ describe('ShipmentManager', () => {
     expect(await screen.findByTestId('location')).toHaveTextContent('/admin/packages?search=1ZTRACK0000001')
   })
 
+  it('shows an empty state when a search matches no shipments', async () => {
+    mockFetch({})
+    const user = userEvent.setup()
+    renderManager()
+    await screen.findByText('1ZTRACK0000001')
+
+    await user.type(screen.getByPlaceholderText(/search by tracking number/i), 'nobody-matches-this')
+
+    expect(await screen.findByText('No shipments found.')).toBeInTheDocument()
+    expect(screen.queryByText('1ZTRACK0000001')).not.toBeInTheDocument()
+  })
+
   it('filters the table down to only the selected status', async () => {
     mockFetch({})
     const user = userEvent.setup()

@@ -184,6 +184,18 @@ describe('PackageManager', () => {
     expect(screen.queryByText('Second Package')).not.toBeInTheDocument()
   })
 
+  it('shows an empty state when a search matches no packages', async () => {
+    mockFetch({})
+    const user = userEvent.setup()
+    renderManager()
+    await screen.findByText('Desk Lamp')
+
+    await user.type(screen.getByPlaceholderText(/search by tracking number/i), 'nobody-matches-this')
+
+    expect(await screen.findByText('No packages found.')).toBeInTheDocument()
+    expect(screen.queryByText('Desk Lamp')).not.toBeInTheDocument()
+  })
+
   it('clicking the tracking number navigates to Shipments with it pre-filled as a search', async () => {
     mockFetch({})
     const user = userEvent.setup()
