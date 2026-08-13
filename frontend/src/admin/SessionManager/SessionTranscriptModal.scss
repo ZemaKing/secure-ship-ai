@@ -16,23 +16,52 @@
     display: flex;
     flex-direction: column;
     width: 100%;
-    max-width: 560px;
-    max-height: 80vh;
-    padding: v.$space-5;
+    max-width: 640px;
+    max-height: 85vh;
     box-shadow: 0 20px 40px rgba(17, 24, 39, 0.2);
+    overflow: hidden;
   }
 
   &__header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    margin-bottom: v.$space-4;
+    gap: v.$space-3;
+    padding: v.$space-4 v.$space-5;
+    border-bottom: 1px solid v.$color-border;
+  }
+
+  &__header-info {
+    display: flex;
+    align-items: center;
+    gap: v.$space-3;
+  }
+
+  &__header-icon {
+    @include m.flex-center;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: v.$radius-pill;
+    background: v.$color-primary-light;
+
+    img {
+      width: 18px;
+      height: 18px;
+    }
   }
 
   &__title {
     margin: 0;
-    font-size: v.$font-size-lg;
+    font-size: v.$font-size-md;
+    font-weight: 700;
     color: v.$color-text;
+  }
+
+  &__subtitle {
+    margin: 2px 0 0;
+    font-size: v.$font-size-xs;
+    color: v.$color-text-muted;
   }
 
   &__close {
@@ -50,7 +79,8 @@
   &__body {
     display: flex;
     flex-direction: column;
-    gap: v.$space-3;
+    gap: v.$space-4;
+    padding: v.$space-5;
     overflow-y: auto;
   }
 
@@ -60,21 +90,65 @@
     font-size: v.$font-size-sm;
   }
 
+  &__day-group {
+    display: flex;
+    flex-direction: column;
+    gap: v.$space-4;
+  }
+
+  &__day-divider {
+    display: flex;
+    align-items: center;
+    gap: v.$space-3;
+    color: v.$color-text-muted;
+    font-size: v.$font-size-xs;
+
+    &::before,
+    &::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: v.$color-border;
+    }
+
+    span {
+      flex-shrink: 0;
+      padding: v.$space-1 v.$space-3;
+      border: 1px solid v.$color-border;
+      border-radius: v.$radius-pill;
+    }
+  }
+
   &__entry {
-    padding: v.$space-3;
-    border-radius: v.$radius-md;
-    border: 1px solid v.$color-border;
-    background: v.$color-bg-muted;
+    display: flex;
+    align-items: flex-start;
+    gap: v.$space-3;
+  }
 
-    &--user {
-      border-color: v.$color-primary-border;
-      background: v.$color-primary-background;
+  &__avatar {
+    @include m.flex-center;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: v.$radius-pill;
+
+    img {
+      width: 18px;
+      height: 18px;
     }
 
-    &--rejected {
-      border-color: v.$color-status-exception;
-      background: v.$color-status-exception-bg;
+    // Same light-blue circle for both roles as ChatWindow's own ChatMessage
+    // avatars (chat-bot.svg/user.svg are already drawn in the brand blue, so no
+    // dark background or color-inverting filter is needed here either).
+    &--user,
+    &--assistant {
+      background: v.$color-primary-light;
     }
+  }
+
+  &__entry-content-wrap {
+    flex: 1;
+    min-width: 0;
   }
 
   &__entry-header {
@@ -82,16 +156,10 @@
     align-items: center;
     gap: v.$space-2;
     margin-bottom: v.$space-1;
-
-    // Time stamp stays right-aligned even with the badge inserted between it and
-    // the role label.
-    .session-transcript-modal__entry-time {
-      margin-left: auto;
-    }
   }
 
   &__entry-role {
-    font-size: v.$font-size-xs;
+    font-size: 12px;
     font-weight: 700;
     color: v.$color-text;
   }
@@ -106,14 +174,76 @@
   }
 
   &__entry-time {
-    font-size: v.$font-size-xxs;
+    margin-left: auto;
+    font-size: 10px;
     color: v.$color-text-subtle;
   }
 
-  &__entry-content {
+  &__entry-bubble {
     margin: 0;
-    font-size: v.$font-size-sm;
+    padding: v.$space-3;
+    border-radius: v.$radius-md;
+    background: v.$color-bg-muted;
+    font-size: 12px;
     color: v.$color-text;
     white-space: pre-wrap;
+  }
+
+  &__entry--user &__entry-bubble {
+    background: v.$color-primary-background;
+  }
+
+  &__entry-bubble--rejected {
+    background: v.$color-status-exception-bg;
+  }
+
+  &__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: v.$space-3;
+    padding: v.$space-4 v.$space-5;
+    border-top: 1px solid v.$color-border;
+  }
+
+  &__footer-info {
+    display: flex;
+    align-items: flex-start;
+    gap: v.$space-2;
+  }
+
+  &__footer-icon {
+    @include m.icon(20px);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  &__footer-title {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 700;
+    color: v.$color-text;
+  }
+
+  &__footer-text {
+    margin: 2px 0 0;
+    font-size: 10px;
+    color: v.$color-text-muted;
+  }
+
+  &__close-button {
+    flex-shrink: 0;
+    padding: v.$space-2 v.$space-5;
+    border: 1px solid v.$color-border;
+    border-radius: v.$radius-sm;
+    background: v.$color-bg;
+    color: v.$color-text;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover {
+      background: v.$color-bg-muted;
+    }
   }
 }
