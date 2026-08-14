@@ -1,4 +1,4 @@
-# Adversarial testing — Week 3, Chunk D
+# Adversarial testing
 
 REQUIREMENTS.md asks for an explicit, documented adversarial pass on the shipment-lookup
 enforcement point (Epic F3), not just a claim that it's safe by design. This records
@@ -63,4 +63,4 @@ response's `shipments` contained only the calling session's own shipment.
 pytest backend/tests/test_gating.py backend/tests/test_shipment_lookup.py
 ```
 
-Both files are part of the full suite (`pytest backend/tests`, 16/16 as of this chunk).
+Both files are part of the full suite (`pytest backend/tests`).

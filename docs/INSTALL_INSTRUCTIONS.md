@@ -2,8 +2,8 @@
 
 Setup checklist for this solo Windows build, per `DEV_PLAN.md` §2. Split into two parts:
 
-1. **Tools & apps** — install these once, now, before Week 1 starts.
-2. **Project dependencies** — installed later via `npm`/`pip` once the repo is scaffolded (Week 1). Kept here as a reference so all install commands live in one place.
+1. **Tools & apps** — install these once, before any project-specific setup below.
+2. **Project dependencies** — installed later via `npm`/`pip` once the repo is scaffolded. Kept here as a reference so all install commands live in one place.
 
 ---
 
@@ -97,7 +97,7 @@ Quick smoke test:
 ollama run qwen3:8b "Say hello in one sentence."
 ```
 
-Ollama runs host-native (not in Docker) for Weeks 1–4 — see `DEV_PLAN.md` §1.
+A host-native Ollama install is only needed if you plan to run the backend outside Docker — the containerized path (§2.3) pulls its own `qwen3:8b` into a named volume and needs no host install. See `DEV_PLAN.md` §1.
 
 ---
 
@@ -116,7 +116,7 @@ Pick one:
 - pgAdmin: https://www.pgadmin.org/download/pgadmin-4-windows/
 - DBeaver: https://dbeaver.io/download/
 
-Alternative if you'd rather stay in the terminal (works once Week 1's `docker-compose.yml` exists):
+Alternative if you'd rather stay in the terminal (works once the repo's `docker-compose.yml` exists):
 
 ```powershell
 docker exec -it <container_name> psql -U user -d secureship
@@ -140,7 +140,7 @@ code --install-extension mrmlnc.vscode-scss
 
 ---
 
-### 1.9 Auth0 account (Week 4)
+### 1.9 Auth0 account
 
 Free sign-up: https://auth0.com — **Personal** account type is fine for this project (not a company signup).
 
@@ -191,7 +191,7 @@ The same three values also go into `docker-compose.yml`'s `backend.environment`/
 
 **Known gotcha, already fixed in code:** `Auth0Provider` must be given an explicit `redirect_uri` — leaving it to the SDK's default caused a real, 100%-reproducible `Unable to issue redirect for OAuth 2.0 transaction` error on Auth0's own login page (confirmed across two separate freshly-created tenants before the cause was found). Fixed in `frontend/src/auth/Auth0ProviderWithNavigate.tsx`; noted here in case a future SDK upgrade reintroduces it. Full debugging trail in `CHANGE_LOG.md`'s 2026-08-07 entry.
 
-**Not yet locked down (planned for Week 4, Chunk E):** right now, anyone who signs up on the Universal Login screen gets full admin access — there's no role/permission check yet, and public self-service Sign Up is still enabled on the connection. Chunk E adds an `admin:access` RBAC permission check and disables public Sign Up.
+**Known gap in the steps above — RBAC isn't set up yet:** with only steps 1–5 done, anyone who signs up on the Universal Login screen gets full admin access — there's no role/permission check from those steps alone, and public self-service Sign Up is still enabled on the connection. The running app enforces a real `admin:access` RBAC permission check (see `CLAUDE.md`) and expects public Sign Up disabled — set both up on the Auth0 side (define the `admin:access` permission, assign it to your admin user, enable RBAC + "Add Permissions in the Access Token" on the API, and disable Sign Up on the connection) to match.
 
 Verify:
 
@@ -206,12 +206,12 @@ Expected: `400 invalid_request` with no `Authorization` header — confirms the 
 ### Not needed
 
 - No standalone virtualenv tool — Python's built-in `venv` covers it.
-- No standalone Postgres install — it runs as a Docker container defined in Week 1's `docker-compose.yml`.
+- No standalone Postgres install — it runs as a Docker container defined in the repo's `docker-compose.yml`.
 - No Zustand or other state library — React Query only (HTTP-only architecture, see `DEV_PLAN.md` §1).
 
 ---
 
-## 2. Project dependencies (later — after Week 1 scaffolding)
+## 2. Project dependencies (later — after repo scaffolding)
 
 These aren't needed today. Listed here so every install command for this project lives in one file.
 
@@ -268,7 +268,7 @@ uvicorn main:app --reload
 
 ### 2.2 Frontend (Vite + React + TypeScript)
 
-From `frontend/`, scaffold (Week 1 only — for a clone of the finished repo, `package.json` already exists, so just run `npm install`):
+From `frontend/`, scaffold (only needed once, from scratch — for a clone of the finished repo, `package.json` already exists, so just run `npm install`):
 
 ```powershell
 npm create vite@latest . -- --template react-ts
@@ -289,7 +289,7 @@ Run the dev server:
 npm run dev
 ```
 
-### 2.3 Docker Compose (Week 1)
+### 2.3 Docker Compose
 
 Once `docker-compose.yml` exists at the repo root:
 
@@ -297,7 +297,7 @@ Once `docker-compose.yml` exists at the repo root:
 docker compose up --build
 ```
 
-### 2.3.1 Seed data (Week 1)
+### 2.3.1 Seed data
 
 The database has no rows until seeded — neither Docker's `alembic upgrade head` nor a host-native `alembic upgrade head` inserts any data, only tables. From the repo root, backend venv active, dev Postgres up and migrated:
 
@@ -307,11 +307,11 @@ python scripts/seed_data.py
 
 Populates mock customers/shipments/packages straight through the ORM models. No truncate/reset step — safe to re-run, but re-running just adds more rows on top of what's already there.
 
-Brings up `frontend`, `backend`, and `postgres` containers. Ollama stayed on the host through Week 4, reached via `host.docker.internal:11434`; Week 5's stretch goal added a fourth `ollama` container (see `docs/DEV_PLAN.md`'s Week 5 section) — `docker compose up` now pulls `qwen3:8b` into a named volume itself, no host-native Ollama install required.
+Brings up `frontend`, `backend`, `postgres`, and `ollama` containers — `docker compose up` pulls `qwen3:8b` into a named volume itself, no host-native Ollama install required. Ollama can also still run on the host instead, reached via `host.docker.internal:11434` (see `docs/DEV_PLAN.md` §1).
 
 ---
 
-### 2.4 Testing tools (added Week 2)
+### 2.4 Testing tools
 
 No separate install step — both are already pinned in `requirements.txt`/`package.json`, so they come in with the installs in 2.1/2.2 above.
 
@@ -340,4 +340,4 @@ ollama --version
 ollama show qwen3:8b
 ```
 
-All four should return version/capability info with no errors before starting Week 1.
+All four should return version/capability info with no errors before starting the project setup.

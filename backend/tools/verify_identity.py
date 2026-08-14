@@ -35,7 +35,7 @@ def verify_identity(
 
     This is the single place that writes `pending_identity` or reads `Customer` —
     the model only ever supplies these four fields, never a `customer_id` directly
-    (the same enforcement shape Week 3's `lookup_shipments` tool will rely on).
+    (the same enforcement shape the `lookup_shipments` tool relies on).
     """
     given = {"first_name": first_name, "last_name": last_name, "phone_number": phone_number, "address": address}
     pending = dict(session.pending_identity or {})

@@ -201,7 +201,7 @@ def delete_package(package_id: uuid.UUID, db: Session = Depends(get_db)) -> None
     admin_packages.delete_package(db, package)
 
 
-# Week 5 stretch — the admin chat session viewer. Deliberately read-only: no create/
+# The admin chat session viewer. Deliberately read-only: no create/
 # update/delete routes exist here at all, unlike every entity above. This is the one
 # place in the whole admin surface that legitimately reads ChatSession — for audit/
 # support visibility only, never to write it, so it can't become a path for an admin

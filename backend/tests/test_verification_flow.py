@@ -1,4 +1,4 @@
-"""Chunk D's 2FA store: 3 wrong attempts locks out, a correct code verifies, and an
+"""The 2FA store: 3 wrong attempts locks out, a correct code verifies, and an
 expired code is rejected even if it's otherwise correct — no silent auto-regenerate
 on any of the three exit paths (DEV_PLAN.md's explicit ask: pick and document the
 numbers, which live in services/verification_store.py as CODE_TTL_SECONDS/MAX_ATTEMPTS).

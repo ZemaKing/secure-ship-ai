@@ -28,7 +28,7 @@ IDENTITY_COLLECTING_STATES = (ChatSessionState.ANONYMOUS, ChatSessionState.COLLE
 SHIPMENT_KEYWORDS = ("shipment", "package", "parcel", "order", "tracking", "deliver")
 AGENT_NAME = "Melany"
 # Only the actual scripted *text* (§6.2b's "chat window changes color" step carries no
-# text of its own — it's a frontend-only visual cue, Chunk H's concern, not a chat line).
+# text of its own — it's a frontend-only visual cue, not a chat line).
 ESCALATION_SCRIPT_LINES = (
     "Thank you for your patience, switching you to a human",
     "Melany has entered the chat",
@@ -38,7 +38,7 @@ ESCALATION_SCRIPT_LINES = (
 
 def _mentions_shipment(message: str) -> bool:
     """A plain keyword check, not a model call — mirrors the escalation-intent design
-    (Chunk E) in keeping a state transition deterministic rather than dependent on
+    in keeping a state transition deterministic rather than dependent on
     whether the model happens to call a tool this turn. Only decides whether a session
     leaves Anonymous; the actual identity match is always tool/backend-enforced.
     """
@@ -253,7 +253,7 @@ def send_chat_message(request: ChatRequest, db: Session = Depends(get_db)) -> Ch
                 ]
             )
             reply = followup.content or "I found your shipments, but couldn't summarize them just now — could you ask again?"
-            # Week 3, Chunk C: the same real result also goes to the frontend as
+            # The same real result also goes to the frontend as
             # structured data, so ShipmentCard can render it instead of only prose.
             shipments_payload = _to_shipment_payloads(outcome)
         else:

@@ -1,4 +1,4 @@
-// Extracted from ChatWindow.tsx (Week 3) once ShipmentManager (Week 4, Chunk C)
+// Extracted from ChatWindow.tsx once ShipmentManager
 // needed the identical formatting — a second real use case, not a speculative one.
 
 export function formatDateTime(iso: string) {

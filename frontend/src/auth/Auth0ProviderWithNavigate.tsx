@@ -23,7 +23,7 @@ function Auth0ProviderWithNavigate({ children }: Auth0ProviderWithNavigateProps)
       authorizationParams={{
         audience: import.meta.env.VITE_AUTH0_AUDIENCE,
         redirect_uri: window.location.origin,
-        // Week 4, Chunk E: auth0-fastapi-api's require_auth(scopes=...) checks the
+        // auth0-fastapi-api's require_auth(scopes=...) checks the
         // token's OAuth `scope` claim (a space-delimited string), not the RBAC
         // `permissions` array — so admin:access has to be explicitly requested here
         // to ever land in `scope`, even though the permission itself is already

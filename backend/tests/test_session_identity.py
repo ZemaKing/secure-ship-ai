@@ -1,4 +1,4 @@
-"""Chunk A's actual point: chat sessions are per-client, not a shared singleton."""
+"""The actual point: chat sessions are per-client, not a shared singleton."""
 from routes.chat import _get_or_create_session
 
 

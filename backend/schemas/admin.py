@@ -109,7 +109,7 @@ class PackageOut(BaseModel):
 
 
 class ChatSessionOut(BaseModel):
-    """Week 5 stretch — the admin chat session viewer (read-only). visitor_name/
+    """The admin chat session viewer (read-only). visitor_name/
     phone_number are resolved server-side (services/admin_sessions.py) from either a
     real Customer row (once Verified) or pending_identity (before that) — never a raw
     customer_id exposed for the admin to correlate against Customer records directly,

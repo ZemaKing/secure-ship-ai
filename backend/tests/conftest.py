@@ -34,7 +34,7 @@ def db_session():
     # join_transaction_mode="create_savepoint": SQLAlchemy's documented recipe for
     # joining a Session into an externally-managed transaction (here, the test's
     # own rollback-everything transaction). Without it, code under test calling
-    # session.rollback() itself (Week 4, Chunk B's delete-with-children 409 handler
+    # session.rollback() itself (the delete-with-children 409 handler
     # is the first path that does) rolls back to the very start of the connection's
     # transaction — wiping out this test's own fixture data, not just the failed
     # operation. With it, commit()/rollback() inside the tested code only
@@ -50,8 +50,8 @@ def db_session():
 
 @pytest.fixture()
 def client(db_session):
-    # Extracted from test_admin_customers.py (Week 4, Chunk B) once
-    # test_admin_shipments.py (Chunk C) needed the identical thing — overrides both
+    # Extracted from test_admin_customers.py once
+    # test_admin_shipments.py needed the identical thing — overrides both
     # get_current_admin (bypass real Auth0) and get_db (route the app's own
     # dependency onto this test's transactional db_session, so TestClient requests
     # don't open a second, real, uncontrolled SessionLocal() connection).

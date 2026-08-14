@@ -1,9 +1,8 @@
-"""Week 4, Chunk B: Customer CRUD through the real /admin/customers routes.
+"""Customer CRUD through the real /admin/customers routes.
 
-Uses FastAPI's TestClient against the real main.app (same pattern as
-test_admin_auth.py). The `client` fixture (get_current_admin + get_db overrides)
-lives in conftest.py — extracted there in Chunk C once test_admin_shipments.py
-needed the identical thing.
+Uses FastAPI's TestClient against the real main.app (same pattern as test_admin_auth.py).
+The `client` fixture (get_current_admin + get_db overrides)
+lives in conftest.py — extracted there once test_admin_shipments.py needed the identical thing.
 """
 def _customer_payload(**overrides):
     payload = {

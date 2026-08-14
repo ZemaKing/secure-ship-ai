@@ -1,4 +1,4 @@
-"""Week 5's PII/logging audit (docs/PII_AUDIT.md) — the automated backstop for its
+"""The PII/logging audit (docs/PII_AUDIT.md) — the automated backstop for its
 central claim: the mock 2FA code, generated fresh per session and printed only to the
 console (tools/send_verification_code.py), never also lands in ChatSession.transcript,
 the one place this app persists conversational content to Postgres.

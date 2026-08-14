@@ -11,7 +11,7 @@ interface SessionTranscriptModalProps {
 
 // A rejected identity match isn't its own persisted ChatSessionState — routes/chat.py
 // returns this exact fixed string (NEUTRAL_IDENTITY_MESSAGE) and the session just stays
-// in CollectingIdentity (see docs/diagrams/6.2's Week 5 correction). DEV_PLAN.md's
+// in CollectingIdentity (see docs/diagrams/6.2). DEV_PLAN.md's
 // stretch-goal ask is to surface gating-rejection cases in this viewer alongside
 // escalation, so this flags that specific reply text rather than inventing a state
 // that doesn't exist in the schema.

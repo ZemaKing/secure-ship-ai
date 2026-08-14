@@ -1,4 +1,4 @@
-"""Week 5's deliberate edge-case pass: malformed input, an expired code exercised
+"""A deliberate edge-case pass: malformed input, an expired code exercised
 through the real HTTP /verify-code endpoint (not just the tool layer, which
 test_verification_flow.py already covers), empty-result shipment lookups, and
 giving up mid-identity-collection to ask something unrelated. Confirms graceful

@@ -27,8 +27,8 @@ POST_ESCALATION_UNVERIFIED_INSTRUCTIONS = (
 )
 
 # Used only for the second, tool-free model call that phrases a lookup_shipments answer
-# (Week 3, Chunk B) — the data block itself is built by routes/chat.py from the tool's
-# real result, never guessed by the model. Kept deliberately brief (Chunk C follow-up):
+# — the data block itself is built by routes/chat.py from the tool's
+# real result, never guessed by the model. Kept deliberately brief:
 # the full details (status, dates, origin/destination, contents) already render in a
 # visual ShipmentCard, so repeating them in prose is redundant, not helpful.
 SHIPMENT_DATA_INSTRUCTIONS = (
@@ -52,7 +52,7 @@ def build_system_prompt(
     instructions while a session is still Anonymous/CollectingIdentity, the
     post-escalation-but-unverified instructions while ESCALATED_TO_HUMAN with no
     confirmed customer_id, any identity fields already known for this session so the
-    model doesn't ask the visitor to repeat themselves, and (Chunk B) a verified
+    model doesn't ask the visitor to repeat themselves, and a verified
     visitor's own real shipment data for the model to phrase an answer from.
     """
     prompt = BASE_SYSTEM_PROMPT

@@ -1,5 +1,5 @@
-"""Week 4, Chunk C: Shipment CRUD through the real /admin/shipments routes, plus
-the status-update proof this chunk's live demo gesture depends on — that a status
+"""Shipment CRUD through the real /admin/shipments routes, plus
+the status-update proof the live demo gesture depends on — that a status
 change made through the admin CRUD path is what a verified chat session's real
 lookup_shipments() tool call sees on its very next call, since both read/write the
 same Postgres rows.
@@ -119,7 +119,7 @@ def test_delete_shipment_with_packages_returns_409_not_500(client, make_customer
 def test_status_update_via_admin_is_what_lookup_shipments_returns_next(
     db_session, make_customer, make_shipment, make_session
 ):
-    """The actual proof behind Chunk C's live demo gesture: update a shipment's
+    """The actual proof behind the live demo gesture: update a shipment's
     status through the admin CRUD path, then ask the exact same question
     lookup_shipments() answers for a verified chat session — they must agree,
     because both read the same Postgres row, not a cache or a snapshot.

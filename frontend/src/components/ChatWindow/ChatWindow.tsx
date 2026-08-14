@@ -34,7 +34,7 @@ function formatTimestamp() {
 
 // The backend's wire format (snake_case, generated from schemas/chat.py) is kept
 // separate from ShipmentCardData (camelCase) — the component's own presentation
-// shape, unchanged since it was first built against a hardcoded mock (Week 1).
+// shape, unchanged since it was first built against a hardcoded mock.
 function toShipmentCardData(payload: ShipmentPayload): ShipmentCardData {
   return {
     trackingNumber: payload.tracking_number,

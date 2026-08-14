@@ -1,4 +1,4 @@
-"""Week 5 stretch: the admin chat session viewer, through the real /admin/sessions
+"""The admin chat session viewer, through the real /admin/sessions
 routes. Read-only — no create/update/delete route exists at all, unlike every other
 admin entity (see test_admin_chat_separation.py's test_admin_sessions_is_read_only for
 the structural proof of that). Covers the two things unique to this entity: resolving

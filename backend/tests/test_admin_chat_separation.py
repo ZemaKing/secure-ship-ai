@@ -1,4 +1,4 @@
-"""Week 4, Chunk E: Epic E4's structural-separation proof — admin auth (Auth0) and
+"""Epic E4's structural-separation proof — admin auth (Auth0) and
 the chat's conversational identity gate are two genuinely independent systems, not
 just two code paths that happen not to collide yet. Five falsifiable assertions,
 each targeting a concrete way the two could actually leak into each other:
@@ -9,7 +9,7 @@ each targeting a concrete way the two could actually leak into each other:
    why a real wrong-audience/expired *signed* token isn't reproduced here).
 3. Source inspection: no *write-capable* admin route/service file (Customer/Shipment/
    Package CRUD) ever references ChatSession at all — the code-level analog of
-   lookup_shipments having no identifier parameter. `admin_sessions.py` (Week 5's
+   lookup_shipments having no identifier parameter. `admin_sessions.py` (the
    read-only chat session viewer) is deliberately excluded from this check — see its
    own docstring below for why that's still consistent with Epic E4, not a violation
    of it: the real invariant was always "no identity crossover," never "admin code
@@ -49,7 +49,7 @@ def test_admin_routes_reject_invalid_token():
     # override — the real router-level auth0.require_auth() dependency runs for
     # real here. A validly-*signed*-but-wrong-audience/expired token would need a
     # real Auth0-issued JWT to forge convincingly (this project has no local
-    # signing key), so that case is instead covered by the live Chunk A/E dry runs,
+    # signing key), so that case is instead covered by live dry runs,
     # not reproduced as a unit test.
     headers = {"Authorization": "Bearer garbage.invalid.token"}
     for path in ADMIN_ROUTES:
@@ -59,7 +59,7 @@ def test_admin_routes_reject_invalid_token():
 
 def test_write_capable_admin_modules_never_touch_chat_session():
     # The code-level analog of lookup_shipments' "no identifier parameter exists to
-    # misuse" proof (Week 3, Chunk D) — here, "no reference to ChatSession exists to
+    # misuse" proof — here, "no reference to ChatSession exists to
     # misuse", scoped to the admin modules that can actually mutate data (Customer/
     # Shipment/Package). Reads the actual source files on disk rather than importing
     # and inspecting objects, so it catches a reference in a comment or an unused
@@ -80,7 +80,7 @@ def test_write_capable_admin_modules_never_touch_chat_session():
 
 
 def test_admin_sessions_is_read_only():
-    # admin_sessions.py (Week 5's chat session viewer) is the one deliberate exception
+    # admin_sessions.py (the chat session viewer) is the one deliberate exception
     # to the rule above — it exists specifically to read ChatSession rows for admin
     # audit/support visibility. What actually preserves Epic E4's real invariant (no
     # identity crossover, not "admin code may never read a ChatSession row") is that
@@ -97,7 +97,7 @@ def test_admin_sessions_is_read_only():
     assert session_response.status_code == 400  # missing auth header — route exists, same as every other /admin/* route
     with open(os.path.join(backend_dir, "routes", "admin.py"), encoding="utf-8") as f:
         routes_contents = f.read()
-    sessions_section = routes_contents[routes_contents.index("# Week 5 stretch"):]
+    sessions_section = routes_contents[routes_contents.index("# The admin chat session viewer"):]
     for method in ("@router.post(\"/sessions", "@router.patch(\"/sessions", "@router.delete(\"/sessions"):
         assert method not in sessions_section, f"/admin/sessions must stay read-only ({method} found)"
 

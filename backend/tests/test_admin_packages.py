@@ -1,4 +1,4 @@
-"""Week 4, Chunk D1: Package CRUD through the real /admin/packages routes.
+"""Package CRUD through the real /admin/packages routes.
 
 No delete-with-children 409 case here — nothing has a foreign key pointing at
 packages.id, so a Package delete can never hit an IntegrityError the way Customer

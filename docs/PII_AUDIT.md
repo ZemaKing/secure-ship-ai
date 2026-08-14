@@ -1,4 +1,4 @@
-# PII / logging audit — Week 5
+# PII / logging audit
 
 `docs/REQUIREMENTS.md` §4.3 and `CLAUDE.md`'s non-negotiable invariants both state the
 same rule: **no PII in persistent logs** — console output during dev is fine; nothing
@@ -51,7 +51,7 @@ either, which leads to the one real nuance found in this pass:
 > stdout/stderr to disk under Docker's own data directory (outside this repo, not
 > `.gitignore`-relevant) — meaning the mock-SMS print (phone number + code) technically
 > does reach a file, just not one this application writes itself. This has been true
-> since the mock-SMS print was first added (Week 2) and was never flagged before this
+> since the mock-SMS print was first added and was never flagged before this
 > audit. The alternative — disabling container logging (`logging: driver: "none"` in
 > `docker-compose.yml`) — would also silence the `[TOOL CALL] lookup_shipments ...` line
 > that REQUIREMENTS.md §8 explicitly wants visible during a live demo (`docker compose
@@ -87,7 +87,7 @@ New `backend/tests/test_pii_logging.py::test_the_2fa_code_never_lands_in_the_per
 — sends a message that matches identity and triggers a real code send, then asserts
 neither the generated code nor the customer's phone number appears anywhere in
 `session.transcript`'s persisted content. This is the same "don't just assert it, prove
-it with a test" discipline `ADVERSARIAL_TESTING.md` established in Week 3.
+it with a test" discipline `ADVERSARIAL_TESTING.md` established.
 
 ```
 pytest backend/tests/test_pii_logging.py
