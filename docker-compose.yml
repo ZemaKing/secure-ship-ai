@@ -13,17 +13,43 @@ services:
       timeout: 5s
       retries: 10
 
+  ollama:
+    image: ollama/ollama:latest
+    ports: ["11434:11434"]
+    volumes: ["ollama_data:/root/.ollama"]
+    # The base image's own entrypoint only runs `ollama serve`; pulling the model
+    # needs a running server first, so this overrides it to serve in the
+    # background, poll until it's actually accepting requests (a fixed sleep was
+    # tried first and raced a slow first-boot server), pull once, then hand off
+    # to the server process. The named volume means the pull only actually
+    # downloads on a genuinely fresh volume — a restart with existing data is a
+    # no-op `ollama pull`.
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        ollama serve &
+        until ollama list >/dev/null 2>&1; do sleep 1; done;
+        ollama pull qwen3:8b;
+        wait
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list | grep -q qwen3"]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+
   backend:
     build: ./backend
     environment:
       - DATABASE_URL=postgresql://user:pass@postgres:5432/secureship
       - FRONTEND_ORIGIN=http://localhost:5173
-      - OLLAMA_HOST=http://host.docker.internal:11434
+      - OLLAMA_HOST=http://ollama:11434
       - AUTH0_DOMAIN=dev-0rhen6amw7vpuz4p.us.auth0.com
       - AUTH0_AUDIENCE=https://secureship-admin-api
     ports: ["8000:8000"]
     depends_on:
       postgres:
+        condition: service_healthy
+      ollama:
         condition: service_healthy
 
   frontend:
@@ -38,3 +64,4 @@ services:
 
 volumes:
   pgdata:
+  ollama_data:

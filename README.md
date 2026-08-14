@@ -37,19 +37,18 @@ The two identity systems — the chat's conversational gate and Auth0's admin lo
 | API client | [Orval](https://orval.dev)-generated React Query hooks from the backend's OpenAPI schema — no hand-written fetch calls |
 | Backend | FastAPI + Pydantic v2 + SQLAlchemy + Alembic + Uvicorn |
 | Database | Postgres (chat transcripts stored in a `JSONB` column, not a second datastore) |
-| Local LLM | [Ollama](https://ollama.com) running `qwen3:8b`, host-native |
+| Local LLM | [Ollama](https://ollama.com) running `qwen3:8b`, containerized as an `ollama` Compose service (also runs fine host-native, e.g. for backend-outside-Docker iteration) |
 | Admin auth | Auth0 (Universal Login, RBAC `admin:access` scope), via `auth0-fastapi-api` / `@auth0/auth0-react` |
 | Tests | `pytest` (backend), Vitest + Testing Library (frontend) |
 
 ## Quick start (Docker Compose)
 
-**Prerequisites:** Docker Desktop, and [Ollama](https://ollama.com/download) running natively on the host (not containerized — see [`docs/DEV_PLAN.md`](docs/DEV_PLAN.md) §1 for why).
+**Prerequisites:** Docker Desktop. Ollama itself is containerized (an `ollama` Compose service pulls `qwen3:8b`, ~5.2GB, on first start) — no separate host install needed, though a host-native `ollama serve` still works identically if you're running the backend outside Docker.
 
 ```bash
-ollama pull qwen3:8b
-ollama show qwen3:8b   # confirm "tools" is listed under capabilities
-
 docker compose up -d --build
+# first start: `docker compose logs ollama` to watch the qwen3:8b pull —
+# backend won't start until ollama's healthcheck passes
 python scripts/seed_data.py   # needs the backend's venv active, or run it inside the backend container
 ```
 
@@ -57,7 +56,7 @@ python scripts/seed_data.py   # needs the backend's venv active, or run it insid
 - Backend / Swagger UI: [http://localhost:8000/docs](http://localhost:8000/docs)
 - `curl http://localhost:8000/health` → `{"status":"ok"}`
 
-**Full rebuild from scratch** (drops the Postgres volume too):
+**Full rebuild from scratch** (drops the Postgres volume and the Ollama model volume too — the next `up` re-pulls `qwen3:8b` from scratch):
 
 ```bash
 docker compose down -v --rmi local
@@ -104,7 +103,7 @@ VITE_AUTH0_CLIENT_ID=<your Auth0 SPA client ID>
 VITE_AUTH0_AUDIENCE=<your Auth0 API identifier — must match AUTH0_AUDIENCE above>
 ```
 
-`OLLAMA_HOST` is optional and only needed to override the default (`http://localhost:11434` host-native; `docker-compose.yml` sets it to `http://host.docker.internal:11434` for the containerized backend). Admin login requires an Auth0 tenant with RBAC enabled and an `admin:access` permission assigned to your admin user — see `docs/REQUIREMENTS.md` §4.5 for the Agent-Skills-driven setup this project used.
+`OLLAMA_HOST` is optional and only needed to override the default (`http://localhost:11434` for a host-native `ollama serve`; `docker-compose.yml` sets it to `http://ollama:11434` to reach the `ollama` Compose service instead). Admin login requires an Auth0 tenant with RBAC enabled and an `admin:access` permission assigned to your admin user — see `docs/REQUIREMENTS.md` §4.5 for the Agent-Skills-driven setup this project used.
 
 ## Project structure
 
@@ -147,7 +146,7 @@ cd frontend && npm test
 | `backend/` | `python llm/ollama_client.py` | Standalone Ollama connectivity check |
 | `frontend/` | `npm run generate:api` | Regenerate Orval hooks against the backend's live `/openapi.json` |
 | `frontend/` | `npm run build` / `npm run lint` | Type-check + production build / oxlint |
-| repo root | `docker compose up -d` | Bring up `postgres` + `backend` + `frontend` |
+| repo root | `docker compose up -d` | Bring up `postgres` + `ollama` + `backend` + `frontend` |
 | repo root | `python scripts/seed_data.py` | (Re-)seed mock data — safe to re-run, adds more rows each time |
 
 ## Program & docs

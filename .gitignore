@@ -217,9 +217,6 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Local demo/presentation prep — not part of the shipped project
-/demo/
-
 # Auth0 Agent Skills (Week 4, Section 4.5) — installed locally via
 # `npx skills add auth0/agent-skills --full-depth --skill auth0 -y`, regenerable,
 # not project code. Only the auth0 symlink under .claude/skills/ is ignored here —

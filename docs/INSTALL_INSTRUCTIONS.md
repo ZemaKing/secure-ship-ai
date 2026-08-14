@@ -307,7 +307,7 @@ python scripts/seed_data.py
 
 Populates mock customers/shipments/packages straight through the ORM models. No truncate/reset step — safe to re-run, but re-running just adds more rows on top of what's already there.
 
-Brings up `frontend`, `backend`, and `postgres` containers. Ollama stays on the host and is reached via `host.docker.internal:11434`.
+Brings up `frontend`, `backend`, and `postgres` containers. Ollama stayed on the host through Week 4, reached via `host.docker.internal:11434`; Week 5's stretch goal added a fourth `ollama` container (see `docs/DEV_PLAN.md`'s Week 5 section) — `docker compose up` now pulls `qwen3:8b` into a named volume itself, no host-native Ollama install required.
 
 ---
 
