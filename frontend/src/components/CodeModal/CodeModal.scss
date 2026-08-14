@@ -72,7 +72,9 @@
     border: 1px solid v.$color-border;
     border-radius: v.$radius-sm;
     text-align: center;
-    font-size: v.$font-size-xs;
+    // Deliberately not the app's usual 12px — a 6-digit verification code needs
+    // to stay large and legible, unlike ordinary form-field text.
+    font-size: v.$font-size-lg;
     color: v.$color-text;
     font-family: inherit;
 
@@ -96,15 +98,16 @@
 
   &__actions {
     display: flex;
+    justify-content: center;
     gap: v.$space-3;
-    margin-bottom: v.$space-5;
+    margin: 0 v.$space-4 v.$space-5;
   }
 
   &__cancel-button,
   &__verify-button {
     @include m.button-reset;
     flex: 1;
-    padding: v.$space-3;
+    padding: v.$space-2 v.$space-3;
     border-radius: v.$radius-sm;
     font-size: v.$font-size-xs;
     font-weight: 600;
