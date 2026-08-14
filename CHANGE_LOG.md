@@ -6,6 +6,22 @@ Full technical scope and week-by-week milestones live in `docs/DEV_PLAN.md` — 
 
 ---
 
+## 2026-08-14 — Week 5: Final Demo dry run 🎬
+
+**Theme:** The last item on the whole 5-week plan — a live, end-to-end walkthrough of both the chat gate and the admin panel, back to back, against the real running stack (not a scripted/mocked replay).
+
+**What was run, live, browser-driven (no shortcuts through Auth0 or the UI):** anonymous chat → `_mentions_shipment()` auto-flip to `CollectingIdentity` on the very first message → all four identity fields given in one message → matched to a real seeded customer (Petar Popović) → real mock 2FA code sent and console-printed (`989884`) → entered in the real `CodeModal` → `Verified` → a real shipment question answered with real, correctly-scoped data (`lookup_shipments`, two `ShipmentCard`s rendered) → **lost the browser session on purpose** to prove there's no persistent end-user login (a fresh session genuinely had to re-verify from scratch, exactly per the project's own invariant) → real Auth0 Universal Login → a real admin shipment-status edit (`1ZA0D04F3352994D` → `delivered`) → back in a **second, independent** verified chat session, asked again, and got the updated status back — proving the admin write path and the chat read path share the same live Postgres rows, not a cache. Every step cross-checked against the real backend in parallel (`psql` for `chat_sessions`/`shipments` state, `docker compose logs backend` for the `[MOCK SMS]` and `[TOOL CALL] lookup_shipments customer_id=... shipment_count=...` lines) rather than trusted on the UI's word alone.
+
+**Docs cold-read pass:** re-read `README.md` and the regenerated `docs/diagrams/` end to end as if seeing them for the first time — both held up; no corrections needed beyond what Week 5's earlier doc tasks and the Ollama-containerization doc pass already made accurate.
+
+**Retro — what Claude Code got right immediately vs. needed correction, across the full 5 weeks:** see the bottom of `docs/DEV_PLAN.md`'s Week 5 section for the full write-up. Short version: the backend-side enforcement patterns (tool allowlisting, `customer_id`-only scoping, structural admin/chat separation) were right from the first draft and never needed rework; almost every real correction needed over 5 weeks was on the frontend/styling side (remount-key bugs, `isLoading`-vs-`data===undefined` gating, `display:flex`-on-`<td>` breaking borders) and in a handful of environment/infra specifics no amount of code-reading would have surfaced (Auth0's separate `scope` vs. RBAC `permissions` claims, `host.docker.internal` vs. a Compose service name, a fixed `sleep` racing a slow container first-boot) — the kind of thing that's only findable by actually running it, not by re-reading the code more carefully.
+
+**No code or test changes this task** — pure verification + one retro doc update. `docs/DEV_PLAN.md`'s Final Demo checklist and Week 5 task list are now fully checked off.
+
+**Where things stand:** Week 5, and the whole 5-week program, is complete — all 8 Week 5 tasks done, all three stretch goals shipped, 71/71 backend tests and 55/55 frontend tests passing, both live-verified against the real running stack.
+
+---
+
 ## 2026-08-13 — Week 5: Admin chat session viewer (stretch goal) 💬
 
 **Theme:** First of Week 5's three pre-committed stretch goals — a read-only admin page listing `ChatSession` rows and their transcripts, reusing Week 4's CRUD-route/service shape exactly, minus the write side. Chosen table columns (Visitor/Customer, State, Started At, Transcript) and the state-label approach (real `ChatSessionState` values as colored pills, not the admin-pages mockup's fictional "Resolved"/"Closed"/"Abandoned" ticket vocabulary — confirmed with the user before building, since none of that exists in this app's schema) were settled up front rather than guessed mid-build.
