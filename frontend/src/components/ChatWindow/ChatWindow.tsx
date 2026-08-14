@@ -18,10 +18,10 @@ const ERROR_REPLY_TEXT = "Sorry, something went wrong reaching the assistant. Pl
 // small talk — routes/chat.py's _mentions_shipment() fallback specifically flips a
 // from-scratch session into identity collection on wording like this.
 const SUGGESTED_PROMPTS = [
-  'Where is my shipment now?',
-  'When will my package be delivered?',
-  'Do I have any shipments in transit?',
-  'I want to talk to a human',
+  { text: 'Where is my shipment now?', icon: '/icons/pill-search.svg' },
+  { text: 'When will my package be delivered?', icon: '/icons/pill-calendar.svg' },
+  { text: 'Do I have any shipments in transit?', icon: '/icons/pill-transit.svg' },
+  { text: 'I want to talk to a human', icon: '/icons/pill-talk-to-human.svg' },
 ]
 
 function makeMessageId() {
@@ -217,12 +217,13 @@ function ChatWindow() {
       <div className="chat-window__suggestions">
         {SUGGESTED_PROMPTS.map((prompt) => (
           <button
-            key={prompt}
+            key={prompt.text}
             type="button"
             className="chat-window__suggestion-pill"
-            onClick={() => handleSuggestedPrompt(prompt)}
+            onClick={() => handleSuggestedPrompt(prompt.text)}
           >
-            {prompt}
+            <img className="chat-window__suggestion-pill-icon" src={prompt.icon} alt="" />
+            <span className="chat-window__suggestion-pill-text">{prompt.text}</span>
           </button>
         ))}
       </div>
