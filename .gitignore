@@ -222,7 +222,9 @@ __marimo__/
 
 # Auth0 Agent Skills (Week 4, Section 4.5) — installed locally via
 # `npx skills add auth0/agent-skills --full-depth --skill auth0 -y`, regenerable,
-# not project code
+# not project code. Only the auth0 symlink under .claude/skills/ is ignored here —
+# project-authored skills (e.g. .claude/skills/orval-regen-suggestion/) are real
+# project code and should be committed.
 /.agents/
-/.claude/skills/
+/.claude/skills/auth0
 /skills-lock.json
