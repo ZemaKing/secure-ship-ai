@@ -103,7 +103,31 @@ VITE_AUTH0_CLIENT_ID=<your Auth0 SPA client ID>
 VITE_AUTH0_AUDIENCE=<your Auth0 API identifier — must match AUTH0_AUDIENCE above>
 ```
 
-`OLLAMA_HOST` is optional and only needed to override the default (`http://localhost:11434` for a host-native `ollama serve`; `docker-compose.yml` sets it to `http://ollama:11434` to reach the `ollama` Compose service instead). Admin login requires an Auth0 tenant with RBAC enabled and an `admin:access` permission assigned to your admin user — see `docs/REQUIREMENTS.md` §4.5 for the Agent-Skills-driven setup this project used.
+`OLLAMA_HOST` is optional and only needed to override the default (`http://localhost:11434` for a host-native `ollama serve`; `docker-compose.yml` sets it to `http://ollama:11434` to reach the `ollama` Compose service instead).
+
+## Auth0 setup (one-time, per tenant)
+
+Admin login needs a real Auth0 tenant — free sign-up at [auth0.com](https://auth0.com) (**Personal** account type is fine). Built using the Auth0 Agent Skills (see `docs/REQUIREMENTS.md` §4.5), but the actual tenant config below is manual regardless.
+
+**Create the application and API** (Dashboard → manage.auth0.com):
+
+1. **Applications → Applications → Create Application** — name `SecureShip Admin`, type **Single Page Web Applications**.
+2. In that application's **Settings** tab: Allowed Callback URLs `http://localhost:5173, http://localhost:5173/admin`; Allowed Logout URLs `http://localhost:5173`; Allowed Web Origins `http://localhost:5173`. Save. Note the **Domain** and **Client ID**.
+3. **Applications → APIs → Create API** — name `SecureShip Admin API`, identifier `https://secureship-admin-api` (becomes `AUTH0_AUDIENCE` — a URI-shaped string that's never actually called, just needs to be unique within the tenant), signing algorithm RS256 (default).
+4. **Grant the application access to the API** — API → **Application Access** tab (older UI: "Machine to Machine Applications" — despite the name, it also covers the Authorization Code/PKCE flow a SPA uses) → find the SPA application → toggle **User-Delegated Access** to Authorized → Save. Skipping this fails login immediately with `invalid_request: Client "..." is not authorized to access resource server "..."`.
+5. **RBAC** — the app enforces a real `admin:access` permission, not just a validly-signed token: enable RBAC + "Add Permissions in the Access Token" on the API, define an `admin:access` permission, assign it to your admin user, and disable public self-service Sign Up on the connection.
+
+No client secret is needed anywhere — the SPA uses PKCE, and the backend only ever *validates* tokens (never issues them), so it stays a stateless JWT validator. Put the resulting values into `backend/.env`/`frontend/.env` (host-native) or `docker-compose.yml`'s `backend.environment`/`frontend.environment` blocks (containerized — already wired in for the existing tenant, swap in new values there if setting up fresh).
+
+**Known gotcha, already fixed in code:** `Auth0Provider` must be given an explicit `redirect_uri` — leaving it to the SDK's default caused a real, 100%-reproducible `Unable to issue redirect for OAuth 2.0 transaction` error on Auth0's own login page (confirmed across two separate freshly-created tenants before the cause was found). Fixed in `frontend/src/auth/Auth0ProviderWithNavigate.tsx`; noted here in case a future SDK upgrade reintroduces it. Full debugging trail in `CHANGE_LOG.md`'s 2026-08-07 entry.
+
+Verify (backend running):
+
+```bash
+curl -i http://localhost:8000/admin/me
+```
+
+Expected: `400 invalid_request` with no `Authorization` header — confirms the backend is validating against the real tenant, not just returning a generic error.
 
 ## Project structure
 
